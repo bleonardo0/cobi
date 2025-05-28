@@ -1,120 +1,188 @@
-import { Model3D } from "@/types/model";
+import { Model3D, SupabaseModel, convertSupabaseToModel } from "@/types/model";
 import { generateSlug } from "./utils";
-import fs from "fs/promises";
-import path from "path";
+import { supabaseAdmin, isSupabaseConfigured } from "./supabase";
 
-const MODELS_DIR = path.join(process.cwd(), "public", "models");
-const MODELS_DATA_FILE = path.join(process.cwd(), "data", "models.json");
+const STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'models-3d';
 
-// Ensure directories exist
-export async function ensureDirectories() {
-  try {
-    await fs.mkdir(MODELS_DIR, { recursive: true });
-    await fs.mkdir(path.dirname(MODELS_DATA_FILE), { recursive: true });
-  } catch (error) {
-    console.error("Error creating directories:", error);
+// Check if Supabase is configured
+function checkSupabaseConfig() {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase n\'est pas configuré. Veuillez configurer les variables d\'environnement.');
   }
 }
 
-// Load models from JSON file
-export async function loadModels(): Promise<Model3D[]> {
-  try {
-    await ensureDirectories();
-    const data = await fs.readFile(MODELS_DATA_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    // File doesn't exist or is invalid, return empty array
-    return [];
+// Upload file to Supabase Storage
+export async function uploadFileToStorage(
+  file: File,
+  filename: string
+): Promise<{ url: string; path: string }> {
+  checkSupabaseConfig();
+  
+  const filePath = `models/${filename}`;
+  
+  const { data, error } = await supabaseAdmin.storage
+    .from(STORAGE_BUCKET)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+  if (error) {
+    throw new Error(`Erreur lors de l'upload: ${error.message}`);
   }
+
+  // Get public URL
+  const { data: urlData } = supabaseAdmin.storage
+    .from(STORAGE_BUCKET)
+    .getPublicUrl(filePath);
+
+  return {
+    url: urlData.publicUrl,
+    path: filePath
+  };
 }
 
-// Save models to JSON file
-export async function saveModels(models: Model3D[]): Promise<void> {
-  try {
-    await ensureDirectories();
-    await fs.writeFile(MODELS_DATA_FILE, JSON.stringify(models, null, 2));
-  } catch {
-    console.error("Error saving models");
-  }
-}
-
-// Add a new model
+// Add a new model to database
 export async function addModel(
   filename: string,
   originalName: string,
-  fileSize: number
+  fileSize: number,
+  mimeType: string,
+  storagePath: string,
+  publicUrl: string
 ): Promise<Model3D> {
-  const models = await loadModels();
+  checkSupabaseConfig();
   
-  const model: Model3D = {
-    id: Date.now().toString(),
+  const modelData = {
     name: originalName.replace(/\.[^/.]+$/, ""), // Remove extension
     filename,
-    url: `/models/${filename}`,
-    fileSize,
-    uploadDate: new Date().toISOString(),
-    mimeType: getMimeTypeFromFilename(filename),
+    original_name: originalName,
+    file_size: fileSize,
+    mime_type: mimeType,
+    storage_path: storagePath,
+    public_url: publicUrl,
     slug: generateSlug(originalName.replace(/\.[^/.]+$/, "")),
   };
 
-  models.push(model);
-  await saveModels(models);
-  
-  return model;
+  const { data, error } = await supabaseAdmin
+    .from('models_3d')
+    .insert(modelData)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Erreur lors de l'ajout en base: ${error.message}`);
+  }
+
+  return convertSupabaseToModel(data as SupabaseModel);
 }
 
 // Get model by slug
 export async function getModelBySlug(slug: string): Promise<Model3D | null> {
-  const models = await loadModels();
-  return models.find(model => model.slug === slug) || null;
+  if (!isSupabaseConfigured) {
+    return null;
+  }
+  
+  const { data, error } = await supabaseAdmin
+    .from('models_3d')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return convertSupabaseToModel(data as SupabaseModel);
 }
 
 // Get all models
 export async function getAllModels(): Promise<Model3D[]> {
-  return await loadModels();
+  if (!isSupabaseConfigured) {
+    return [];
+  }
+  
+  const { data, error } = await supabaseAdmin
+    .from('models_3d')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching models:', error);
+    return [];
+  }
+
+  return data.map((model: SupabaseModel) => convertSupabaseToModel(model));
 }
 
 // Delete a model
 export async function deleteModel(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured) {
+    return false;
+  }
+  
   try {
-    const models = await loadModels();
-    const modelIndex = models.findIndex(model => model.id === id);
-    
-    if (modelIndex === -1) {
+    // First get the model to get storage path
+    const { data: model, error: fetchError } = await supabaseAdmin
+      .from('models_3d')
+      .select('storage_path')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !model) {
       return false;
     }
 
-    const model = models[modelIndex];
-    
-    // Delete file from filesystem
-    const filePath = path.join(MODELS_DIR, model.filename);
-    try {
-      await fs.unlink(filePath);
-    } catch {
-      // File might not exist, continue anyway
+    // Delete file from storage
+    const { error: storageError } = await supabaseAdmin.storage
+      .from(STORAGE_BUCKET)
+      .remove([model.storage_path]);
+
+    if (storageError) {
+      console.error('Error deleting file from storage:', storageError);
+      // Continue anyway to delete from database
     }
 
-    // Remove from models array
-    models.splice(modelIndex, 1);
-    await saveModels(models);
-    
-    return true;
-  } catch {
+    // Delete from database
+    const { error: dbError } = await supabaseAdmin
+      .from('models_3d')
+      .delete()
+      .eq('id', id);
+
+    return !dbError;
+  } catch (error) {
+    console.error('Error deleting model:', error);
     return false;
   }
 }
 
-function getMimeTypeFromFilename(filename: string): string {
-  const ext = path.extname(filename).toLowerCase();
+// Get MIME type from filename
+export function getMimeTypeFromFilename(filename: string): string {
+  const ext = filename.toLowerCase().split('.').pop();
   
   switch (ext) {
-    case '.usdz':
+    case 'usdz':
       return 'model/vnd.usdz+zip';
-    case '.glb':
+    case 'glb':
       return 'model/gltf-binary';
-    case '.gltf':
+    case 'gltf':
       return 'model/gltf+json';
     default:
       return 'application/octet-stream';
   }
+}
+
+// Generate unique filename
+export function generateUniqueFilename(originalName: string): string {
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 8);
+  const extension = originalName.split('.').pop();
+  const baseName = originalName.replace(/\.[^/.]+$/, '');
+  
+  const cleanBaseName = baseName
+    .replace(/[^a-zA-Z0-9-_]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  
+  return `${cleanBaseName}-${timestamp}-${randomString}.${extension}`;
 } 

@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { addModel } from "@/lib/models";
+import { addModel, uploadFileToStorage, generateUniqueFilename, getMimeTypeFromFilename } from "@/lib/models";
 import { UploadResponse, SupportedMimeTypes } from "@/types/model";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-const UPLOAD_DIR = path.join(process.cwd(), "public", "models");
 
 const SUPPORTED_MIME_TYPES: SupportedMimeTypes[] = [
   'model/vnd.usdz+zip',
@@ -34,20 +31,6 @@ function validateFile(file: File): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-function generateUniqueFilename(originalName: string): string {
-  const timestamp = Date.now();
-  const randomString = Math.random().toString(36).substring(2, 8);
-  const extension = path.extname(originalName);
-  const baseName = path.basename(originalName, extension);
-  
-  const cleanBaseName = baseName
-    .replace(/[^a-zA-Z0-9-_]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-  
-  return `${cleanBaseName}-${timestamp}-${randomString}${extension}`;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -68,21 +51,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    try {
-      await mkdir(UPLOAD_DIR, { recursive: true });
-    } catch {
-      // Directory might already exist
-    }
-
+    // Generate unique filename
     const filename = generateUniqueFilename(file.name);
-    const filePath = path.join(UPLOAD_DIR, filename);
+    const mimeType = getMimeTypeFromFilename(filename);
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    
-    await writeFile(filePath, buffer);
+    // Upload to Supabase Storage
+    const { url, path } = await uploadFileToStorage(file, filename);
 
-    const model = await addModel(filename, file.name, file.size);
+    // Add to database
+    const model = await addModel(
+      filename,
+      file.name,
+      file.size,
+      mimeType,
+      path,
+      url
+    );
 
     const response: UploadResponse = {
       success: true,

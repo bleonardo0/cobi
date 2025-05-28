@@ -1,6 +1,6 @@
-# Galerie 3D - Next.js
+# Galerie 3D - Next.js avec Supabase
 
-Une galerie moderne de modèles 3D avec support de la réalité augmentée, construite avec Next.js 15, React 18+ et Tailwind CSS.
+Une galerie moderne de modèles 3D avec support de la réalité augmentée, construite avec Next.js 15, React 18+, Tailwind CSS et Supabase.
 
 ## ✨ Fonctionnalités
 
@@ -11,12 +11,15 @@ Une galerie moderne de modèles 3D avec support de la réalité augmentée, cons
 - 🔍 **Pages de détail** pour chaque modèle
 - 📊 **Statistiques** de la collection
 - 🚀 **Performance optimisée** avec Next.js SSR
+- ☁️ **Stockage cloud** avec Supabase Storage
+- 🗄️ **Base de données** PostgreSQL via Supabase
 - ✅ **Tests unitaires** avec Jest et React Testing Library
 
 ## 🛠️ Stack Technique
 
 - **Framework** : Next.js 15 (App Router)
 - **UI** : React 18+, Tailwind CSS
+- **Backend** : Supabase (PostgreSQL + Storage)
 - **3D/AR** : @google/model-viewer
 - **Animations** : Framer Motion
 - **Types** : TypeScript
@@ -38,9 +41,11 @@ src/
 ├── components/            # Composants React
 │   ├── GalleryGrid.tsx    # Grille de modèles
 │   ├── ModelCard.tsx      # Carte de modèle 3D
+│   ├── ModelViewer.tsx    # Wrapper pour model-viewer
 │   └── UploadForm.tsx     # Formulaire d'upload
 ├── lib/                   # Utilitaires et logique métier
-│   ├── models.ts          # Gestion des données
+│   ├── models.ts          # Gestion des données avec Supabase
+│   ├── supabase.ts        # Configuration Supabase
 │   └── utils.ts           # Fonctions utilitaires
 ├── types/                 # Définitions TypeScript
 │   ├── model.ts           # Types des modèles 3D
@@ -54,6 +59,7 @@ src/
 
 - Node.js 18+ 
 - npm ou yarn
+- Compte Supabase
 
 ### Installation
 
@@ -64,7 +70,41 @@ cd galerie-3d
 
 # Installer les dépendances
 npm install
+```
 
+### Configuration Supabase
+
+1. **Créer un projet Supabase** sur [supabase.com](https://supabase.com)
+
+2. **Configurer les variables d'environnement**
+   
+   Créez un fichier `.env.local` :
+   ```env
+   # Supabase Configuration
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   
+   # Storage Configuration
+   NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=models-3d
+   ```
+
+3. **Configurer la base de données**
+   
+   Exécutez le script SQL dans l'éditeur Supabase :
+   ```bash
+   # Le contenu du fichier supabase-setup.sql
+   ```
+
+4. **Créer le bucket de stockage**
+   
+   Dans Supabase Storage, créez un bucket public nommé `models-3d`
+
+📖 **Guide détaillé** : Consultez [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) pour les instructions complètes.
+
+### Démarrage
+
+```bash
 # Démarrer le serveur de développement
 npm run dev
 ```
@@ -92,6 +132,7 @@ npm run test:watch   # Tests en mode watch
 
 - Taille maximale : 50MB par fichier
 - Types MIME supportés : `model/vnd.usdz+zip`, `model/gltf-binary`, `model/gltf+json`
+- Stockage : Supabase Storage (1GB gratuit, puis payant)
 
 ## 🎯 Utilisation
 
@@ -101,6 +142,7 @@ npm run test:watch   # Tests en mode watch
 2. Glissez-déposez vos fichiers 3D ou cliquez pour sélectionner
 3. Les fichiers sont validés automatiquement
 4. Cliquez sur "Télécharger" pour ajouter à la galerie
+5. Le fichier est stocké dans Supabase Storage et les métadonnées en base
 
 ### 2. Visualiser en 3D
 
@@ -121,11 +163,14 @@ Pour les modèles USDZ sur iOS :
 
 ### Variables d'Environnement
 
-Créez un fichier `.env.local` :
-
 ```env
-# Optionnel : Configuration personnalisée
-NEXT_PUBLIC_MAX_FILE_SIZE=52428800  # 50MB en bytes
+# Supabase (Obligatoire)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Storage (Optionnel)
+NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=models-3d
 ```
 
 ### Personnalisation
@@ -184,6 +229,8 @@ L'interface s'adapte automatiquement :
 - Limitation de la taille des fichiers
 - Noms de fichiers sécurisés (caractères spéciaux supprimés)
 - Validation des extensions et types MIME
+- Politiques de sécurité Supabase (RLS)
+- Stockage sécurisé avec Supabase Storage
 
 ## 🚀 Déploiement
 
@@ -193,46 +240,78 @@ L'interface s'adapte automatiquement :
 # Installer Vercel CLI
 npm i -g vercel
 
-# Déployer
+# Configurer les variables d'environnement dans Vercel
+# Puis déployer
 vercel
 ```
+
+**Important** : Configurez les variables d'environnement Supabase dans les paramètres de votre projet Vercel.
 
 ### Build Manuel
 
 ```bash
-# Build de production
 npm run build
-
-# Démarrer le serveur
-npm start
+npm run start
 ```
+
+## 📊 Base de Données
+
+### Structure de la table `models_3d`
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| id | UUID | Identifiant unique |
+| name | TEXT | Nom du modèle |
+| filename | TEXT | Nom du fichier |
+| original_name | TEXT | Nom original du fichier |
+| file_size | BIGINT | Taille en bytes |
+| mime_type | TEXT | Type MIME |
+| storage_path | TEXT | Chemin dans Supabase Storage |
+| public_url | TEXT | URL publique du fichier |
+| slug | TEXT | Slug unique pour l'URL |
+| created_at | TIMESTAMP | Date de création |
+| updated_at | TIMESTAMP | Date de modification |
+
+## 🔧 Dépannage
+
+### Erreurs courantes
+
+1. **"bucket not found"**
+   - Vérifiez que le bucket `models-3d` existe dans Supabase Storage
+   - Vérifiez la variable `NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET`
+
+2. **Erreur de permissions**
+   - Vérifiez les politiques de storage dans Supabase
+   - Assurez-vous que le bucket est public
+   - Vérifiez les clés API dans `.env.local`
+
+3. **Erreur de base de données**
+   - Vérifiez que la table `models_3d` existe
+   - Vérifiez les politiques RLS si activées
+   - Vérifiez la clé service role
+
+## 📈 Monitoring
+
+- Surveillez l'utilisation du storage dans le dashboard Supabase
+- Configurez des alertes pour les quotas
+- Surveillez les logs d'erreur dans l'onglet **Logs** de Supabase
 
 ## 🤝 Contribution
 
 1. Fork le projet
-2. Créez une branche feature (`git checkout -b feature/nouvelle-fonctionnalite`)
-3. Committez vos changements (`git commit -m 'Ajout nouvelle fonctionnalité'`)
-4. Push vers la branche (`git push origin feature/nouvelle-fonctionnalite`)
+2. Créez une branche feature (`git checkout -b feature/AmazingFeature`)
+3. Commit vos changements (`git commit -m 'Add some AmazingFeature'`)
+4. Push vers la branche (`git push origin feature/AmazingFeature`)
 5. Ouvrez une Pull Request
 
 ## 📄 Licence
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
-## 🆘 Support
+## 🙏 Remerciements
 
-Pour toute question ou problème :
-
-1. Consultez la documentation
-2. Vérifiez les [issues existantes](../../issues)
-3. Créez une nouvelle issue si nécessaire
-
-## 🔮 Roadmap
-
-- [ ] Support des textures PBR
-- [ ] Éditeur de métadonnées
-- [ ] Système de tags et catégories
-- [ ] API REST complète
-- [ ] Mode sombre
-- [ ] Partage social
-- [ ] Compression automatique des modèles
+- [Google Model Viewer](https://modelviewer.dev/) pour le rendu 3D
+- [Supabase](https://supabase.com/) pour le backend
+- [Next.js](https://nextjs.org/) pour le framework
+- [Tailwind CSS](https://tailwindcss.com/) pour le styling
+- [Framer Motion](https://www.framer.com/motion/) pour les animations
