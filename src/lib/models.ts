@@ -61,7 +61,7 @@ export async function addModel(
     mime_type: mimeType,
     storage_path: storagePath,
     public_url: publicUrl,
-    slug: generateSlug(originalName.replace(/\.[^/.]+$/, "")),
+    slug: generateSlug(filename), // Use unique filename instead of original name
   };
 
   const { data, error } = await supabaseAdmin

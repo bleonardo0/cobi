@@ -7,11 +7,15 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function generateSlug(filename: string): string {
-  return filename
+  const baseSlug = filename
     .toLowerCase()
     .replace(/\.[^/.]+$/, "") // Remove file extension
     .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric with hyphens
     .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
+  
+  // Add timestamp to ensure uniqueness
+  const timestamp = Date.now().toString(36); // Convert to base36 for shorter string
+  return `${baseSlug}-${timestamp}`;
 }
 
 export function validateFileType(file: File): boolean {
