@@ -5,7 +5,6 @@ import { Model3D, ModelsResponse } from "@/types/model";
 import GalleryGrid from "@/components/GalleryGrid";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import SupabaseAlert from "@/components/SupabaseAlert";
 
 export default function HomePage() {
   const [models, setModels] = useState<Model3D[]>([]);
@@ -121,9 +120,6 @@ export default function HomePage() {
           initial="hidden"
           animate="visible"
         >
-          {/* Supabase Alert */}
-          <SupabaseAlert />
-
           {/* Stats */}
           <motion.div
             variants={statsVariants}

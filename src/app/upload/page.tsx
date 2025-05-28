@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import UploadForm from "@/components/UploadForm";
-import SupabaseAlert from "@/components/SupabaseAlert";
 import { Model3D } from "@/types/model";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -80,9 +79,6 @@ export default function UploadPage() {
           initial="hidden"
           animate="visible"
         >
-          {/* Supabase Alert */}
-          <SupabaseAlert />
-
           {/* Upload Form */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
             <UploadForm onUploadSuccess={handleUploadSuccess} />
