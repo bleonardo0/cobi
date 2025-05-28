@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getAllModels } from "@/lib/models";
 import { ModelsResponse } from "@/types/model";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const models = await getAllModels();
     

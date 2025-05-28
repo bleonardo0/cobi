@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Model3D } from "@/types/model";
 import { formatFileSize } from "@/lib/utils";
 import Link from "next/link";
+import ModelViewer from "@/components/ModelViewer";
 
 export default function ModelDetailPage() {
   const params = useParams();
-  const router = useRouter();
-  const modelViewerRef = useRef<any>(null);
+  const modelViewerRef = useRef<HTMLElement>(null);
   const [model, setModel] = useState<Model3D | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,13 +20,6 @@ export default function ModelDetailPage() {
       fetchModel(params.slug as string);
     }
   }, [params.slug]);
-
-  useEffect(() => {
-    // Dynamically import model-viewer for client-side only
-    import('@google/model-viewer').then(() => {
-      // model-viewer is now loaded
-    });
-  }, []);
 
   const fetchModel = async (slug: string) => {
     try {
@@ -100,7 +93,7 @@ export default function ModelDetailPage() {
             Modèle non trouvé
           </h1>
           <p className="text-gray-600 mb-6">
-            {error || 'Le modèle demandé n\'existe pas ou a été supprimé.'}
+            {error || 'Le modèle demandé n&apos;existe pas ou a été supprimé.'}
           </p>
           <Link
             href="/"
@@ -153,7 +146,7 @@ export default function ModelDetailPage() {
                 <button
                   onClick={() => {
                     if (modelViewerRef.current) {
-                      modelViewerRef.current.activateAR();
+                      (modelViewerRef.current as any).activateAR();
                     }
                   }}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
@@ -212,28 +205,17 @@ export default function ModelDetailPage() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="relative h-96 lg:h-[600px] bg-gradient-to-br from-gray-50 to-gray-100">
-                <model-viewer
+                <ModelViewer
                   ref={modelViewerRef}
                   src={model.url}
                   alt={model.name}
-                  auto-rotate
-                  camera-controls
-                  ar
-                  ar-modes="webxr scene-viewer quick-look"
-                  ios-src={model.mimeType === 'model/vnd.usdz+zip' ? model.url : undefined}
                   className="w-full h-full"
-                  loading="lazy"
-                  reveal="interaction"
                   style={{
                     width: '100%',
                     height: '100%',
                     backgroundColor: 'transparent',
                   }}
-                >
-                  <div slot="progress-bar" className="flex items-center justify-center h-full">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                  </div>
-                </model-viewer>
+                />
               </div>
               
               {/* Controls */}
@@ -247,7 +229,7 @@ export default function ModelDetailPage() {
                     <button
                       onClick={() => {
                         if (modelViewerRef.current) {
-                          modelViewerRef.current.resetTurntableRotation();
+                          (modelViewerRef.current as any).resetTurntableRotation();
                         }
                       }}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -287,7 +269,7 @@ export default function ModelDetailPage() {
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Date d'ajout</label>
+                  <label className="text-sm font-medium text-gray-500">Date d&apos;ajout</label>
                   <p className="text-gray-900">
                     {new Date(model.uploadDate).toLocaleDateString('fr-FR', {
                       year: 'numeric',

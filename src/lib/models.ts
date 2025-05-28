@@ -1,5 +1,5 @@
 import { Model3D } from "@/types/model";
-import { generateSlug, getMimeTypeFromExtension } from "./utils";
+import { generateSlug } from "./utils";
 import fs from "fs/promises";
 import path from "path";
 
@@ -22,8 +22,8 @@ export async function loadModels(): Promise<Model3D[]> {
     await ensureDirectories();
     const data = await fs.readFile(MODELS_DATA_FILE, "utf-8");
     return JSON.parse(data);
-  } catch (error) {
-    // If file doesn't exist, return empty array
+  } catch {
+    // File doesn't exist or is invalid, return empty array
     return [];
   }
 }
@@ -33,9 +33,8 @@ export async function saveModels(models: Model3D[]): Promise<void> {
   try {
     await ensureDirectories();
     await fs.writeFile(MODELS_DATA_FILE, JSON.stringify(models, null, 2));
-  } catch (error) {
-    console.error("Error saving models:", error);
-    throw error;
+  } catch {
+    console.error("Error saving models");
   }
 }
 
@@ -54,8 +53,8 @@ export async function addModel(
     url: `/models/${filename}`,
     fileSize,
     uploadDate: new Date().toISOString(),
-    mimeType: getMimeTypeFromExtension(filename),
-    slug: generateSlug(originalName),
+    mimeType: getMimeTypeFromFilename(filename),
+    slug: generateSlug(originalName.replace(/\.[^/.]+$/, "")),
   };
 
   models.push(model);
@@ -91,8 +90,8 @@ export async function deleteModel(id: string): Promise<boolean> {
     const filePath = path.join(MODELS_DIR, model.filename);
     try {
       await fs.unlink(filePath);
-    } catch (error) {
-      console.warn("Could not delete file:", filePath);
+    } catch {
+      // File might not exist, continue anyway
     }
 
     // Remove from models array
@@ -100,8 +99,22 @@ export async function deleteModel(id: string): Promise<boolean> {
     await saveModels(models);
     
     return true;
-  } catch (error) {
-    console.error("Error deleting model:", error);
+  } catch {
     return false;
+  }
+}
+
+function getMimeTypeFromFilename(filename: string): string {
+  const ext = path.extname(filename).toLowerCase();
+  
+  switch (ext) {
+    case '.usdz':
+      return 'model/vnd.usdz+zip';
+    case '.glb':
+      return 'model/gltf-binary';
+    case '.gltf':
+      return 'model/gltf+json';
+    default:
+      return 'application/octet-stream';
   }
 } 

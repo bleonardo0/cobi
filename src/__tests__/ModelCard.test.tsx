@@ -6,7 +6,7 @@ import { Model3D } from '@/types/model';
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, variants, initial, animate, whileHover, className, ...props }: any) => 
+    div: ({ children, className, ...props }: React.PropsWithChildren<{ className?: string }>) => 
       <div className={className} {...props}>{children}</div>,
   },
 }));
@@ -44,7 +44,7 @@ describe('ModelCard', () => {
   it('shows GLB format for non-USDZ models', () => {
     const glbModel = {
       ...mockModel,
-      mimeType: 'model/gltf-binary',
+      mimeType: 'model/gltf-binary' as const,
       filename: 'test-model.glb',
     };
     

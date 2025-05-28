@@ -27,6 +27,26 @@ export function validateFileType(file: File): boolean {
          file.name.toLowerCase().endsWith('.gltf');
 }
 
+export function validateFile(file: File): { valid: boolean; error?: string } {
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+  if (file.size > MAX_FILE_SIZE) {
+    return {
+      valid: false,
+      error: `Le fichier ${file.name} est trop volumineux (max 50MB)`
+    };
+  }
+
+  if (!validateFileType(file)) {
+    return {
+      valid: false,
+      error: `Le fichier ${file.name} n'est pas un format supporté (USDZ, GLB, GLTF)`
+    };
+  }
+
+  return { valid: true };
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
   
