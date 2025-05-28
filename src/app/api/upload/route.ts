@@ -33,18 +33,36 @@ function validateFile(file: File): { valid: boolean; error?: string } {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("🚀 Upload API called");
+    
+    // Check environment variables
+    console.log("📋 Environment check:", {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      bucket: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET
+    });
+
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
     if (!file) {
+      console.log("❌ No file provided");
       return NextResponse.json(
         { success: false, error: "Aucun fichier fourni" },
         { status: 400 }
       );
     }
 
+    console.log("📁 File info:", {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+
     const validation = validateFile(file);
     if (!validation.valid) {
+      console.log("❌ File validation failed:", validation.error);
       return NextResponse.json(
         { success: false, error: validation.error },
         { status: 400 }
@@ -54,11 +72,16 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const filename = generateUniqueFilename(file.name);
     const mimeType = getMimeTypeFromFilename(filename);
+    
+    console.log("🔧 Generated filename:", filename);
 
     // Upload to Supabase Storage
+    console.log("☁️ Uploading to Supabase Storage...");
     const { url, path } = await uploadFileToStorage(file, filename);
+    console.log("✅ Upload successful:", { url, path });
 
     // Add to database
+    console.log("💾 Adding to database...");
     const model = await addModel(
       filename,
       file.name,
@@ -67,6 +90,7 @@ export async function POST(request: NextRequest) {
       path,
       url
     );
+    console.log("✅ Database insert successful:", model.id);
 
     const response: UploadResponse = {
       success: true,
@@ -75,7 +99,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Upload error:", error);
+    console.error("💥 Upload error:", error);
+    console.error("💥 Error stack:", error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
       { 
         success: false, 
