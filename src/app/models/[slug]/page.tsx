@@ -21,6 +21,15 @@ export default function ModelDetailPage() {
     }
   }, [params.slug]);
 
+  useEffect(() => {
+    // Charger model-viewer dynamiquement côté client
+    import('@google/model-viewer').then(() => {
+      console.log('model-viewer chargé');
+    }).catch((error) => {
+      console.error('Erreur lors du chargement de model-viewer:', error);
+    });
+  }, []);
+
   const fetchModel = async (slug: string) => {
     try {
       setIsLoading(true);
@@ -44,6 +53,49 @@ export default function ModelDetailPage() {
       setError(error instanceof Error ? error.message : 'Erreur inconnue');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleARClick = () => {
+    if (modelViewerRef.current) {
+      try {
+        // Attendre que le model-viewer soit complètement chargé
+        const modelViewer = modelViewerRef.current;
+        
+        // Vérifier si la méthode activateAR existe
+        if (typeof (modelViewer as any).activateAR === 'function') {
+          (modelViewer as any).activateAR();
+        } else {
+          // Fallback: attendre un peu puis réessayer
+          setTimeout(() => {
+            if (typeof (modelViewer as any).activateAR === 'function') {
+              (modelViewer as any).activateAR();
+            } else {
+              console.error('AR non disponible pour ce modèle');
+              alert('La réalité augmentée n\'est pas disponible sur cet appareil ou navigateur.');
+            }
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('Erreur lors de l\'activation AR:', error);
+        alert('Impossible d\'activer la réalité augmentée. Assurez-vous d\'utiliser un appareil compatible.');
+      }
+    }
+  };
+
+  const handleResetView = () => {
+    if (modelViewerRef.current) {
+      try {
+        const modelViewer = modelViewerRef.current as any;
+        if (typeof modelViewer.resetTurntableRotation === 'function') {
+          modelViewer.resetTurntableRotation();
+        }
+        if (typeof modelViewer.cameraControls?.reset === 'function') {
+          modelViewer.cameraControls.reset();
+        }
+      } catch (error) {
+        console.error('Erreur lors de la réinitialisation:', error);
+      }
     }
   };
 
@@ -144,11 +196,7 @@ export default function ModelDetailPage() {
             <div className="flex items-center space-x-3">
               {model.mimeType === 'model/vnd.usdz+zip' && (
                 <button
-                  onClick={() => {
-                    if (modelViewerRef.current) {
-                      (modelViewerRef.current as any).activateAR();
-                    }
-                  }}
+                  onClick={handleARClick}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   <svg
@@ -227,11 +275,7 @@ export default function ModelDetailPage() {
                   
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => {
-                        if (modelViewerRef.current) {
-                          (modelViewerRef.current as any).resetTurntableRotation();
-                        }
-                      }}
+                      onClick={handleResetView}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
                       Réinitialiser

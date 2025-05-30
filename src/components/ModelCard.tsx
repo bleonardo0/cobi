@@ -13,6 +13,7 @@ interface ModelCardProps {
 
 export default function ModelCard({ model }: ModelCardProps) {
   const modelViewerRef = useRef<HTMLElement>(null);
+  const hiddenModelViewerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     // Dynamically import model-viewer for client-side only
@@ -20,6 +21,21 @@ export default function ModelCard({ model }: ModelCardProps) {
       // model-viewer is now loaded
     });
   }, []);
+
+  const handleARClick = () => {
+    // Détermine quelle référence utiliser selon l'affichage
+    const activeModelViewer = model.thumbnailUrl ? hiddenModelViewerRef.current : modelViewerRef.current;
+    
+    if (activeModelViewer) {
+      try {
+        (activeModelViewer as HTMLElement & { activateAR: () => void }).activateAR();
+      } catch (error) {
+        console.error('Erreur lors de l\'activation AR:', error);
+        // Fallback: rediriger vers la page de détail où le modèle 3D est toujours visible
+        window.location.href = `/models/${model.slug}`;
+      }
+    }
+  };
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -80,7 +96,7 @@ export default function ModelCard({ model }: ModelCardProps) {
               }}
             />
             <ModelViewer
-              ref={modelViewerRef}
+              ref={hiddenModelViewerRef}
               src={model.url}
               alt={model.name}
               className="w-full h-full hidden"
@@ -110,11 +126,7 @@ export default function ModelCard({ model }: ModelCardProps) {
         {/* AR Button for USDZ files */}
         {model.mimeType === 'model/vnd.usdz+zip' && (
           <button
-            onClick={() => {
-              if (modelViewerRef.current) {
-                (modelViewerRef.current as HTMLElement & { activateAR: () => void }).activateAR();
-              }
-            }}
+            onClick={handleARClick}
             className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium hover:bg-blue-700 transition-colors"
           >
             AR

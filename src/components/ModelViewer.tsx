@@ -40,14 +40,18 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
               ar
               ar-modes="webxr scene-viewer quick-look"
               ios-src="${src}"
+              ar-scale="auto"
               loading="lazy"
               reveal="interaction"
+              environment-image="neutral"
+              shadow-intensity="1"
               class="${className || ''}"
               style="${style ? Object.entries(style).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ') : ''}"
             >
               ${children ? `<div slot="progress-bar" class="flex items-center justify-center h-full">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
               </div>` : ''}
+              <button slot="ar-button" class="hidden"></button>
             </model-viewer>
           `
         }}
