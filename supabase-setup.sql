@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS public.models_3d (
     storage_path TEXT NOT NULL,
     public_url TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
+    thumbnail_url TEXT,
+    thumbnail_path TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -55,4 +57,9 @@ CREATE TRIGGER update_models_3d_updated_at
 
 -- Politique de stockage pour permettre la suppression
 -- CREATE POLICY "Allow public deletes" ON storage.objects
---     FOR DELETE USING (bucket_id = 'models-3d'); 
+--     FOR DELETE USING (bucket_id = 'models-3d');
+
+-- Mise à jour pour les tables existantes (ajout des colonnes thumbnail)
+ALTER TABLE public.models_3d 
+ADD COLUMN IF NOT EXISTS thumbnail_url TEXT,
+ADD COLUMN IF NOT EXISTS thumbnail_path TEXT; 

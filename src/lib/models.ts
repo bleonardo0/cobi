@@ -14,11 +14,12 @@ function checkSupabaseConfig() {
 // Upload file to Supabase Storage
 export async function uploadFileToStorage(
   file: File,
-  filename: string
+  filename: string,
+  folder: string = 'models'
 ): Promise<{ url: string; path: string }> {
   checkSupabaseConfig();
   
-  const filePath = `models/${filename}`;
+  const filePath = `${folder}/${filename}`;
   
   const { data, error } = await supabaseAdmin.storage
     .from(STORAGE_BUCKET)
@@ -49,7 +50,9 @@ export async function addModel(
   fileSize: number,
   mimeType: string,
   storagePath: string,
-  publicUrl: string
+  publicUrl: string,
+  thumbnailUrl?: string,
+  thumbnailPath?: string
 ): Promise<Model3D> {
   checkSupabaseConfig();
   
@@ -62,6 +65,8 @@ export async function addModel(
     storage_path: storagePath,
     public_url: publicUrl,
     slug: generateSlug(filename), // Use unique filename instead of original name
+    thumbnail_url: thumbnailUrl,
+    thumbnail_path: thumbnailPath,
   };
 
   const { data, error } = await supabaseAdmin
@@ -173,7 +178,7 @@ export function getMimeTypeFromFilename(filename: string): string {
 }
 
 // Generate unique filename
-export function generateUniqueFilename(originalName: string): string {
+export function generateUniqueFilename(originalName: string, prefix: string = ''): string {
   const timestamp = Date.now();
   const randomString = Math.random().toString(36).substring(2, 8);
   const extension = originalName.split('.').pop();
@@ -184,5 +189,5 @@ export function generateUniqueFilename(originalName: string): string {
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
   
-  return `${cleanBaseName}-${timestamp}-${randomString}.${extension}`;
+  return `${prefix}${cleanBaseName}-${timestamp}-${randomString}.${extension}`;
 } 

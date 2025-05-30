@@ -9,6 +9,8 @@ export interface Model3D {
   mimeType: SupportedMimeTypes;
   slug: string;
   storagePath: string;
+  thumbnailUrl?: string;
+  thumbnailPath?: string;
 }
 
 export interface UploadResponse {
@@ -40,6 +42,8 @@ export interface SupabaseModel {
   slug: string;
   created_at: string;
   updated_at: string;
+  thumbnail_url?: string;
+  thumbnail_path?: string;
 }
 
 // Fonction utilitaire pour convertir de Supabase vers notre interface
@@ -55,5 +59,7 @@ export function convertSupabaseToModel(supabaseModel: SupabaseModel): Model3D {
     mimeType: supabaseModel.mime_type as SupportedMimeTypes,
     slug: supabaseModel.slug,
     storagePath: supabaseModel.storage_path,
+    thumbnailUrl: supabaseModel.thumbnail_url,
+    thumbnailPath: supabaseModel.thumbnail_path,
   };
 } 

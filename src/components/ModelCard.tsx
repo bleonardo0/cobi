@@ -62,17 +62,50 @@ export default function ModelCard({ model }: ModelCardProps) {
     >
       {/* Model Viewer */}
       <div className="relative h-48 bg-gradient-to-br from-gray-50 to-gray-100">
-        <ModelViewer
-          ref={modelViewerRef}
-          src={model.url}
-          alt={model.name}
-          className="w-full h-full"
-          style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'transparent',
-          }}
-        />
+        {model.thumbnailUrl ? (
+          // Afficher l'image de prévisualisation si disponible
+          <div className="relative w-full h-full">
+            <img
+              src={model.thumbnailUrl}
+              alt={`Prévisualisation de ${model.name}`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback vers le modèle 3D si l'image ne charge pas
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const modelViewer = target.nextElementSibling as HTMLElement;
+                if (modelViewer) {
+                  modelViewer.style.display = 'block';
+                }
+              }}
+            />
+            <ModelViewer
+              ref={modelViewerRef}
+              src={model.url}
+              alt={model.name}
+              className="w-full h-full hidden"
+              style={{
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'transparent',
+                display: 'none',
+              }}
+            />
+          </div>
+        ) : (
+          // Fallback vers le modèle 3D si pas d'image
+          <ModelViewer
+            ref={modelViewerRef}
+            src={model.url}
+            alt={model.name}
+            className="w-full h-full"
+            style={{
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'transparent',
+            }}
+          />
+        )}
         
         {/* AR Button for USDZ files */}
         {model.mimeType === 'model/vnd.usdz+zip' && (

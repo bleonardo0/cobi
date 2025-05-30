@@ -3,11 +3,19 @@ import { addModel, uploadFileToStorage, generateUniqueFilename, getMimeTypeFromF
 import { UploadResponse, SupportedMimeTypes } from "@/types/model";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB pour les images
 
 const SUPPORTED_MIME_TYPES: SupportedMimeTypes[] = [
   'model/vnd.usdz+zip',
   'model/gltf-binary',
   'model/gltf+json'
+];
+
+const SUPPORTED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg', 
+  'image/png',
+  'image/webp'
 ];
 
 function validateFile(file: File): { valid: boolean; error?: string } {
@@ -31,6 +39,24 @@ function validateFile(file: File): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
+function validateImage(file: File): { valid: boolean; error?: string } {
+  if (file.size > MAX_IMAGE_SIZE) {
+    return {
+      valid: false,
+      error: `L'image ${file.name} est trop volumineuse (max 10MB)`
+    };
+  }
+
+  if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+    return {
+      valid: false,
+      error: `L'image ${file.name} n'est pas un format supporté (JPG, PNG, WebP)`
+    };
+  }
+
+  return { valid: true };
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log("🚀 Upload API called");
@@ -45,6 +71,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
+    const thumbnailFile = formData.get("thumbnail") as File | null;
 
     if (!file) {
       console.log("❌ No file provided");
@@ -57,7 +84,8 @@ export async function POST(request: NextRequest) {
     console.log("📁 File info:", {
       name: file.name,
       size: file.size,
-      type: file.type
+      type: file.type,
+      hasThumbnail: !!thumbnailFile
     });
 
     const validation = validateFile(file);
@@ -67,6 +95,27 @@ export async function POST(request: NextRequest) {
         { success: false, error: validation.error },
         { status: 400 }
       );
+    }
+
+    // Valider l'image de prévisualisation si fournie
+    let thumbnailUrl: string | undefined;
+    let thumbnailPath: string | undefined;
+    
+    if (thumbnailFile) {
+      console.log("🖼️ Thumbnail info:", {
+        name: thumbnailFile.name,
+        size: thumbnailFile.size,
+        type: thumbnailFile.type
+      });
+
+      const thumbnailValidation = validateImage(thumbnailFile);
+      if (!thumbnailValidation.valid) {
+        console.log("❌ Thumbnail validation failed:", thumbnailValidation.error);
+        return NextResponse.json(
+          { success: false, error: thumbnailValidation.error },
+          { status: 400 }
+        );
+      }
     }
 
     // Generate unique filename
@@ -80,6 +129,16 @@ export async function POST(request: NextRequest) {
     const { url, path } = await uploadFileToStorage(file, filename);
     console.log("✅ Upload successful:", { url, path });
 
+    // Upload thumbnail if provided
+    if (thumbnailFile) {
+      console.log("☁️ Uploading thumbnail to Supabase Storage...");
+      const thumbnailFilename = generateUniqueFilename(thumbnailFile.name);
+      const thumbnailUpload = await uploadFileToStorage(thumbnailFile, thumbnailFilename, 'thumbnails');
+      thumbnailUrl = thumbnailUpload.url;
+      thumbnailPath = thumbnailUpload.path;
+      console.log("✅ Thumbnail upload successful:", { thumbnailUrl, thumbnailPath });
+    }
+
     // Add to database
     console.log("💾 Adding to database...");
     const model = await addModel(
@@ -88,7 +147,9 @@ export async function POST(request: NextRequest) {
       file.size,
       mimeType,
       path,
-      url
+      url,
+      thumbnailUrl,
+      thumbnailPath
     );
     console.log("✅ Database insert successful:", model.id);
 

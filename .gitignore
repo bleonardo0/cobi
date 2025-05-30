@@ -12,6 +12,7 @@
 # next.js
 /.next/
 /out/
+/.swc/
 
 # production
 /build
@@ -47,6 +48,3 @@ Thumbs.db
 # Uploaded models (optional - remove if you want to track them)
 /public/models/*
 !/public/models/.gitkeep
-
-# Model data
-/data/models.json
