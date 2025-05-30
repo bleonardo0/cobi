@@ -79,23 +79,23 @@ export default function HomePage() {
         animate="visible"
         className="bg-white shadow-sm border-b border-gray-200"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 Galerie 3D
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
                 Explorez et partagez vos modèles 3D en réalité augmentée
               </p>
             </div>
             
             <Link
               href="/upload"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base"
             >
               <svg
-                className="w-5 h-5 mr-2"
+                className="w-4 h-4 sm:w-5 sm:h-5 mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -107,7 +107,7 @@ export default function HomePage() {
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              Ajouter un modèle
+              <span className="hidden sm:inline">Ajouter un modèle</span>
             </Link>
           </div>
         </div>
@@ -125,11 +125,11 @@ export default function HomePage() {
             variants={statsVariants}
             className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
           >
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <svg
-                    className="w-6 h-6 text-blue-600"
+                    className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -143,17 +143,17 @@ export default function HomePage() {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{models.length}</p>
-                  <p className="text-gray-600">Modèles 3D</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{models.length}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Modèles 3D</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <svg
-                    className="w-6 h-6 text-green-600"
+                    className="w-5 h-5 sm:w-6 sm:h-6 text-green-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -167,19 +167,19 @@ export default function HomePage() {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">
                     {models.filter(m => m.mimeType === 'model/vnd.usdz+zip').length}
                   </p>
-                  <p className="text-gray-600">Compatible AR</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Compatible AR</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                   <svg
-                    className="w-6 h-6 text-purple-600"
+                    className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -193,10 +193,10 @@ export default function HomePage() {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">
                     {Math.round(models.reduce((acc, m) => acc + m.fileSize, 0) / (1024 * 1024))}
                   </p>
-                  <p className="text-gray-600">MB stockés</p>
+                  <p className="text-xs sm:text-sm text-gray-600">MB stockés</p>
                 </div>
               </div>
             </div>

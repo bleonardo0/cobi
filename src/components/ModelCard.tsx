@@ -137,15 +137,15 @@ export default function ModelCard({ model }: ModelCardProps) {
       {/* Content */}
       <div className="p-4">
         <div className="flex items-start justify-between mb-2">
-          <h3 className="text-lg font-semibold text-gray-900 truncate flex-1">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate flex-1">
             {model.name}
           </h3>
-          <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
+          <span className="ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-100 text-gray-700 text-[0.6rem] sm:text-xs rounded-full font-medium">
             {getFileFormat(model.mimeType)}
           </span>
         </div>
 
-        <div className="space-y-2 text-sm text-gray-600">
+        <div className="space-y-2 text-xs sm:text-sm text-gray-600">
           <div className="flex justify-between">
             <span>Taille:</span>
             <span className="font-medium">{formatFileSize(model.fileSize)}</span>
@@ -159,7 +159,7 @@ export default function ModelCard({ model }: ModelCardProps) {
         <div className="mt-4 pt-4 border-t border-gray-100">
           <Link
             href={`/models/${model.slug}`}
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+            className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium text-xs sm:text-sm transition-colors"
           >
             Voir détails →
           </Link>
