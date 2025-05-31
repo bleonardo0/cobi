@@ -83,10 +83,10 @@ export default function HomePage() {
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Galerie 3D
+                Cobi
               </h1>
               <p className="text-gray-600 mt-1">
-                Explorez et partagez vos modèles 3D en réalité augmentée
+                Dashboard pour votre restaurant
               </p>
             </div>
             
