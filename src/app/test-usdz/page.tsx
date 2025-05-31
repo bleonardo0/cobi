@@ -10,7 +10,7 @@ export default function TestUSDZPage() {
   const testModels = [
     {
       name: 'Apple - Toy Robot (Référence)',
-      url: 'https://developer.apple.com/augmented-reality/quick-look/models/toyrobot/toy_robot_vintage.usdz',
+      url: "https://cwrivrxejzesoyszhggz.supabase.co/storage/v1/object/public/models-3d/models/Baldi-5-1748711194080-nql7p5.usdz",
       description: 'Modèle USDZ officiel d\'Apple'
     },
     {
