@@ -187,11 +187,29 @@ export default function UploadPage() {
               </div>
               
               <div>
+                <h4 className="font-medium mb-2">Images de prévisualisation :</h4>
+                <ul className="space-y-1">
+                  <li>• <strong>Optionnel</strong> : Ajoutez une image JPG, PNG ou WebP</li>
+                  <li>• <strong>Recommandé</strong> : 400x300px ou ratio 4:3</li>
+                  <li>• <strong>Taille max</strong> : 10MB par image</li>
+                </ul>
+              </div>
+              
+              <div>
                 <h4 className="font-medium mb-2">Optimisation :</h4>
                 <ul className="space-y-1">
                   <li>• Limitez la taille des fichiers (max 50MB)</li>
                   <li>• Optimisez les textures pour le web</li>
                   <li>• Réduisez le nombre de polygones si nécessaire</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-2">Conseils :</h4>
+                <ul className="space-y-1">
+                  <li>• L'image de prévisualisation améliore l'apparence dans la galerie</li>
+                  <li>• Sans image, le modèle 3D sera affiché directement</li>
+                  <li>• Vous pouvez toujours ajouter une image plus tard</li>
                 </ul>
               </div>
             </div>

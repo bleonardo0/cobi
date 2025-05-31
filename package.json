@@ -22,7 +22,7 @@
     "formidable": "^3.5.4",
     "framer-motion": "^12.15.0",
     "multer": "^2.0.0",
-    "next": "15.3.2",
+    "next": "^15.4.0-canary.59",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.3.0"

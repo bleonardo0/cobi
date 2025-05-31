@@ -69,7 +69,18 @@ export async function POST(request: NextRequest) {
       bucket: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET
     });
 
-    const formData = await request.formData();
+    // Parse form data with error handling
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (error) {
+      console.log("❌ Failed to parse form data:", error);
+      return NextResponse.json(
+        { success: false, error: "Données de formulaire invalides" },
+        { status: 400 }
+      );
+    }
+
     const file = formData.get("file") as File;
     const thumbnailFile = formData.get("thumbnail") as File | null;
 
@@ -162,12 +173,19 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("💥 Upload error:", error);
     console.error("💥 Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Ensure we always return valid JSON
     return NextResponse.json(
       { 
         success: false, 
         error: error instanceof Error ? error.message : "Erreur lors du téléchargement" 
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     );
   }
 } 

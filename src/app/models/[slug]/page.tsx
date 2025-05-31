@@ -59,14 +59,11 @@ export default function ModelDetailPage() {
   const handleARClick = () => {
     if (modelViewerRef.current) {
       try {
-        // Attendre que le model-viewer soit complètement chargé
         const modelViewer = modelViewerRef.current;
         
-        // Vérifier si la méthode activateAR existe
         if (typeof (modelViewer as any).activateAR === 'function') {
           (modelViewer as any).activateAR();
         } else {
-          // Fallback: attendre un peu puis réessayer
           setTimeout(() => {
             if (typeof (modelViewer as any).activateAR === 'function') {
               (modelViewer as any).activateAR();
@@ -288,6 +285,20 @@ export default function ModelDetailPage() {
 
           {/* Model Info */}
           <div className="space-y-6">
+            {/* Thumbnail Preview */}
+            {model.thumbnailUrl && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  Aperçu
+                </h2>
+                <img 
+                  src={model.thumbnailUrl} 
+                  alt={`Aperçu de ${model.name}`}
+                  className="w-full rounded-lg border border-gray-200"
+                />
+              </div>
+            )}
+
             {/* Details */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -409,29 +420,27 @@ export default function ModelDetailPage() {
                 Partager
               </h2>
               
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                  }}
-                  className="w-full flex items-center justify-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                }}
+                className="w-full flex items-center justify-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Copier le lien
-                </button>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+                Copier le lien
+              </button>
             </div>
           </div>
         </motion.div>

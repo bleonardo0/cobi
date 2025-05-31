@@ -14,7 +14,8 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedThumbnail, setSelectedThumbnail] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -44,6 +45,13 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
     }
   }, []);
 
+  const handleThumbnailInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleThumbnailSelection(files[0]);
+    }
+  }, []);
+
   const handleFileSelection = (file: File) => {
     setUploadError(null);
     
@@ -56,7 +64,7 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
     setSelectedFile(file);
   };
 
-  const handleImageSelection = (file: File) => {
+  const handleThumbnailSelection = (file: File) => {
     setUploadError(null);
     
     // Validation pour les images
@@ -73,7 +81,14 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
       return;
     }
     
-    setSelectedImage(file);
+    setSelectedThumbnail(file);
+    
+    // Créer une preview de l'image
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setThumbnailPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const uploadFile = async () => {
@@ -87,9 +102,9 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
       const formData = new FormData();
       formData.append('file', selectedFile);
       
-      // Ajouter l'image de prévisualisation si sélectionnée
-      if (selectedImage) {
-        formData.append('thumbnail', selectedImage);
+      // Ajouter le thumbnail si sélectionné
+      if (selectedThumbnail) {
+        formData.append('thumbnail', selectedThumbnail);
       }
 
       // Simulate progress
@@ -111,9 +126,33 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
       clearInterval(progressInterval);
       setUploadProgress(100);
 
+      const contentType = response.headers.get('content-type');
+      const isJson = contentType && contentType.includes('application/json');
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur lors du téléchargement');
+        let errorMessage = 'Erreur lors du téléchargement';
+        
+        if (isJson) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            // Si le parsing JSON échoue, utiliser le message par défaut
+          }
+        } else {
+          try {
+            const errorText = await response.text();
+            errorMessage = errorText || `Erreur ${response.status}: ${response.statusText}`;
+          } catch {
+            errorMessage = `Erreur ${response.status}: ${response.statusText}`;
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      if (!isJson) {
+        throw new Error('Réponse invalide du serveur');
       }
 
       const data = await response.json();
@@ -137,10 +176,16 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
 
   const resetForm = () => {
     setSelectedFile(null);
-    setSelectedImage(null);
+    setSelectedThumbnail(null);
+    setThumbnailPreview(null);
     setUploadProgress(0);
     setUploadError(null);
     setIsUploading(false);
+  };
+
+  const removeThumbnail = () => {
+    setSelectedThumbnail(null);
+    setThumbnailPreview(null);
   };
 
   const getSupportedFormats = (): SupportedMimeTypes[] => {
@@ -157,221 +202,30 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
       >
         {!selectedFile ? (
           /* File Selection */
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`
-              relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300
-              ${isDragOver 
-                ? 'border-blue-400 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
-              }
-            `}
-          >
-            <input
-              type="file"
-              accept=".usdz,.glb,.gltf"
-              onChange={handleFileInput}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            
-            <div className="space-y-4">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                <svg
-                  className="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-              </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">
-                  Glissez-déposez votre fichier ici
-                </p>
-                <p className="text-gray-500 mt-1">
-                  ou cliquez pour sélectionner
-                </p>
-              </div>
-              
-              <div className="text-sm text-gray-400">
-                <p>Formats supportés: USDZ, GLB, GLTF</p>
-                <p>Taille maximale: 50MB</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* File Preview & Upload */
           <div className="space-y-6">
-            {/* File Info */}
-            <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-6 h-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`
+                relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300
+                ${isDragOver 
+                  ? 'border-blue-400 bg-blue-50' 
+                  : 'border-gray-300 hover:border-gray-400'
+                }
+              `}
+            >
+              <input
+                type="file"
+                accept=".usdz,.glb,.gltf"
+                onChange={handleFileInput}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
               
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {selectedFile.name}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {formatFileSize(selectedFile.size)}
-                </p>
-              </div>
-              
-              <button
-                onClick={resetForm}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Image de prévisualisation (optionnelle) */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-gray-900">
-                Image de prévisualisation (optionnelle)
-              </h3>
-              
-              {!selectedImage ? (
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                    onChange={(e) => {
-                      const files = e.target.files;
-                      if (files && files.length > 0) {
-                        handleImageSelection(files[0]);
-                      }
-                    }}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <svg
-                        className="w-4 h-4 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      Cliquez pour ajouter une image
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      JPG, PNG, WebP - Max 10MB
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-green-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {selectedImage.name}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {formatFileSize(selectedImage.size)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setSelectedImage(null)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Progress Bar */}
-            {isUploading && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Téléchargement en cours...</span>
-                  <span className="text-gray-900 font-medium">{uploadProgress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <motion.div
-                    className="bg-blue-600 h-2 rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${uploadProgress}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Error Message */}
-            {uploadError && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center">
+              <div className="space-y-4">
+                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
                   <svg
-                    className="w-5 h-5 text-red-600 mr-2"
+                    className="w-8 h-8 text-blue-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -380,32 +234,188 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                     />
                   </svg>
-                  <p className="text-sm text-red-800">{uploadError}</p>
+                </div>
+                
+                <div>
+                  <p className="text-lg font-medium text-gray-900">
+                    {isDragOver ? 'Déposez votre fichier ici' : 'Sélectionnez votre modèle 3D'}
+                  </p>
+                  <p className="text-gray-500 mt-2">
+                    Glissez-déposez ou cliquez pour sélectionner un fichier
+                  </p>
+                </div>
+                
+                <div className="text-sm text-gray-400">
+                  Formats supportés : USDZ, GLB, GLTF • Taille max : 50MB
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* File Selected */
+          <div className="space-y-6">
+            {/* Fichier sélectionné */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-5 h-5 text-blue-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{selectedFile.name}</p>
+                    <p className="text-sm text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                  </div>
+                </div>
+                
+                {!isUploading && (
+                  <button
+                    onClick={resetForm}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Section Thumbnail (optionnel) */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-3">
+                Image de prévisualisation (optionnel)
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Ajoutez une image JPG, PNG ou WebP pour prévisualiser votre modèle dans la galerie
+              </p>
+
+              {!selectedThumbnail ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleThumbnailInput}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    style={{ position: 'relative' }}
+                  />
+                  <div className="space-y-2">
+                    <svg
+                      className="mx-auto w-8 h-8 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <p className="text-sm text-gray-600">Cliquez pour sélectionner une image</p>
+                    <p className="text-xs text-gray-400">JPG, PNG, WebP • Max 10MB</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-4">
+                  {thumbnailPreview && (
+                    <img
+                      src={thumbnailPreview}
+                      alt="Preview"
+                      className="w-16 h-16 object-cover rounded-lg border"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{selectedThumbnail.name}</p>
+                    <p className="text-sm text-gray-500">{formatFileSize(selectedThumbnail.size)}</p>
+                  </div>
+                  {!isUploading && (
+                    <button
+                      onClick={removeThumbnail}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Upload Progress */}
+            {isUploading && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Téléchargement en cours...</span>
+                  <span className="text-gray-900 font-medium">{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {uploadError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <svg
+                    className="w-5 h-5 text-red-600 mr-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <p className="text-red-800 text-sm">{uploadError}</p>
                 </div>
               </div>
             )}
 
             {/* Upload Button */}
-            <div className="flex space-x-3">
-              <button
-                onClick={uploadFile}
-                disabled={isUploading}
-                className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-              >
-                {isUploading ? 'Téléchargement...' : 'Télécharger le modèle'}
-              </button>
-              
-              <button
-                onClick={resetForm}
-                disabled={isUploading}
-                className="px-4 py-3 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Annuler
-              </button>
-            </div>
+            <button
+              onClick={uploadFile}
+              disabled={isUploading}
+              className={`
+                w-full py-3 px-4 rounded-lg font-medium transition-colors
+                ${isUploading
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                }
+              `}
+            >
+              {isUploading ? 'Téléchargement...' : 'Télécharger le modèle'}
+            </button>
           </div>
         )}
       </motion.div>
