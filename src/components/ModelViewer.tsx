@@ -1,6 +1,15 @@
 'use client';
 
-import { useEffect, forwardRef, useState } from 'react';
+import { useEffect, forwardRef, useState, useMemo } from 'react';
+
+interface Hotspot {
+  id: string;
+  position: string; // Format: "X Y Z" (coordonnées 3D)
+  normal: string;   // Format: "X Y Z" (normale de surface)
+  title: string;
+  description?: string;
+  icon?: string;
+}
 
 interface ModelViewerProps {
   src: string;
@@ -8,14 +17,16 @@ interface ModelViewerProps {
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
+  hotspots?: Hotspot[];
 }
 
 const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
-  ({ src, alt, className = '', style, children }, ref) => {
-    const [isLoaded, setIsLoaded] = useState(false);
-    const [isError, setIsError] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const [deviceInfo, setDeviceInfo] = useState<any>({});
+  ({ src, alt, className = '', style, children, hotspots = [] }, ref) => {
+      const [isLoaded, setIsLoaded] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deviceInfo, setDeviceInfo] = useState<any>({});
+  const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
 
     // Détecter le type de fichier
     const isUSDZ = src.toLowerCase().includes('.usdz');
@@ -36,40 +47,47 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
 
     const proxyUrl = getProxyUrl(src);
 
-    useEffect(() => {
-      // Détecter les informations du device
-      setDeviceInfo({
-        isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
-        isSafari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
-        isWebKit: 'WebKitAppearance' in document.documentElement.style,
-      });
-    }, []);
+      useEffect(() => {
+    // Détecter les informations du device
+    setDeviceInfo({
+      isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+      isSafari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
+      isWebKit: 'WebKitAppearance' in document.documentElement.style,
+    });
 
-    useEffect(() => {
-      let isMounted = true;
-      let loadTimeout: NodeJS.Timeout;
+  }, []);
 
-      const loadModelViewer = async () => {
-        try {
-          console.log('🔄 Loading ModelViewer...');
-          console.log('📂 Original URL:', src);
-          console.log('🔄 Proxy URL:', proxyUrl);
-          console.log('📋 File type:', { isUSDZ, isGLB, isGLTF });
-          console.log('📱 Device:', deviceInfo);
-          
-          // Reset states
-          setIsLoading(true);
-          setIsError(false);
-          setIsLoaded(false);
-          
-          // Import model-viewer dynamically
-          await import('@google/model-viewer');
-          console.log('✅ @google/model-viewer loaded');
+      useEffect(() => {
+    let isMounted = true;
+    let loadTimeout: NodeJS.Timeout;
 
-          // Pour les fichiers USDZ, vérifier la compatibilité
-          if (isUSDZ && !deviceInfo.isIOS && !deviceInfo.isSafari) {
-            console.warn('⚠️ USDZ file on non-iOS/Safari browser - compatibility may be limited');
+    const loadModelViewer = async () => {
+      try {
+        console.log('🔄 Loading ModelViewer...');
+        console.log('📂 Original URL:', src);
+        console.log('🔄 Proxy URL:', proxyUrl);
+        console.log('📋 File type:', { isUSDZ, isGLB, isGLTF });
+        console.log('📱 Device:', deviceInfo);
+        
+        // Reset states
+        setIsLoading(true);
+        setIsError(false);
+        setIsLoaded(false);
+        
+        // Import model-viewer dynamically
+        await import('@google/model-viewer');
+        console.log('✅ @google/model-viewer loaded');
+
+                  // Pour les fichiers USDZ, vérifier la compatibilité
+        if (isUSDZ && !deviceInfo.isIOS && !deviceInfo.isSafari) {
+          console.warn('⚠️ USDZ file on non-iOS/Safari browser - showing download option instead');
+          // Ne pas charger le model-viewer pour USDZ sur navigateurs non-compatibles
+          if (isMounted) {
+            setIsLoading(false);
+            setIsError(true);
           }
+          return;
+        }
 
           let modelLoadedSuccessfully = false;
 
@@ -109,7 +127,52 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           clearTimeout(loadTimeout);
         }
       };
-    }, [src, proxyUrl, isUSDZ, deviceInfo]);
+    }, [src, proxyUrl, isUSDZ, deviceInfo]); // activeHotspot retiré des dépendances
+
+    // Gestion des clics sur les hotspots de manière propre
+    useEffect(() => {
+      const handleHotspotClick = (event: Event) => {
+        const target = event.target as HTMLElement;
+        const hotspotButton = target.closest('[data-hotspot-id]') as HTMLElement;
+        
+        if (hotspotButton) {
+          const hotspotId = hotspotButton.getAttribute('data-hotspot-id');
+          if (hotspotId) {
+            setActiveHotspot(prev => prev === hotspotId ? null : hotspotId);
+          }
+        }
+      };
+
+      // Attacher l'événement au conteneur
+      const container = document.querySelector('.model-viewer-container');
+      if (container) {
+        container.addEventListener('click', handleHotspotClick);
+        
+        return () => {
+          container.removeEventListener('click', handleHotspotClick);
+        };
+      }
+    }, [hotspots]); // Se met à jour seulement si les hotspots changent
+
+    // Mémoriser les hotspots HTML pour éviter les regénérations
+    const hotspotsHTML = useMemo(() => {
+      if (!hotspots.length || isUSDZ) return '';
+      
+      return hotspots.map(hotspot => `
+        <button 
+          slot="hotspot-${hotspot.id}" 
+          class="hotspot" 
+          data-position="${hotspot.position}" 
+          data-normal="${hotspot.normal}"
+          data-visibility-attribute="visible"
+          data-hotspot-id="${hotspot.id}"
+        >
+          <div class="hotspot-icon">
+            ${hotspot.icon || '📍'}
+          </div>
+        </button>
+      `).join('');
+    }, [hotspots, isUSDZ]);
 
     // Générer les attributs model-viewer selon le type de fichier
     const getModelViewerAttributes = () => {
@@ -124,13 +187,16 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
       `;
 
       if (isUSDZ) {
-        // Attributs spécifiques pour USDZ
-        return baseAttributes + `
+        // Attributs spécifiques pour USDZ - utiliser seulement ios-src pour éviter les erreurs de parsing
+        return `
           ios-src="${proxyUrl}"
+          alt="${alt}"
           ar
-          ar-modes="webxr scene-viewer quick-look"
+          ar-modes="quick-look"
           environment-image="neutral"
           auto-rotate-delay="0"
+          interaction-prompt="none"
+          style="width: 100%; height: 100%; display: block; background: transparent; min-height: 400px;"
         `;
       } else {
         // Attributs pour GLB/GLTF
@@ -227,10 +293,83 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           <div 
             style={{ width: '100%', height: '100%' }}
             dangerouslySetInnerHTML={{
-              __html: `<model-viewer ${getModelViewerAttributes()}></model-viewer>`
+              __html: `<model-viewer ${getModelViewerAttributes()}>
+                ${hotspotsHTML}
+              </model-viewer>`
             }}
           />
         )}
+
+        {/* Hotspot Tooltips */}
+        {activeHotspot && hotspots.length > 0 && (
+          <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-4 max-w-xs z-20 border">
+            {(() => {
+              const hotspot = hotspots.find(h => h.id === activeHotspot);
+              if (!hotspot) return null;
+              return (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-gray-900">{hotspot.title}</h3>
+                    <button
+                      onClick={() => setActiveHotspot(null)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                  {hotspot.description && (
+                    <p className="text-gray-600 text-sm">{hotspot.description}</p>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Styles CSS pour les hotspots */}
+        <style jsx>{`
+          :global(.hotspot) {
+            display: block;
+            width: 20px;
+            height: 20px;
+            border: none;
+            border-radius: 50%;
+            background: #1d4ed8;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            animation: pulse 2s infinite;
+          }
+          
+          :global(.hotspot:hover) {
+            transform: scale(1.2);
+            background: #1e40af;
+          }
+          
+          :global(.hotspot-icon) {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            font-size: 12px;
+          }
+          
+          @keyframes pulse {
+            0% {
+              box-shadow: 0 0 0 0 rgba(29, 78, 216, 0.7);
+            }
+            70% {
+              box-shadow: 0 0 0 10px rgba(29, 78, 216, 0);
+            }
+            100% {
+              box-shadow: 0 0 0 0 rgba(29, 78, 216, 0);
+            }
+          }
+        `}</style>
         
         {children}
       </div>

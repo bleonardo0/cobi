@@ -50,10 +50,14 @@ export async function GET(
       contentType = 'model/gltf-binary';
     } else if (filePath.endsWith('.gltf')) {
       contentType = 'model/gltf+json';
+    } else if (filePath.endsWith('.usdz')) {
+      contentType = 'model/vnd.usdz+zip';
     } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
       contentType = 'image/jpeg';
     } else if (filePath.endsWith('.png')) {
       contentType = 'image/png';
+    } else if (filePath.endsWith('.webp')) {
+      contentType = 'image/webp';
     }
     
     // Create response with proper headers

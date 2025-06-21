@@ -309,13 +309,12 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
               </p>
 
               {!selectedThumbnail ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer">
                   <input
                     type="file"
                     accept="image/jpeg,image/jpg,image/png,image/webp"
                     onChange={handleThumbnailInput}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    style={{ position: 'relative' }}
                   />
                   <div className="space-y-2">
                     <svg

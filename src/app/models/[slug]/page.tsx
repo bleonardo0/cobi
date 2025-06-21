@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Model3D } from "@/types/model";
 import { formatFileSize } from "@/lib/utils";
@@ -10,10 +10,13 @@ import ModelViewer from "@/components/ModelViewer";
 
 export default function ModelDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const modelViewerRef = useRef<HTMLElement>(null);
   const [model, setModel] = useState<Model3D | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (params.slug) {
@@ -93,6 +96,32 @@ export default function ModelDetailPage() {
       } catch (error) {
         console.error('Erreur lors de la réinitialisation:', error);
       }
+    }
+  };
+
+  const handleDeleteModel = async () => {
+    if (!model) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/models/${model.id}`, {
+        method: 'DELETE',
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Redirect to home page after successful deletion
+        router.push('/');
+      } else {
+        alert('Erreur lors de la suppression: ' + (data.error || 'Erreur inconnue'));
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      alert('Erreur lors de la suppression du modèle');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -233,6 +262,26 @@ export default function ModelDetailPage() {
                 </svg>
                 Télécharger
               </a>
+              
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                Supprimer
+              </button>
             </div>
           </div>
         </div>
@@ -260,6 +309,27 @@ export default function ModelDetailPage() {
                     height: '100%',
                     backgroundColor: 'transparent',
                   }}
+                  hotspots={
+                    // Hotspots d'exemple seulement pour les modèles GLB
+                    !model.mimeType.includes('usdz') ? [
+                      {
+                        id: 'detail1',
+                        position: '0 1 0.5',
+                        normal: '0 1 0',
+                        title: 'Point d\'intérêt',
+                        description: 'Ceci est un point d\'intérêt sur le modèle 3D. Vous pouvez ajouter des descriptions et des informations détaillées.',
+                        icon: '🔍'
+                      },
+                      {
+                        id: 'info1',
+                        position: '-0.5 0.5 0',
+                        normal: '-1 0 0',
+                        title: 'Information',
+                        description: 'Zone importante du modèle avec des détails techniques ou artistiques.',
+                        icon: '💡'
+                      }
+                    ] : []
+                  }
                 />
               </div>
               
@@ -445,6 +515,63 @@ export default function ModelDetailPage() {
           </div>
         </motion.div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                <svg
+                  className="w-6 h-6 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Confirmer la suppression
+              </h3>
+            </div>
+            
+            <p className="text-gray-600 mb-6">
+              Êtes-vous sûr de vouloir supprimer le modèle &quot;{model.name}&quot; ? 
+              Cette action est irréversible et supprimera définitivement le fichier et ses données.
+            </p>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteModel}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Suppression...
+                  </>
+                ) : (
+                  'Supprimer définitivement'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
