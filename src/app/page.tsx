@@ -111,25 +111,47 @@ export default function HomePage() {
               </p>
             </div>
             
-            <Link
-              href="/upload"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex space-x-3">
+              <Link
+                href="/insights"
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Ajouter un modèle
-            </Link>
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                📊 Insights
+              </Link>
+              
+              <Link
+                href="/upload"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Ajouter un modèle
+              </Link>
+            </div>
           </div>
         </div>
       </motion.header>
@@ -141,6 +163,44 @@ export default function HomePage() {
           initial="hidden"
           animate="visible"
         >
+          {/* Menu QR Code Section */}
+          <motion.div
+            variants={statsVariants}
+            className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200 mb-8"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">🍽️ Menu Client 3D</h2>
+                <p className="text-gray-700 mb-4">
+                  Vos clients peuvent scanner un QR code pour accéder au menu 3D interactif
+                </p>
+                <div className="flex items-center space-x-4">
+                  <Link
+                    href="/menu/test"
+                    target="_blank"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Voir le menu test
+                  </Link>
+                  <div className="text-sm text-gray-600">
+                    📱 Optimisé mobile • 🎯 Analytics intégrés
+                  </div>
+                </div>
+              </div>
+              <div className="hidden md:block">
+                <div className="w-20 h-20 bg-white rounded-lg border-2 border-gray-300 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-2xl mb-1">📱</div>
+                    <div className="text-xs text-gray-500">QR Code</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
           {/* Stats */}
           <motion.div
             variants={statsVariants}
