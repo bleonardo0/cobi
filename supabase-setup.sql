@@ -67,11 +67,58 @@ BEGIN
                    WHERE table_name = 'models_3d' AND column_name = 'format') THEN
         ALTER TABLE models_3d ADD COLUMN format VARCHAR(50);
     END IF;
+    
+    -- Vérifier et ajouter category
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'category') THEN
+        ALTER TABLE models_3d ADD COLUMN category VARCHAR(50);
+    END IF;
+    
+    -- Vérifier et ajouter tags
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'tags') THEN
+        ALTER TABLE models_3d ADD COLUMN tags TEXT[];
+    END IF;
+    
+    -- Vérifier et ajouter description
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'description') THEN
+        ALTER TABLE models_3d ADD COLUMN description TEXT;
+    END IF;
+    
+    -- Vérifier et ajouter ingredients
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'ingredients') THEN
+        ALTER TABLE models_3d ADD COLUMN ingredients TEXT[];
+    END IF;
+    
+    -- Vérifier et ajouter price
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'price') THEN
+        ALTER TABLE models_3d ADD COLUMN price DECIMAL(10,2);
+    END IF;
+    
+    -- Vérifier et ajouter short_description
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'short_description') THEN
+        ALTER TABLE models_3d ADD COLUMN short_description VARCHAR(150);
+    END IF;
+    
+    -- Vérifier et ajouter allergens
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'allergens') THEN
+        ALTER TABLE models_3d ADD COLUMN allergens TEXT[];
+    END IF;
 END $$;
 
 -- Index pour améliorer les performances
 CREATE INDEX IF NOT EXISTS idx_models_3d_slug ON models_3d(slug);
 CREATE INDEX IF NOT EXISTS idx_models_3d_created_at ON models_3d(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_models_3d_category ON models_3d(category);
+CREATE INDEX IF NOT EXISTS idx_models_3d_tags ON models_3d USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_models_3d_name ON models_3d(name);
+CREATE INDEX IF NOT EXISTS idx_models_3d_ingredients ON models_3d USING GIN(ingredients);
+CREATE INDEX IF NOT EXISTS idx_models_3d_allergens ON models_3d USING GIN(allergens);
 
 -- Fonction pour mettre à jour automatiquement updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()

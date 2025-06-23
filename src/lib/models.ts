@@ -56,7 +56,12 @@ export async function addModel(
   glbUrl?: string,
   glbPath?: string,
   usdzUrl?: string,
-  usdzPath?: string
+  usdzPath?: string,
+  category?: string,
+  tags?: string[],
+  price?: number,
+  shortDescription?: string,
+  allergens?: string[]
 ): Promise<Model3D> {
   checkSupabaseConfig();
   
@@ -75,6 +80,11 @@ export async function addModel(
     glb_path: glbPath,
     usdz_url: usdzUrl,
     usdz_path: usdzPath,
+    category: category || 'autres',
+    tags: tags || [],
+    price: price,
+    short_description: shortDescription,
+    allergens: allergens || [],
   };
 
   const { data, error } = await supabaseAdmin

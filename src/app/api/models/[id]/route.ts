@@ -122,6 +122,48 @@ export async function PATCH(
       updateData.name = modelName.trim();
     }
 
+    // Mettre à jour la catégorie et les tags si fournis
+    const category = formData.get('category') as string | null;
+    const tagsString = formData.get('tags') as string | null;
+    
+    if (category) {
+      updateData.category = category;
+    }
+    
+    if (tagsString) {
+      try {
+        const tags = JSON.parse(tagsString);
+        updateData.tags = tags;
+      } catch (error) {
+        console.log('⚠️ Failed to parse tags, ignoring:', error);
+      }
+    }
+
+    // Mettre à jour les nouveaux champs restaurant si fournis
+    const priceString = formData.get('price') as string | null;
+    const shortDescription = formData.get('shortDescription') as string | null;
+    const allergensString = formData.get('allergens') as string | null;
+    
+    if (priceString) {
+      const price = parseFloat(priceString);
+      if (!isNaN(price)) {
+        updateData.price = price;
+      }
+    }
+    
+    if (shortDescription) {
+      updateData.short_description = shortDescription;
+    }
+    
+    if (allergensString) {
+      try {
+        const allergens = JSON.parse(allergensString);
+        updateData.allergens = allergens;
+      } catch (error) {
+        console.log('⚠️ Failed to parse allergens, ignoring:', error);
+      }
+    }
+
     // Gérer la suppression/ajout du fichier GLB
     if (removeGlb && existingModel.glbPath) {
       // Supprimer le fichier GLB existant

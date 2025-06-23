@@ -19,6 +19,15 @@ export interface Model3D {
   usdzPath?: string;
   usdzFileSize?: number;
   format?: string;
+  // Nouveaux champs pour la catégorisation
+  category?: string;
+  tags?: string[];
+  description?: string;
+  ingredients?: string[];
+  // Nouveaux champs restaurant
+  price?: number;
+  shortDescription?: string;
+  allergens?: string[];
 }
 
 export interface UploadResponse {
@@ -36,6 +45,34 @@ export type SupportedMimeTypes =
   | 'model/vnd.usdz+zip'
   | 'model/gltf-binary'
   | 'model/gltf+json';
+
+// Types pour le système de catégorisation
+export type MenuCategory = 
+  | 'entrees'
+  | 'plats'
+  | 'desserts'
+  | 'boissons'
+  | 'menus-speciaux'
+  | 'autres';
+
+export interface CategoryInfo {
+  id: MenuCategory;
+  name: string;
+  icon: string;
+  color: string;
+}
+
+export interface FilterState {
+  category: MenuCategory | 'all';
+  tags: string[];
+  search: string;
+}
+
+export interface TagInfo {
+  id: string;
+  name: string;
+  color: string;
+}
 
 // Type pour la conversion entre Supabase et notre interface
 export interface SupabaseModel {
@@ -60,6 +97,15 @@ export interface SupabaseModel {
   usdz_path?: string;
   usdz_file_size?: number;
   format?: string;
+  // Nouveaux champs pour la catégorisation
+  category?: string;
+  tags?: string[];
+  description?: string;
+  ingredients?: string[];
+  // Nouveaux champs restaurant
+  price?: number;
+  short_description?: string;
+  allergens?: string[];
 }
 
 // Fonction utilitaire pour convertir de Supabase vers notre interface
@@ -85,5 +131,14 @@ export function convertSupabaseToModel(supabaseModel: SupabaseModel): Model3D {
     usdzPath: supabaseModel.usdz_path,
     usdzFileSize: supabaseModel.usdz_file_size,
     format: supabaseModel.format,
+    // Nouveaux champs catégorisation
+    category: supabaseModel.category,
+    tags: supabaseModel.tags,
+    description: supabaseModel.description,
+    ingredients: supabaseModel.ingredients,
+    // Nouveaux champs restaurant
+    price: supabaseModel.price,
+    shortDescription: supabaseModel.short_description,
+    allergens: supabaseModel.allergens,
   };
 } 

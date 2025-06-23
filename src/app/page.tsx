@@ -1,15 +1,20 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { Model3D, ModelsResponse } from "@/types/model";
+import { useState, useEffect, useCallback } from "react";
+import { Model3D, ModelsResponse, FilterState } from "@/types/model";
 import GalleryGrid from "@/components/GalleryGrid";
+import FilterBar from "@/components/FilterBar";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { filterModels, getFilterStats, sortModels } from "@/lib/filtering";
+import { MENU_CATEGORIES } from "@/lib/constants";
 
 export default function HomePage() {
   const [models, setModels] = useState<Model3D[]>([]);
+  const [filteredModels, setFilteredModels] = useState<Model3D[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'category'>('name');
 
   useEffect(() => {
     fetchModels();
@@ -25,13 +30,29 @@ export default function HomePage() {
       }
       
       const data: ModelsResponse = await response.json();
-      setModels(data.models || []);
+      const sortedModels = sortModels(data.models || [], sortBy);
+      setModels(sortedModels);
+      setFilteredModels(sortedModels);
     } catch (error) {
       console.error('Error fetching models:', error);
       setError(error instanceof Error ? error.message : 'Erreur inconnue');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Fonction pour gérer les changements de filtres
+  const handleFilterChange = useCallback((filters: FilterState) => {
+    const filtered = filterModels(models, filters);
+    const sorted = sortModels(filtered, sortBy);
+    setFilteredModels(sorted);
+  }, [models, sortBy]);
+
+  // Fonction pour gérer les changements de tri
+  const handleSortChange = (newSortBy: 'name' | 'date' | 'category') => {
+    setSortBy(newSortBy);
+    const sorted = sortModels(filteredModels, newSortBy);
+    setFilteredModels(sorted);
   };
 
   const headerVariants = {
@@ -144,7 +165,7 @@ export default function HomePage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-2xl font-bold text-gray-900">{models.length}</p>
-                  <p className="text-gray-600">Modèles 3D</p>
+                  <p className="text-gray-600">Modèles total</p>
                 </div>
               </div>
             </div>
@@ -162,15 +183,13 @@ export default function HomePage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
                     />
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">
-                    {models.filter(m => m.mimeType === 'model/vnd.usdz+zip').length}
-                  </p>
-                  <p className="text-gray-600">Compatible AR</p>
+                  <p className="text-2xl font-bold text-gray-900">{filteredModels.length}</p>
+                  <p className="text-gray-600">Affichés</p>
                 </div>
               </div>
             </div>
@@ -188,23 +207,58 @@ export default function HomePage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
                     />
                   </svg>
                 </div>
                 <div className="ml-4">
                   <p className="text-2xl font-bold text-gray-900">
-                    {Math.round(models.reduce((acc, m) => acc + m.fileSize, 0) / (1024 * 1024))}
+                    {MENU_CATEGORIES.length}
                   </p>
-                  <p className="text-gray-600">MB stockés</p>
+                  <p className="text-gray-600">Catégories</p>
                 </div>
               </div>
             </div>
           </motion.div>
 
+          {/* Filter Bar */}
+          {!isLoading && models.length > 0 && (
+            <FilterBar
+              onFilterChange={handleFilterChange}
+              totalItems={models.length}
+              filteredItems={filteredModels.length}
+            />
+          )}
+
+          {/* Sort Controls */}
+          {!isLoading && models.length > 0 && (
+            <div className="flex items-center justify-between mb-6">
+              <div className="text-sm text-gray-600">
+                {filteredModels.length > 0 ? (
+                  <>Affichage de {filteredModels.length} modèle{filteredModels.length > 1 ? 's' : ''}</>
+                ) : (
+                  <>Aucun modèle ne correspond aux critères</>
+                )}
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Trier par:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value as 'name' | 'date' | 'category')}
+                  className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                >
+                  <option value="name">Nom</option>
+                  <option value="date">Date</option>
+                  <option value="category">Catégorie</option>
+                </select>
+              </div>
+            </div>
+          )}
+
           {/* Gallery */}
           <GalleryGrid 
-            models={models} 
+            models={filteredModels} 
             isLoading={isLoading} 
             error={error}
             onRetry={fetchModels}

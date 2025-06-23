@@ -84,6 +84,32 @@ export async function POST(request: NextRequest) {
     const glbFile = formData.get("glbFile") as File | null;
     const usdzFile = formData.get("usdzFile") as File | null;
     const thumbnailFile = formData.get("thumbnail") as File | null;
+    
+    // Récupérer la catégorie et les tags
+    const category = formData.get("category") as string || 'autres';
+    const tagsString = formData.get("tags") as string || '[]';
+    let tags: string[] = [];
+    
+    try {
+      tags = JSON.parse(tagsString);
+    } catch (error) {
+      console.log("⚠️ Failed to parse tags, using empty array:", error);
+      tags = [];
+    }
+
+    // Récupérer les nouveaux champs restaurant
+    const priceString = formData.get("price") as string;
+    const price = priceString ? parseFloat(priceString) : undefined;
+    const shortDescription = formData.get("shortDescription") as string || undefined;
+    const allergensString = formData.get("allergens") as string || '[]';
+    let allergens: string[] = [];
+    
+    try {
+      allergens = JSON.parse(allergensString);
+    } catch (error) {
+      console.log("⚠️ Failed to parse allergens, using empty array:", error);
+      allergens = [];
+    }
 
     if (!glbFile && !usdzFile) {
       console.log("❌ No files provided");
@@ -96,7 +122,12 @@ export async function POST(request: NextRequest) {
     console.log("📁 Files info:", {
       glb: glbFile ? { name: glbFile.name, size: glbFile.size, type: glbFile.type } : null,
       usdz: usdzFile ? { name: usdzFile.name, size: usdzFile.size, type: usdzFile.type } : null,
-      hasThumbnail: !!thumbnailFile
+      hasThumbnail: !!thumbnailFile,
+      category,
+      tags,
+      price,
+      shortDescription,
+      allergens
     });
 
     // Valider les fichiers
@@ -213,7 +244,12 @@ export async function POST(request: NextRequest) {
       glbUrl,
       glbPath,
       usdzUrl,
-      usdzPath
+      usdzPath,
+      category,
+      tags,
+      price,
+      shortDescription,
+      allergens
     );
     console.log("✅ Database insert successful:", model.id);
 

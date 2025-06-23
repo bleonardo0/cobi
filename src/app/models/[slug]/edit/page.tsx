@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Model3D, SupportedMimeTypes } from "@/types/model";
+import { Model3D, SupportedMimeTypes, MenuCategory } from "@/types/model";
 import { formatFileSize } from "@/lib/utils";
+import { MENU_CATEGORIES, PREDEFINED_TAGS, PREDEFINED_ALLERGENS, getCategoryInfo, getTagInfo, getAllergenInfo } from "@/lib/constants";
 import Link from "next/link";
 
 export default function EditModelPage() {
@@ -28,12 +29,40 @@ export default function EditModelPage() {
   
   // État pour le nom du modèle
   const [newModelName, setNewModelName] = useState('');
+  
+  // États pour les catégories et tags
+  const [selectedCategory, setSelectedCategory] = useState<string>('autres');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
+
+  // États pour les nouveaux champs restaurant
+  const [price, setPrice] = useState<string>('');
+  const [shortDescription, setShortDescription] = useState<string>('');
+  const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
+  const [showAllergenDropdown, setShowAllergenDropdown] = useState(false);
+  const allergenDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (params.slug) {
       fetchModel(params.slug as string);
     }
   }, [params.slug]);
+
+  // Fermer les dropdowns quand on clique ailleurs
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
+        setShowTagDropdown(false);
+      }
+      if (allergenDropdownRef.current && !allergenDropdownRef.current.contains(event.target as Node)) {
+        setShowAllergenDropdown(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchModel = async (slug: string) => {
     try {
@@ -64,6 +93,11 @@ export default function EditModelPage() {
       
       setModel(foundModel);
       setNewModelName(foundModel.name || ''); // Initialiser avec le nom actuel
+      setSelectedCategory(foundModel.category || 'autres');
+      setSelectedTags(foundModel.tags || []);
+      setPrice(foundModel.price ? foundModel.price.toString() : '');
+      setShortDescription(foundModel.shortDescription || '');
+      setSelectedAllergens(foundModel.allergens || []);
       console.log('🔍 Model loaded for editing:', foundModel);
     } catch (error) {
       console.error('Error fetching model:', error);
@@ -178,6 +212,69 @@ export default function EditModelPage() {
       setThumbnailPreview(e.target?.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tagId)
+        ? prev.filter(t => t !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
+  const toggleAllergen = (allergenId: string) => {
+    setSelectedAllergens(prev => 
+      prev.includes(allergenId)
+        ? prev.filter(a => a !== allergenId)
+        : [...prev, allergenId]
+    );
+  };
+
+  const updateCategoryAndTags = async () => {
+    if (!model) return;
+
+    setIsUpdating(true);
+    setUpdateError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('category', selectedCategory);
+      formData.append('tags', JSON.stringify(selectedTags));
+      
+      // Ajouter les nouveaux champs restaurant
+      if (price) {
+        formData.append('price', price);
+      }
+      if (shortDescription) {
+        formData.append('shortDescription', shortDescription);
+      }
+      formData.append('allergens', JSON.stringify(selectedAllergens));
+
+      const response = await fetch(`/api/models/${model.id}`, {
+        method: 'PATCH',
+        body: formData,
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setModel(prev => prev ? { 
+          ...prev, 
+          category: selectedCategory, 
+          tags: selectedTags,
+          price: price ? parseFloat(price) : undefined,
+          shortDescription: shortDescription || undefined,
+          allergens: selectedAllergens
+        } : null);
+      } else {
+        setUpdateError(data.error || 'Erreur lors de la mise à jour');
+      }
+    } catch (error) {
+      console.error('Error updating category and tags:', error);
+      setUpdateError('Erreur lors de la mise à jour');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const updateModelName = async () => {
@@ -443,7 +540,7 @@ export default function EditModelPage() {
                     }
                   }}
                   placeholder="Entrez le nom d'affichage"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900"
                   maxLength={100}
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -460,6 +557,238 @@ export default function EditModelPage() {
                       className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                     >
                       {isUpdating ? 'Sauvegarde...' : 'Sauvegarder le nom'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Catégorie et Tags */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Informations du Plat</h2>
+              <div className="border border-gray-200 rounded-lg p-4 space-y-6">
+                
+                {/* Catégorie */}
+                <div>
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                    Catégorie
+                  </label>
+                  <select
+                    id="category"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                  >
+                    {MENU_CATEGORIES.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.icon} {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="mt-2">
+                    {(() => {
+                      const categoryInfo = getCategoryInfo(selectedCategory as MenuCategory);
+                      return categoryInfo ? (
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${categoryInfo.color}`}>
+                          <span className="mr-1">{categoryInfo.icon}</span>
+                          {categoryInfo.name}
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tags
+                  </label>
+                  <div className="relative" ref={tagDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setShowTagDropdown(!showTagDropdown)}
+                      className="w-full text-left px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                    >
+                      {selectedTags.length > 0 ? `${selectedTags.length} tag(s) sélectionné(s)` : 'Sélectionner des tags...'}
+                      <svg className="w-5 h-5 text-gray-400 float-right mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {showTagDropdown && (
+                      <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {PREDEFINED_TAGS.map((tag) => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => toggleTag(tag.id)}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
+                              selectedTags.includes(tag.id) ? 'bg-blue-50 text-blue-700' : ''
+                            }`}
+                          >
+                            <span className="flex items-center justify-between">
+                              {tag.name}
+                              {selectedTags.includes(tag.id) && (
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Affichage des tags sélectionnés */}
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {selectedTags.length > 0 ? (
+                      selectedTags.map((tagId) => {
+                        const tagInfo = getTagInfo(tagId);
+                        return tagInfo ? (
+                          <span
+                            key={tagId}
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${tagInfo.color}`}
+                          >
+                            {tagInfo.name}
+                            <button
+                              type="button"
+                              onClick={() => toggleTag(tagId)}
+                              className="ml-1 hover:text-red-600"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ) : null;
+                      })
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">Aucun tag sélectionné</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Prix */}
+                <div>
+                  <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+                    Prix (€)
+                  </label>
+                  <input
+                    type="number"
+                    id="price"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="15.50"
+                    min="0"
+                    step="0.01"
+                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                   />
+                </div>
+
+                {/* Description courte */}
+                <div>
+                  <label htmlFor="shortDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                    Description courte (max 150 caractères)
+                  </label>
+                  <textarea
+                    id="shortDescription"
+                    value={shortDescription}
+                    onChange={(e) => setShortDescription(e.target.value)}
+                    placeholder="Une délicieuse description de votre plat..."
+                    maxLength={150}
+                    rows={3}
+                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900"
+                   />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {shortDescription.length}/150 caractères
+                  </div>
+                </div>
+
+                {/* Allergènes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Allergènes
+                  </label>
+                  <div className="relative" ref={allergenDropdownRef}>
+                    <button
+                      type="button"
+                                             onClick={() => setShowAllergenDropdown(!showAllergenDropdown)}
+                       className="w-full text-left px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                    >
+                      {selectedAllergens.length > 0 ? `${selectedAllergens.length} allergène(s) sélectionné(s)` : 'Sélectionner des allergènes...'}
+                      <svg className="w-5 h-5 text-gray-400 float-right mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {showAllergenDropdown && (
+                      <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {PREDEFINED_ALLERGENS.map((allergen) => (
+                          <button
+                            key={allergen.id}
+                            type="button"
+                            onClick={() => toggleAllergen(allergen.id)}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
+                              selectedAllergens.includes(allergen.id) ? 'bg-red-50 text-red-700' : ''
+                            }`}
+                          >
+                            <span className="flex items-center justify-between">
+                              <span className="flex items-center">
+                                <span className="mr-2">{allergen.icon}</span>
+                                {allergen.name}
+                              </span>
+                              {selectedAllergens.includes(allergen.id) && (
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Affichage des allergènes sélectionnés */}
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {selectedAllergens.length > 0 ? (
+                      selectedAllergens.map((allergenId) => {
+                        const allergenInfo = getAllergenInfo(allergenId);
+                        return allergenInfo ? (
+                          <span
+                            key={allergenId}
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${allergenInfo.color}`}
+                          >
+                            <span className="mr-1">{allergenInfo.icon}</span>
+                            {allergenInfo.name}
+                            <button
+                              type="button"
+                              onClick={() => toggleAllergen(allergenId)}
+                              className="ml-1 hover:text-red-600"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ) : null;
+                      })
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">Aucun allergène sélectionné</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bouton de sauvegarde */}
+                {(selectedCategory !== (model?.category || 'autres') || 
+                  JSON.stringify(selectedTags.sort()) !== JSON.stringify((model?.tags || []).sort()) ||
+                  price !== (model?.price ? model.price.toString() : '') ||
+                  shortDescription !== (model?.shortDescription || '') ||
+                  JSON.stringify(selectedAllergens.sort()) !== JSON.stringify((model?.allergens || []).sort())) && (
+                  <div className="pt-4 border-t border-gray-200">
+                    <button
+                      onClick={updateCategoryAndTags}
+                      disabled={isUpdating}
+                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                    >
+                      {isUpdating ? 'Sauvegarde...' : 'Sauvegarder les informations'}
                     </button>
                   </div>
                 )}
