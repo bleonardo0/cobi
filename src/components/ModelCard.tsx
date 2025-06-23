@@ -35,11 +35,20 @@ export default function ModelCard({ model }: ModelCardProps) {
     return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
-  const getFileFormat = (mimeType: string) => {
-    if (mimeType.includes('usdz')) return 'USDZ';
-    if (mimeType.includes('gltf-binary')) return 'GLB';
-    if (mimeType.includes('gltf')) return 'GLTF';
-    return 'Unknown';
+  const getFileFormats = (model: Model3D) => {
+    const formats = [];
+    if (model.glbUrl) formats.push('GLB');
+    if (model.usdzUrl) formats.push('USDZ');
+    
+    // Fallback vers l'ancien système si pas de nouveaux champs
+    if (formats.length === 0) {
+      if (model.mimeType.includes('usdz')) return ['USDZ'];
+      if (model.mimeType.includes('gltf-binary')) return ['GLB'];
+      if (model.mimeType.includes('gltf')) return ['GLTF'];
+      return ['Unknown'];
+    }
+    
+    return formats;
   };
 
   return (
@@ -80,7 +89,7 @@ export default function ModelCard({ model }: ModelCardProps) {
                   </svg>
                 </div>
                 <p className="text-sm text-gray-500 font-medium">Modèle 3D</p>
-                <p className="text-xs text-gray-400">{getFileFormat(model.mimeType)}</p>
+                <p className="text-xs text-gray-400">{getFileFormats(model).join(' + ')}</p>
               </div>
             </div>
           )}
@@ -88,12 +97,12 @@ export default function ModelCard({ model }: ModelCardProps) {
           {/* Format Badge */}
           <div className="absolute top-3 right-3">
             <span className="bg-white/90 backdrop-blur-sm text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
-              {getFileFormat(model.mimeType)}
+              {getFileFormats(model).join(' + ')}
             </span>
           </div>
 
           {/* AR Badge for USDZ files */}
-          {model.mimeType === 'model/vnd.usdz+zip' && (
+          {(model.usdzUrl || model.mimeType === 'model/vnd.usdz+zip') && (
             <div className="absolute top-3 left-3">
               <span className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium">
                 AR
@@ -113,7 +122,15 @@ export default function ModelCard({ model }: ModelCardProps) {
           <div className="space-y-2 text-sm text-gray-600">
             <div className="flex justify-between">
               <span>Taille:</span>
-              <span className="font-medium">{formatFileSize(model.fileSize)}</span>
+              <span className="font-medium">
+                {(() => {
+                  if (model.glbUrl && model.usdzUrl) {
+                    const totalSize = (model.glbFileSize || model.fileSize) + (model.usdzFileSize || 0);
+                    return formatFileSize(totalSize);
+                  }
+                  return formatFileSize(model.fileSize);
+                })()}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Ajouté:</span>

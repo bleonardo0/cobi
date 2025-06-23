@@ -52,7 +52,11 @@ export async function addModel(
   storagePath: string,
   publicUrl: string,
   thumbnailUrl?: string,
-  thumbnailPath?: string
+  thumbnailPath?: string,
+  glbUrl?: string,
+  glbPath?: string,
+  usdzUrl?: string,
+  usdzPath?: string
 ): Promise<Model3D> {
   checkSupabaseConfig();
   
@@ -67,6 +71,10 @@ export async function addModel(
     slug: generateSlug(filename), // Use unique filename instead of original name
     thumbnail_url: thumbnailUrl,
     thumbnail_path: thumbnailPath,
+    glb_url: glbUrl,
+    glb_path: glbPath,
+    usdz_url: usdzUrl,
+    usdz_path: usdzPath,
   };
 
   const { data, error } = await supabaseAdmin

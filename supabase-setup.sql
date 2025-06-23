@@ -1,25 +1,79 @@
--- Création de la table models_3d
-CREATE TABLE IF NOT EXISTS public.models_3d (
+-- Création de la table models_3d avec support pour GLB et USDZ
+CREATE TABLE IF NOT EXISTS models_3d (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    name TEXT NOT NULL,
-    filename TEXT NOT NULL,
-    original_name TEXT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    filename VARCHAR(255) NOT NULL UNIQUE,
+    original_name VARCHAR(255) NOT NULL,
     file_size BIGINT NOT NULL,
-    mime_type TEXT NOT NULL,
+    mime_type VARCHAR(100) NOT NULL,
     storage_path TEXT NOT NULL,
     public_url TEXT NOT NULL,
-    slug TEXT NOT NULL UNIQUE,
+    slug VARCHAR(255) NOT NULL UNIQUE,
     thumbnail_url TEXT,
     thumbnail_path TEXT,
+    -- Nouveaux champs pour supporter GLB et USDZ
+    glb_url TEXT,
+    glb_path TEXT,
+    glb_file_size BIGINT,
+    usdz_url TEXT,
+    usdz_path TEXT,
+    usdz_file_size BIGINT,
+    format VARCHAR(50),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Index pour améliorer les performances
-CREATE INDEX IF NOT EXISTS idx_models_3d_slug ON public.models_3d(slug);
-CREATE INDEX IF NOT EXISTS idx_models_3d_created_at ON public.models_3d(created_at DESC);
+-- Ajout des nouvelles colonnes si elles n'existent pas (pour mise à jour)
+DO $$ 
+BEGIN
+    -- Vérifier et ajouter glb_url
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'glb_url') THEN
+        ALTER TABLE models_3d ADD COLUMN glb_url TEXT;
+    END IF;
+    
+    -- Vérifier et ajouter glb_path
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'glb_path') THEN
+        ALTER TABLE models_3d ADD COLUMN glb_path TEXT;
+    END IF;
+    
+    -- Vérifier et ajouter glb_file_size
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'glb_file_size') THEN
+        ALTER TABLE models_3d ADD COLUMN glb_file_size BIGINT;
+    END IF;
+    
+    -- Vérifier et ajouter usdz_url
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'usdz_url') THEN
+        ALTER TABLE models_3d ADD COLUMN usdz_url TEXT;
+    END IF;
+    
+    -- Vérifier et ajouter usdz_path
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'usdz_path') THEN
+        ALTER TABLE models_3d ADD COLUMN usdz_path TEXT;
+    END IF;
+    
+    -- Vérifier et ajouter usdz_file_size
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'usdz_file_size') THEN
+        ALTER TABLE models_3d ADD COLUMN usdz_file_size BIGINT;
+    END IF;
+    
+    -- Vérifier et ajouter format
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'models_3d' AND column_name = 'format') THEN
+        ALTER TABLE models_3d ADD COLUMN format VARCHAR(50);
+    END IF;
+END $$;
 
--- Trigger pour mettre à jour updated_at automatiquement
+-- Index pour améliorer les performances
+CREATE INDEX IF NOT EXISTS idx_models_3d_slug ON models_3d(slug);
+CREATE INDEX IF NOT EXISTS idx_models_3d_created_at ON models_3d(created_at DESC);
+
+-- Fonction pour mettre à jour automatiquement updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -28,38 +82,57 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_models_3d_updated_at 
-    BEFORE UPDATE ON public.models_3d 
-    FOR EACH ROW 
+-- Trigger pour mettre à jour automatiquement updated_at
+DROP TRIGGER IF EXISTS update_models_3d_updated_at ON models_3d;
+CREATE TRIGGER update_models_3d_updated_at
+    BEFORE UPDATE ON models_3d
+    FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Politique RLS (Row Level Security) - optionnel selon vos besoins
--- ALTER TABLE public.models_3d ENABLE ROW LEVEL SECURITY;
+-- Configuration de la sécurité RLS (Row Level Security)
+ALTER TABLE models_3d ENABLE ROW LEVEL SECURITY;
 
 -- Politique pour permettre la lecture publique
--- CREATE POLICY "Allow public read access" ON public.models_3d
---     FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow public read access" ON models_3d;
+CREATE POLICY "Allow public read access" ON models_3d
+    FOR SELECT USING (true);
 
--- Politique pour permettre l'insertion (vous pouvez ajuster selon vos besoins d'authentification)
--- CREATE POLICY "Allow authenticated insert" ON public.models_3d
---     FOR INSERT WITH CHECK (true);
+-- Politique pour permettre l'insertion (pour l'API d'upload)
+DROP POLICY IF EXISTS "Allow insert for authenticated users" ON models_3d;
+CREATE POLICY "Allow insert for authenticated users" ON models_3d
+    FOR INSERT WITH CHECK (true);
 
--- Création du bucket de stockage (à exécuter dans l'interface Supabase Storage)
--- INSERT INTO storage.buckets (id, name, public) VALUES ('models-3d', 'models-3d', true);
+-- Politique pour permettre la suppression (pour l'API de suppression)
+DROP POLICY IF EXISTS "Allow delete for authenticated users" ON models_3d;
+CREATE POLICY "Allow delete for authenticated users" ON models_3d
+    FOR DELETE USING (true);
+
+-- Politique pour permettre la mise à jour
+DROP POLICY IF EXISTS "Allow update for authenticated users" ON models_3d;
+CREATE POLICY "Allow update for authenticated users" ON models_3d
+    FOR UPDATE USING (true);
+
+-- Configuration du bucket de stockage
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('models-3d', 'models-3d', true)
+ON CONFLICT (id) DO NOTHING;
 
 -- Politique de stockage pour permettre l'upload public
--- CREATE POLICY "Allow public uploads" ON storage.objects
---     FOR INSERT WITH CHECK (bucket_id = 'models-3d');
+DROP POLICY IF EXISTS "Allow public uploads" ON storage.objects;
+CREATE POLICY "Allow public uploads" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'models-3d');
 
 -- Politique de stockage pour permettre la lecture publique
--- CREATE POLICY "Allow public downloads" ON storage.objects
---     FOR SELECT USING (bucket_id = 'models-3d');
+DROP POLICY IF EXISTS "Allow public downloads" ON storage.objects;
+CREATE POLICY "Allow public downloads" ON storage.objects
+    FOR SELECT USING (bucket_id = 'models-3d');
 
 -- Politique de stockage pour permettre la suppression
--- CREATE POLICY "Allow public deletes" ON storage.objects
---     FOR DELETE USING (bucket_id = 'models-3d');
+DROP POLICY IF EXISTS "Allow public deletes" ON storage.objects;
+CREATE POLICY "Allow public deletes" ON storage.objects
+    FOR DELETE USING (bucket_id = 'models-3d');
 
 -- Mise à jour pour les tables existantes (ajout des colonnes thumbnail)
-ALTER TABLE public.models_3d 
+ALTER TABLE models_3d 
 ADD COLUMN IF NOT EXISTS thumbnail_url TEXT,
 ADD COLUMN IF NOT EXISTS thumbnail_path TEXT; 

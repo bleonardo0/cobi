@@ -11,6 +11,14 @@ export interface Model3D {
   storagePath: string;
   thumbnailUrl?: string;
   thumbnailPath?: string;
+  // Nouveaux champs pour supporter GLB + USDZ
+  glbUrl?: string;
+  glbPath?: string;
+  glbFileSize?: number;
+  usdzUrl?: string;
+  usdzPath?: string;
+  usdzFileSize?: number;
+  format?: string;
 }
 
 export interface UploadResponse {
@@ -44,6 +52,14 @@ export interface SupabaseModel {
   updated_at: string;
   thumbnail_url?: string;
   thumbnail_path?: string;
+  // Nouveaux champs pour GLB + USDZ
+  glb_url?: string;
+  glb_path?: string;
+  glb_file_size?: number;
+  usdz_url?: string;
+  usdz_path?: string;
+  usdz_file_size?: number;
+  format?: string;
 }
 
 // Fonction utilitaire pour convertir de Supabase vers notre interface
@@ -61,5 +77,13 @@ export function convertSupabaseToModel(supabaseModel: SupabaseModel): Model3D {
     storagePath: supabaseModel.storage_path,
     thumbnailUrl: supabaseModel.thumbnail_url,
     thumbnailPath: supabaseModel.thumbnail_path,
+    // Nouveaux champs GLB + USDZ
+    glbUrl: supabaseModel.glb_url,
+    glbPath: supabaseModel.glb_path,
+    glbFileSize: supabaseModel.glb_file_size,
+    usdzUrl: supabaseModel.usdz_url,
+    usdzPath: supabaseModel.usdz_path,
+    usdzFileSize: supabaseModel.usdz_file_size,
+    format: supabaseModel.format,
   };
 } 

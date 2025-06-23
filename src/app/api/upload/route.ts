@@ -81,31 +81,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const file = formData.get("file") as File;
+    const glbFile = formData.get("glbFile") as File | null;
+    const usdzFile = formData.get("usdzFile") as File | null;
     const thumbnailFile = formData.get("thumbnail") as File | null;
 
-    if (!file) {
-      console.log("❌ No file provided");
+    if (!glbFile && !usdzFile) {
+      console.log("❌ No files provided");
       return NextResponse.json(
-        { success: false, error: "Aucun fichier fourni" },
+        { success: false, error: "Aucun fichier GLB ou USDZ fourni" },
         { status: 400 }
       );
     }
 
-    console.log("📁 File info:", {
-      name: file.name,
-      size: file.size,
-      type: file.type,
+    console.log("📁 Files info:", {
+      glb: glbFile ? { name: glbFile.name, size: glbFile.size, type: glbFile.type } : null,
+      usdz: usdzFile ? { name: usdzFile.name, size: usdzFile.size, type: usdzFile.type } : null,
       hasThumbnail: !!thumbnailFile
     });
 
-    const validation = validateFile(file);
-    if (!validation.valid) {
-      console.log("❌ File validation failed:", validation.error);
-      return NextResponse.json(
-        { success: false, error: validation.error },
-        { status: 400 }
-      );
+    // Valider les fichiers
+    if (glbFile) {
+      const glbValidation = validateFile(glbFile);
+      if (!glbValidation.valid) {
+        console.log("❌ GLB file validation failed:", glbValidation.error);
+        return NextResponse.json(
+          { success: false, error: glbValidation.error },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (usdzFile) {
+      const usdzValidation = validateFile(usdzFile);
+      if (!usdzValidation.valid) {
+        console.log("❌ USDZ file validation failed:", usdzValidation.error);
+        return NextResponse.json(
+          { success: false, error: usdzValidation.error },
+          { status: 400 }
+        );
+      }
     }
 
     // Valider l'image de prévisualisation si fournie
@@ -129,16 +143,46 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate unique filename
-    const filename = generateUniqueFilename(file.name);
-    const mimeType = getMimeTypeFromFilename(filename);
-    
-    console.log("🔧 Generated filename:", filename);
+    // Variables pour les uploads
+    let glbUrl: string | undefined;
+    let glbPath: string | undefined;
+    let usdzUrl: string | undefined;
+    let usdzPath: string | undefined;
+    let primaryFile: File = glbFile || usdzFile!;
+    let primaryFilename: string = '';
+    let primaryMimeType: SupportedMimeTypes = 'model/gltf-binary';
 
-    // Upload to Supabase Storage
-    console.log("☁️ Uploading to Supabase Storage...");
-    const { url, path } = await uploadFileToStorage(file, filename);
-    console.log("✅ Upload successful:", { url, path });
+    // Upload GLB file
+    if (glbFile) {
+      const glbFilename = generateUniqueFilename(glbFile.name);
+      console.log("☁️ Uploading GLB to Supabase Storage...");
+      const glbUpload = await uploadFileToStorage(glbFile, glbFilename);
+      glbUrl = glbUpload.url;
+      glbPath = glbUpload.path;
+      console.log("✅ GLB upload successful:", { glbUrl, glbPath });
+      
+      // Le GLB devient le fichier principal
+      primaryFile = glbFile;
+      primaryFilename = glbFilename;
+      primaryMimeType = getMimeTypeFromFilename(glbFilename) as SupportedMimeTypes;
+    }
+
+    // Upload USDZ file
+    if (usdzFile) {
+      const usdzFilename = generateUniqueFilename(usdzFile.name);
+      console.log("☁️ Uploading USDZ to Supabase Storage...");
+      const usdzUpload = await uploadFileToStorage(usdzFile, usdzFilename);
+      usdzUrl = usdzUpload.url;
+      usdzPath = usdzUpload.path;
+      console.log("✅ USDZ upload successful:", { usdzUrl, usdzPath });
+      
+      // Si pas de GLB, le USDZ devient le fichier principal
+      if (!glbFile) {
+        primaryFile = usdzFile;
+        primaryFilename = usdzFilename;
+        primaryMimeType = getMimeTypeFromFilename(usdzFilename) as SupportedMimeTypes;
+      }
+    }
 
     // Upload thumbnail if provided
     if (thumbnailFile) {
@@ -150,17 +194,26 @@ export async function POST(request: NextRequest) {
       console.log("✅ Thumbnail upload successful:", { thumbnailUrl, thumbnailPath });
     }
 
+    // Calculer le nom du modèle à partir des fichiers
+    const modelName = glbFile ? 
+      glbFile.name.replace(/\.[^/.]+$/, "") : 
+      usdzFile!.name.replace(/\.[^/.]+$/, "");
+
     // Add to database
     console.log("💾 Adding to database...");
     const model = await addModel(
-      filename,
-      file.name,
-      file.size,
-      mimeType,
-      path,
-      url,
+      primaryFilename,
+      modelName,
+      primaryFile.size,
+      primaryMimeType,
+      glbPath || usdzPath!,
+      glbUrl || usdzUrl!,
       thumbnailUrl,
-      thumbnailPath
+      thumbnailPath,
+      glbUrl,
+      glbPath,
+      usdzUrl,
+      usdzPath
     );
     console.log("✅ Database insert successful:", model.id);
 

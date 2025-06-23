@@ -10,40 +10,18 @@ interface UploadFormProps {
 }
 
 export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
-  const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedGlbFile, setSelectedGlbFile] = useState<File | null>(null);
+  const [selectedUsdzFile, setSelectedUsdzFile] = useState<File | null>(null);
   const [selectedThumbnail, setSelectedThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showFileSelection, setShowFileSelection] = useState(true);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      handleFileSelection(files[0]);
-    }
-  }, []);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFileSelection(files[0]);
-    }
-  }, []);
 
   const handleThumbnailInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -52,17 +30,21 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
     }
   }, []);
 
-  const handleFileSelection = (file: File) => {
-    setUploadError(null);
-    
-    const validation = validateFile(file);
-    if (!validation.valid) {
-      setUploadError(validation.error || 'Fichier invalide');
-      return;
+  const handleGlbInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleGlbSelection(files[0]);
     }
-    
-    setSelectedFile(file);
-  };
+  }, []);
+
+  const handleUsdzInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleUsdzSelection(files[0]);
+    }
+  }, []);
+
+
 
   const handleThumbnailSelection = (file: File) => {
     setUploadError(null);
@@ -91,8 +73,53 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
     reader.readAsDataURL(file);
   };
 
+  const handleGlbSelection = (file: File) => {
+    setUploadError(null);
+    
+    // Validation pour GLB/GLTF
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    const allowedTypes = ['model/gltf-binary', 'model/gltf+json'];
+    const hasValidExtension = /\.(glb|gltf)$/i.test(file.name);
+    
+    if (file.size > maxSize) {
+      setUploadError('Le fichier GLB ne doit pas dépasser 50MB');
+      return;
+    }
+    
+    if (!allowedTypes.includes(file.type) && !hasValidExtension) {
+      setUploadError('Format non supporté. Utilisez GLB ou GLTF');
+      return;
+    }
+    
+    setSelectedGlbFile(file);
+  };
+
+  const handleUsdzSelection = (file: File) => {
+    setUploadError(null);
+    
+    // Validation pour USDZ
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    const allowedTypes = ['model/vnd.usdz+zip'];
+    const hasValidExtension = /\.usdz$/i.test(file.name);
+    
+    if (file.size > maxSize) {
+      setUploadError('Le fichier USDZ ne doit pas dépasser 50MB');
+      return;
+    }
+    
+    if (!allowedTypes.includes(file.type) && !hasValidExtension) {
+      setUploadError('Format non supporté. Utilisez USDZ');
+      return;
+    }
+    
+    setSelectedUsdzFile(file);
+  };
+
   const uploadFile = async () => {
-    if (!selectedFile) return;
+    if (!selectedGlbFile && !selectedUsdzFile) {
+      setUploadError('Veuillez sélectionner au moins un fichier GLB ou USDZ');
+      return;
+    }
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -100,7 +127,14 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
 
     try {
       const formData = new FormData();
-      formData.append('file', selectedFile);
+      
+      // Ajouter les fichiers 3D
+      if (selectedGlbFile) {
+        formData.append('glbFile', selectedGlbFile);
+      }
+      if (selectedUsdzFile) {
+        formData.append('usdzFile', selectedUsdzFile);
+      }
       
       // Ajouter le thumbnail si sélectionné
       if (selectedThumbnail) {
@@ -175,12 +209,14 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
   };
 
   const resetForm = () => {
-    setSelectedFile(null);
+    setSelectedGlbFile(null);
+    setSelectedUsdzFile(null);
     setSelectedThumbnail(null);
     setThumbnailPreview(null);
     setUploadProgress(0);
     setUploadError(null);
     setIsUploading(false);
+    setShowFileSelection(true);
   };
 
   const removeThumbnail = () => {
@@ -192,6 +228,14 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
     return ['model/vnd.usdz+zip', 'model/gltf-binary', 'model/gltf+json'];
   };
 
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
       <motion.div
@@ -200,104 +244,217 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
         transition={{ duration: 0.5 }}
         className="bg-white rounded-xl shadow-sm border border-gray-200 p-8"
       >
-        {!selectedFile ? (
-          /* File Selection */
-          <div className="space-y-6">
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`
-                relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300
-                ${isDragOver 
-                  ? 'border-blue-400 bg-blue-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-                }
-              `}
-            >
-              <input
-                type="file"
-                accept=".usdz,.glb,.gltf"
-                onChange={handleFileInput}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              
-              <div className="space-y-4">
-                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                  <svg
-                    className="w-8 h-8 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
+        <div className="space-y-6">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Uploadez vos modèles 3D</h2>
+            <p className="text-gray-600">Ajoutez un fichier GLB et/ou USDZ pour une compatibilité maximale</p>
+          </div>
+
+          {/* GLB Upload Section */}
+          <div className="border border-gray-200 rounded-lg p-6">
+            <h3 className="font-medium text-gray-900 mb-3 flex items-center">
+              <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+              Fichier GLB/GLTF (Recommandé)
+              {selectedGlbFile && <span className="ml-2 text-sm text-green-600">✓ Sélectionné</span>}
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Format universel pour la visualisation 3D sur tous les navigateurs
+            </p>
+            
+            {!selectedGlbFile ? (
+              <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  accept=".glb,.gltf"
+                  onChange={handleGlbInput}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="space-y-2">
+                  <svg className="mx-auto w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
-                </div>
-                
-                <div>
-                  <p className="text-lg font-medium text-gray-900">
-                    {isDragOver ? 'Déposez votre fichier ici' : 'Sélectionnez votre modèle 3D'}
-                  </p>
-                  <p className="text-gray-500 mt-2">
-                    Glissez-déposez ou cliquez pour sélectionner un fichier
-                  </p>
-                </div>
-                
-                <div className="text-sm text-gray-400">
-                  Formats supportés : USDZ, GLB, GLTF • Taille max : 50MB
+                  <p className="text-sm text-gray-600">Cliquez pour sélectionner un fichier GLB/GLTF</p>
+                  <p className="text-xs text-gray-400">Max 50MB</p>
                 </div>
               </div>
-            </div>
-          </div>
-        ) : (
-          /* File Selected */
-          <div className="space-y-6">
-            {/* Fichier sélectionné */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-blue-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                      />
-                    </svg>
+            ) : (
+              <div className="border border-gray-200 rounded-lg p-4 bg-blue-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedGlbFile.name}</p>
+                      <p className="text-sm text-gray-500">GLB • {formatFileSize(selectedGlbFile.size)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{selectedFile.name}</p>
-                    <p className="text-sm text-gray-500">{formatFileSize(selectedFile.size)}</p>
-                  </div>
-                </div>
-                
-                {!isUploading && (
                   <button
-                    onClick={resetForm}
+                    onClick={() => setSelectedGlbFile(null)}
                     className="text-gray-400 hover:text-gray-600"
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
-                )}
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* USDZ Upload Section */}
+          <div className="border border-gray-200 rounded-lg p-6">
+            <h3 className="font-medium text-gray-900 mb-3 flex items-center">
+              <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
+              Fichier USDZ (Optionnel)
+              {selectedUsdzFile && <span className="ml-2 text-sm text-green-600">✓ Sélectionné</span>}
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Format Apple pour la réalité augmentée sur iOS/Safari
+            </p>
+            
+            {!selectedUsdzFile ? (
+              <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  accept=".usdz"
+                  onChange={handleUsdzInput}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="space-y-2">
+                  <svg className="mx-auto w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-sm text-gray-600">Cliquez pour sélectionner un fichier USDZ</p>
+                  <p className="text-xs text-gray-400">Max 50MB</p>
+                </div>
+              </div>
+            ) : (
+              <div className="border border-gray-200 rounded-lg p-4 bg-purple-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedUsdzFile.name}</p>
+                      <p className="text-sm text-gray-500">USDZ • {formatFileSize(selectedUsdzFile.size)}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedUsdzFile(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Continue Button */}
+          {(selectedGlbFile || selectedUsdzFile) && (
+            <div className="text-center">
+              <button
+                onClick={() => setShowFileSelection(false)}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Continuer avec {selectedGlbFile && selectedUsdzFile ? 'les deux fichiers' : selectedGlbFile ? 'le fichier GLB' : 'le fichier USDZ'}
+              </button>
             </div>
+          )}
+        </div>
+
+        {/* Files Selected - Review Screen */}
+        {!showFileSelection && (selectedGlbFile || selectedUsdzFile) && (
+          /* Files Selected */
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Fichiers sélectionnés</h2>
+              <p className="text-gray-600">Vérifiez vos fichiers avant l'upload</p>
+              <button
+                onClick={() => setShowFileSelection(true)}
+                className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+              >
+                ← Retour à la sélection
+              </button>
+            </div>
+
+            {/* GLB File */}
+            {selectedGlbFile && (
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedGlbFile.name}</p>
+                      <p className="text-sm text-gray-500">GLB • {formatFileSize(selectedGlbFile.size)}</p>
+                    </div>
+                  </div>
+                  {!isUploading && (
+                    <button
+                      onClick={() => setSelectedGlbFile(null)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* USDZ File */}
+            {selectedUsdzFile && (
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedUsdzFile.name}</p>
+                      <p className="text-sm text-gray-500">USDZ • {formatFileSize(selectedUsdzFile.size)}</p>
+                    </div>
+                  </div>
+                  {!isUploading && (
+                    <button
+                      onClick={() => setSelectedUsdzFile(null)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Reset button */}
+            {!isUploading && (selectedGlbFile || selectedUsdzFile) && (
+              <div className="text-center">
+                <button
+                  onClick={resetForm}
+                  className="text-sm text-gray-500 hover:text-gray-700 underline"
+                >
+                  Tout recommencer
+                </button>
+              </div>
+            )}
 
             {/* Section Thumbnail (optionnel) */}
             <div className="border border-gray-200 rounded-lg p-4">

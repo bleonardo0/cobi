@@ -18,20 +18,17 @@ interface ModelViewerProps {
   style?: React.CSSProperties;
   children?: React.ReactNode;
   hotspots?: Hotspot[];
+  glbSrc?: string;
+  usdzSrc?: string;
 }
 
 const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
-  ({ src, alt, className = '', style, children, hotspots = [] }, ref) => {
+  ({ src, alt, className = '', style, children, hotspots = [], glbSrc, usdzSrc }, ref) => {
       const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [deviceInfo, setDeviceInfo] = useState<any>({});
   const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
-
-    // Détecter le type de fichier
-    const isUSDZ = src.toLowerCase().includes('.usdz');
-    const isGLB = src.toLowerCase().includes('.glb');
-    const isGLTF = src.toLowerCase().includes('.gltf');
 
     // Convert Supabase URL to proxy URL
     const getProxyUrl = (originalUrl: string): string => {
@@ -45,7 +42,28 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
       return originalUrl;
     };
 
-    const proxyUrl = getProxyUrl(src);
+    // Choisir le bon fichier selon la plateforme et la disponibilité
+    const getModelSrc = () => {
+      // Si on a des fichiers spécifiques GLB et USDZ
+      if (glbSrc || usdzSrc) {
+        // Sur iOS/Safari, préférer USDZ si disponible
+        if (deviceInfo.isIOS || deviceInfo.isSafari) {
+          return usdzSrc || glbSrc || src;
+        }
+        // Sur autres navigateurs, préférer GLB si disponible
+        return glbSrc || usdzSrc || src;
+      }
+      // Sinon utiliser le src par défaut
+      return src;
+    };
+
+    const modelSrc = getModelSrc();
+    const proxyUrl = getProxyUrl(modelSrc);
+    
+    // Détecter le type de fichier
+    const isUSDZ = modelSrc.toLowerCase().includes('.usdz');
+    const isGLB = modelSrc.toLowerCase().includes('.glb');
+    const isGLTF = modelSrc.toLowerCase().includes('.gltf');
 
       useEffect(() => {
     // Détecter les informations du device
@@ -276,14 +294,16 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
             <span className="bg-green-600 text-white text-sm px-3 py-1 rounded-full shadow-lg">
               ✓ {isUSDZ ? 'USDZ' : isGLB ? 'GLB' : 'GLTF'} chargé
             </span>
-            {isUSDZ && deviceInfo.isIOS && (
-              <a
-                href={proxyUrl}
-                rel="ar"
-                className="block mt-2 bg-blue-600 text-white text-sm px-3 py-1 rounded-full shadow-lg text-center hover:bg-blue-700 transition-colors"
+            {(deviceInfo.isIOS || deviceInfo.isSafari) && (usdzSrc || isUSDZ) && (
+              <button
+                onClick={() => {
+                  const arUrl = usdzSrc ? getProxyUrl(usdzSrc) : proxyUrl;
+                  window.location.href = arUrl;
+                }}
+                className="block mt-2 bg-blue-600 text-white text-sm px-3 py-1 rounded-full shadow-lg text-center hover:bg-blue-700 transition-colors w-full"
               >
                 📱 Voir en AR
-              </a>
+              </button>
             )}
           </div>
         )}

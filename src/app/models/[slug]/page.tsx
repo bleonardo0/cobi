@@ -36,7 +36,8 @@ export default function ModelDetailPage() {
   const fetchModel = async (slug: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/models');
+      // Ajouter un cache-bust pour forcer la récupération des données fraîches
+      const response = await fetch(`/api/models?t=${Date.now()}`);
       
       if (!response.ok) {
         throw new Error('Erreur lors du chargement du modèle');
@@ -50,6 +51,7 @@ export default function ModelDetailPage() {
         return;
       }
       
+      console.log('📊 Modèle récupéré:', foundModel);
       setModel(foundModel);
     } catch (error) {
       console.error('Error fetching model:', error);
@@ -214,38 +216,23 @@ export default function ModelDetailPage() {
                   {model.name}
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  Modèle 3D • {model.mimeType.includes('usdz') ? 'USDZ' : 'GLB/GLTF'}
+                  Modèle 3D • {(() => {
+                    const formats = [];
+                    if (model.glbUrl) formats.push('GLB');
+                    if (model.usdzUrl) formats.push('USDZ');
+                    if (formats.length === 0) {
+                      return model.mimeType.includes('usdz') ? 'USDZ' : 'GLB/GLTF';
+                    }
+                    return formats.join(' + ');
+                  })()}
                 </p>
               </div>
             </div>
             
             <div className="flex items-center space-x-3">
-              {model.mimeType === 'model/vnd.usdz+zip' && (
-                <button
-                  onClick={handleARClick}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Voir en AR
-                </button>
-              )}
-              
-              <a
-                href={model.url}
-                download={model.filename}
-                className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              <Link
+                href={`/models/${model.slug}/edit`}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 <svg
                   className="w-5 h-5 mr-2"
@@ -257,11 +244,11 @@ export default function ModelDetailPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                   />
                 </svg>
-                Télécharger
-              </a>
+                Modifier
+              </Link>
               
               <button
                 onClick={() => setShowDeleteConfirm(true)}
@@ -309,9 +296,11 @@ export default function ModelDetailPage() {
                     height: '100%',
                     backgroundColor: 'transparent',
                   }}
+                  glbSrc={model.glbUrl}
+                  usdzSrc={model.usdzUrl}
                   hotspots={
                     // Hotspots d'exemple seulement pour les modèles GLB
-                    !model.mimeType.includes('usdz') ? [
+                    (model.glbUrl || !model.mimeType.includes('usdz')) ? [
                       {
                         id: 'detail1',
                         position: '0 1 0.5',
@@ -382,15 +371,39 @@ export default function ModelDetailPage() {
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Format</label>
+                  <label className="text-sm font-medium text-gray-500">Format(s)</label>
                   <p className="text-gray-900">
-                    {model.mimeType.includes('usdz') ? 'USDZ' : 'GLB/GLTF'}
+                    {(() => {
+                      const formats = [];
+                      if (model.glbUrl) formats.push('GLB/GLTF');
+                      if (model.usdzUrl) formats.push('USDZ');
+                      if (formats.length === 0) {
+                        return model.mimeType.includes('usdz') ? 'USDZ' : 'GLB/GLTF';
+                      }
+                      return formats.join(' + ');
+                    })()}
                   </p>
                 </div>
                 
                 <div>
                   <label className="text-sm font-medium text-gray-500">Taille</label>
-                  <p className="text-gray-900">{formatFileSize(model.fileSize)}</p>
+                  <div className="text-gray-900">
+                    {model.glbUrl && model.usdzUrl ? (
+                      <div className="space-y-1">
+                        <div className="text-sm">
+                          <span className="font-medium">GLB:</span> {formatFileSize(model.glbFileSize || model.fileSize)}
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">USDZ:</span> {formatFileSize(model.usdzFileSize || 0)}
+                        </div>
+                        <div className="text-xs text-gray-500 pt-1">
+                          Total: {formatFileSize((model.glbFileSize || model.fileSize) + (model.usdzFileSize || 0))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p>{formatFileSize(model.fileSize)}</p>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
@@ -450,7 +463,7 @@ export default function ModelDetailPage() {
                   <span className="text-gray-900">Contrôles de caméra</span>
                 </div>
                 
-                {model.mimeType === 'model/vnd.usdz+zip' && (
+                {(model.usdzUrl || model.mimeType === 'model/vnd.usdz+zip') && (
                   <div className="flex items-center">
                     <svg
                       className="w-5 h-5 text-green-600 mr-3"
@@ -463,7 +476,24 @@ export default function ModelDetailPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-900">Réalité augmentée (iOS)</span>
+                    <span className="text-gray-900">Réalité augmentée (iOS/Safari)</span>
+                  </div>
+                )}
+                
+                {model.glbUrl && (
+                  <div className="flex items-center">
+                    <svg
+                      className="w-5 h-5 text-green-600 mr-3"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-gray-900">Hotspots interactifs</span>
                   </div>
                 )}
                 
