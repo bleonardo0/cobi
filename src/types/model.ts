@@ -28,6 +28,10 @@ export interface Model3D {
   price?: number;
   shortDescription?: string;
   allergens?: string[];
+  // Nouveaux champs pour les améliorations cross-plateforme & accessibilité
+  fallback360Video?: string; // URL de la vidéo 360° de fallback
+  defaultScale?: string; // Échelle par défaut (ex: "0.01m" pour corriger les unités)
+  autoAltText?: boolean; // Active la génération automatique du texte alternatif
 }
 
 export interface UploadResponse {
@@ -106,6 +110,10 @@ export interface SupabaseModel {
   price?: number;
   short_description?: string;
   allergens?: string[];
+  // Nouveaux champs pour les améliorations cross-plateforme & accessibilité
+  fallback_360_video?: string;
+  default_scale?: string;
+  auto_alt_text?: boolean;
 }
 
 // Fonction utilitaire pour convertir de Supabase vers notre interface
@@ -140,5 +148,9 @@ export function convertSupabaseToModel(supabaseModel: SupabaseModel): Model3D {
     price: supabaseModel.price,
     shortDescription: supabaseModel.short_description,
     allergens: supabaseModel.allergens,
+    // Nouveaux champs pour les améliorations cross-plateforme & accessibilité
+    fallback360Video: supabaseModel.fallback_360_video,
+    defaultScale: supabaseModel.default_scale,
+    autoAltText: supabaseModel.auto_alt_text,
   };
 } 

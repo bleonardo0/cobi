@@ -298,6 +298,9 @@ export default function ModelDetailPage() {
                   }}
                   glbSrc={model.glbUrl}
                   usdzSrc={model.usdzUrl}
+                  fallback360Video={model.fallback360Video}
+                  defaultScale={model.defaultScale || "1m"}
+                  autoAltText={true}
                   hotspots={
                     // Hotspots d'exemple seulement pour les modèles GLB
                     (model.glbUrl || !model.mimeType.includes('usdz')) ? [

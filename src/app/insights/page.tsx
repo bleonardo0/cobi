@@ -37,11 +37,6 @@ export default function InsightsPage() {
 
   useEffect(() => {
     fetchAnalyticsData();
-    
-    // Rafraîchir les données toutes les 10 secondes
-    const interval = setInterval(fetchAnalyticsData, 10000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   const fetchAnalyticsData = async () => {
@@ -93,7 +88,7 @@ export default function InsightsPage() {
               <p className="text-gray-600">Analysez les performances de votre menu 3D</p>
               {lastRefresh && (
                 <p className="text-sm text-gray-500 mt-1">
-                  🔄 Dernière mise à jour : {lastRefresh} • Actualisation automatique toutes les 10s
+                  🔄 Dernière mise à jour : {lastRefresh}
                 </p>
               )}
             </div>

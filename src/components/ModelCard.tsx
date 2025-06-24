@@ -104,10 +104,17 @@ export default function ModelCard({ model }: ModelCardProps) {
             </span>
           </div>
 
-          {/* AR Badge for USDZ files */}
-          {(model.usdzUrl || model.mimeType === 'model/vnd.usdz+zip') && (
+          {/* AR Badge for AR-compatible files */}
+          {(model.usdzUrl || model.mimeType === 'model/vnd.usdz+zip' || model.glbUrl || model.mimeType === 'model/gltf-binary') && (
             <div className="absolute top-3 left-3">
-              <span className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium">
+              <span 
+                className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium"
+                title={
+                  model.usdzUrl || model.mimeType === 'model/vnd.usdz+zip' 
+                    ? 'AR disponible sur iOS/Safari'
+                    : 'AR disponible via WebXR sur mobile'
+                }
+              >
                 AR
               </span>
             </div>

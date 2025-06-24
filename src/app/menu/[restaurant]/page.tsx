@@ -326,6 +326,9 @@ export default function MenuPage() {
                 glbSrc={selectedModel.glbUrl}
                 usdzSrc={selectedModel.usdzUrl}
                 className="w-full h-full"
+                fallback360Video={selectedModel.fallback360Video}
+                defaultScale={selectedModel.defaultScale || "0.01m"} // Plats souvent plus petits
+                autoAltText={true}
               />
             </div>
 
