@@ -88,22 +88,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen gradient-bg-soft flex items-center justify-center section-padding px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 sm:space-y-12">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center"
+          className="text-center animate-fade-in"
         >
-          <Link href="/" className="inline-flex items-center space-x-2 text-2xl font-bold text-gray-900 mb-2">
-            <span className="text-3xl">🏗️</span>
+          <Link href="/" className="inline-flex items-center space-x-3 text-2xl sm:text-3xl font-bold mb-6 text-gradient">
+            <span className="text-4xl sm:text-5xl">🏗️</span>
             <span>COBI</span>
           </Link>
-          <h2 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
             {isLogin ? 'Connexion' : 'Inscription'}
-          </h2>
-          <p className="mt-2 text-gray-600">
+          </h1>
+          <p className="text-lg sm:text-xl" style={{ color: 'var(--color-text-secondary)' }}>
             {isLogin 
               ? 'Accédez à votre tableau de bord' 
               : 'Créez votre compte pour commencer'
@@ -116,13 +116,13 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-200 p-6"
+          className="card-modern card-hover p-6 sm:p-8 animate-scale-in"
         >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+          <h3 className="text-xl sm:text-2xl font-semibold mb-6 text-center">
             🎯 Comptes de démonstration
           </h3>
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {[
               { role: 'owner', label: 'Owner', icon: '👑', color: 'red' },
               { role: 'manager', label: 'Manager', icon: '🎯', color: 'blue' },
@@ -133,20 +133,27 @@ export default function LoginPage() {
                 key={role}
                 onClick={() => handleDemoLogin(role as any)}
                 disabled={isLoading}
-                className={`p-3 rounded-lg border-2 hover:shadow-md transition-all disabled:opacity-50 ${
-                  color === 'red' ? 'border-red-200 bg-red-50 hover:bg-red-100 text-red-800' :
-                  color === 'blue' ? 'border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800' :
-                  color === 'green' ? 'border-green-200 bg-green-50 hover:bg-green-100 text-green-800' :
-                  'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-800'
-                }`}
+                className="p-4 sm:p-5 rounded-xl border-2 border-dashed card-hover transition-all disabled:opacity-50"
+                style={{ 
+                  borderColor: 'var(--color-text-secondary)',
+                  backgroundColor: 'var(--color-bg-primary)'
+                }}
+                onMouseEnter={(e) => {
+                  (e.target as HTMLElement).style.borderColor = 'var(--color-primary)';
+                  (e.target as HTMLElement).style.backgroundColor = 'rgba(30, 64, 175, 0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLElement).style.borderColor = 'var(--color-text-secondary)';
+                  (e.target as HTMLElement).style.backgroundColor = 'var(--color-bg-primary)';
+                }}
               >
-                <div className="text-xl mb-1">{icon}</div>
-                <div className="text-sm font-medium">{label}</div>
+                <div className="text-2xl sm:text-3xl mb-2">{icon}</div>
+                <div className="text-sm sm:text-base font-semibold">{label}</div>
               </button>
             ))}
           </div>
           
-          <p className="text-xs text-gray-500 text-center mt-3">
+          <p className="text-xs sm:text-sm text-center mt-4" style={{ color: 'var(--color-text-secondary)' }}>
             Cliquez sur un rôle pour vous connecter instantanément
           </p>
         </motion.div>
@@ -156,37 +163,45 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-200 p-6"
+          className="card-modern p-6 sm:p-8 animate-scale-in"
         >
-          <div className="flex mb-6">
+          <div className="flex mb-8">
             <button
               type="button"
               onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2 px-4 rounded-l-lg font-medium transition-colors ${
+              className={`flex-1 py-3 px-4 rounded-l-xl font-semibold transition-all text-base sm:text-lg ${
                 isLogin 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'text-white'
+                  : 'hover:bg-gray-100'
               }`}
+              style={{
+                backgroundColor: isLogin ? 'var(--color-primary)' : 'var(--color-bg-tertiary)',
+                color: isLogin ? 'white' : 'var(--color-text-secondary)'
+              }}
             >
               Connexion
             </button>
             <button
               type="button"
               onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2 px-4 rounded-r-lg font-medium transition-colors ${
+              className={`flex-1 py-3 px-4 rounded-r-xl font-semibold transition-all text-base sm:text-lg ${
                 !isLogin 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'text-white'
+                  : 'hover:bg-gray-100'
               }`}
+              style={{
+                backgroundColor: !isLogin ? 'var(--color-primary)' : 'var(--color-bg-tertiary)',
+                color: !isLogin ? 'white' : 'var(--color-text-secondary)'
+              }}
             >
               Inscription
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm sm:text-base font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
                   Nom complet
                 </label>
                 <input
@@ -194,14 +209,14 @@ export default function LoginPage() {
                   required={!isLogin}
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="input-modern"
                   placeholder="Votre nom complet"
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm sm:text-base font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
                 Adresse e-mail
               </label>
               <input
@@ -209,13 +224,13 @@ export default function LoginPage() {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="input-modern"
                 placeholder="votre@email.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm sm:text-base font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
                 Mot de passe
               </label>
               <input
@@ -223,14 +238,14 @@ export default function LoginPage() {
                 required
                 value={formData.password}
                 onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="input-modern"
                 placeholder="••••••••"
               />
             </div>
 
             {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm sm:text-base font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
                   Confirmer le mot de passe
                 </label>
                 <input
@@ -238,32 +253,33 @@ export default function LoginPage() {
                   required={!isLogin}
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="input-modern"
                   placeholder="••••••••"
                 />
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-800 text-sm">{error}</p>
+              <div className="status-error rounded-xl p-4 animate-scale-in">
+                <p className="text-sm sm:text-base font-medium">{error}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              className="btn-primary w-full py-4 text-base sm:text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Connexion...' : (isLogin ? 'Se connecter' : 'S\'inscrire')}
             </button>
           </form>
 
           {isLogin && (
-            <div className="mt-4 text-center">
+            <div className="mt-6 text-center">
               <Link 
                 href="/auth/forgot-password" 
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm sm:text-base font-medium transition-colors hover:underline"
+                style={{ color: 'var(--color-primary)' }}
               >
                 Mot de passe oublié ?
               </Link>

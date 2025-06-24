@@ -41,122 +41,86 @@ export default function HomePage() {
     }
   };
 
-  // Fonction pour gérer les changements de filtres
   const handleFilterChange = useCallback((filters: FilterState) => {
     const filtered = filterModels(models, filters);
     const sorted = sortModels(filtered, sortBy);
     setFilteredModels(sorted);
   }, [models, sortBy]);
 
-  // Fonction pour gérer les changements de tri
   const handleSortChange = (newSortBy: 'name' | 'date' | 'category') => {
     setSortBy(newSortBy);
     const sorted = sortModels(filteredModels, newSortBy);
     setFilteredModels(sorted);
   };
 
-  const headerVariants = {
-    hidden: { opacity: 0, y: -20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut",
-      },
-    },
-  };
-
-  const pageVariants = {
+  const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut",
-      },
-    },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   };
 
-  const statsVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
+  const staggerContainer = {
+    hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      scale: 1,
       transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
-    },
+        staggerChildren: 0.1
+      }
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
+    <div className="min-h-screen gradient-bg-soft">
+      {/* Header moderne inspiré du design vitrine */}
       <motion.header
-        variants={headerVariants}
         initial="hidden"
         animate="visible"
-        className="bg-white shadow-sm border-b border-gray-200"
+        variants={fadeInUp}
+        className="nav-modern glass-effect sticky top-0 z-50"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Cobi
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Dashboard pour votre restaurant
-              </p>
+        <div className="container-modern">
+          <div className="flex justify-between items-center py-4 sm:py-6">
+            {/* Logo moderne style vitrine */}
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl gradient-bg flex items-center justify-center">
+                <span className="text-white font-bold text-lg sm:text-xl">C</span>
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold">Cobi</h1>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Dashboard 3D
+                </p>
+              </div>
             </div>
-            
-            <div className="flex space-x-3">
-              <Link
-                href="/insights"
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+
+            {/* Navigation moderne */}
+            <nav className="hidden lg:flex items-center space-x-6">
+              <Link 
+                href="/insights" 
+                className="font-medium hover:underline transition-colors"
+                style={{ color: 'var(--color-text-secondary)' }}
               >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-                📊 Insights
+                📊 Analytics
               </Link>
-              
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+              <Link 
+                href="/menu/test" 
+                target="_blank"
+                className="font-medium hover:underline transition-colors"
+                style={{ color: 'var(--color-text-secondary)' }}
               >
+                🍽️ Menu Client
+              </Link>
+            </nav>
+
+            {/* Actions */}
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <Link href="/dashboard" className="btn-secondary hidden sm:inline-flex">
                 🏗️ Dashboard
               </Link>
-              
-              <Link
-                href="/upload"
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
+              <Link href="/upload" className="btn-primary">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Ajouter un modèle
+                <span className="hidden sm:inline">Ajouter</span>
               </Link>
             </div>
           </div>
@@ -164,60 +128,72 @@ export default function HomePage() {
       </motion.header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="container-modern section-padding">
         <motion.div
-          variants={pageVariants}
           initial="hidden"
           animate="visible"
+          variants={staggerContainer}
+          className="animate-fade-in"
         >
-          {/* Menu QR Code Section */}
+          {/* Section QR Code / Menu Client modernisée */}
           <motion.div
-            variants={statsVariants}
-            className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200 mb-8"
+            variants={fadeInUp}
+            className="card-modern p-8 sm:p-10 mb-12 animate-scale-in"
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
+              border: '1px solid rgba(30, 64, 175, 0.1)'
+            }}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">🍽️ Menu Client 3D</h2>
-                <p className="text-gray-700 mb-4">
-                  Vos clients peuvent scanner un QR code pour accéder au menu 3D interactif
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 lg:gap-8">
+              <div className="flex-1">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+                  🍽️ Menu Client 3D
+                </h2>
+                <p className="text-lg sm:text-xl mb-6 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+                  Sans appli, sans surprise : vos clients scannent un QR code pour découvrir vos plats en 3D et commander en toute confiance.
                 </p>
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                   <Link
                     href="/menu/test"
                     target="_blank"
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="btn-primary"
                   >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
-                    Voir le menu test
+                    Voir le menu démo
                   </Link>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm sm:text-base font-medium" style={{ color: 'var(--color-text-secondary)' }}>
                     📱 Optimisé mobile • 🎯 Analytics intégrés
                   </div>
                 </div>
               </div>
-              <div className="hidden md:block">
-                <div className="w-20 h-20 bg-white rounded-lg border-2 border-gray-300 flex items-center justify-center">
+              <div className="hidden lg:block">
+                <div className="w-24 h-24 rounded-2xl flex items-center justify-center"
+                     style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
                   <div className="text-center">
-                    <div className="text-2xl mb-1">📱</div>
-                    <div className="text-xs text-gray-500">QR Code</div>
+                    <div className="text-3xl mb-2">📱</div>
+                    <div className="text-sm font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
+                      QR Code
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </motion.div>
 
-          {/* Stats */}
+          {/* Stats modernisées */}
           <motion.div
-            variants={statsVariants}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+            variants={fadeInUp}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 mb-12 animate-slide-up"
           >
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="card-modern card-hover p-6 sm:p-8">
+              <div className="flex items-center space-x-4 sm:space-x-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center"
+                     style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
                   <svg
-                    className="w-6 h-6 text-blue-600"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    style={{ color: 'var(--color-primary)' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -230,18 +206,22 @@ export default function HomePage() {
                     />
                   </svg>
                 </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{models.length}</p>
-                  <p className="text-gray-600">Modèles total</p>
+                <div>
+                  <p className="text-3xl sm:text-4xl font-bold mb-2">{models.length}</p>
+                  <p className="text-base sm:text-lg font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                    Modèles 3D
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+            <div className="card-modern card-hover p-6 sm:p-8">
+              <div className="flex items-center space-x-4 sm:space-x-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center"
+                     style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
                   <svg
-                    className="w-6 h-6 text-green-600"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    style={{ color: 'var(--color-primary)' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -254,18 +234,22 @@ export default function HomePage() {
                     />
                   </svg>
                 </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{filteredModels.length}</p>
-                  <p className="text-gray-600">Affichés</p>
+                <div>
+                  <p className="text-3xl sm:text-4xl font-bold mb-2">{filteredModels.length}</p>
+                  <p className="text-base sm:text-lg font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                    Affichés
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+            <div className="card-modern card-hover p-6 sm:p-8">
+              <div className="flex items-center space-x-4 sm:space-x-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center"
+                     style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
                   <svg
-                    className="w-6 h-6 text-purple-600"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    style={{ color: 'var(--color-primary)' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -278,11 +262,13 @@ export default function HomePage() {
                     />
                   </svg>
                 </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">
+                <div>
+                  <p className="text-3xl sm:text-4xl font-bold mb-2">
                     {MENU_CATEGORIES.length}
                   </p>
-                  <p className="text-gray-600">Catégories</p>
+                  <p className="text-base sm:text-lg font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                    Catégories
+                  </p>
                 </div>
               </div>
             </div>
@@ -290,64 +276,70 @@ export default function HomePage() {
 
           {/* Filter Bar */}
           {!isLoading && models.length > 0 && (
-            <FilterBar
-              onFilterChange={handleFilterChange}
-              totalItems={models.length}
-              filteredItems={filteredModels.length}
-            />
+            <motion.div variants={fadeInUp}>
+              <FilterBar
+                onFilterChange={handleFilterChange}
+                totalItems={models.length}
+                filteredItems={filteredModels.length}
+              />
+            </motion.div>
           )}
 
           {/* Sort Controls */}
           {!isLoading && models.length > 0 && (
-            <div className="flex items-center justify-between mb-6">
-              <div className="text-sm text-gray-600">
+            <motion.div 
+              variants={fadeInUp}
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8"
+            >
+              <div className="text-sm sm:text-base font-medium" style={{ color: 'var(--color-text-secondary)' }}>
                 {filteredModels.length > 0 ? (
-                  <>Affichage de {filteredModels.length} modèle{filteredModels.length > 1 ? 's' : ''}</>
+                  <>Affichage de <span className="font-bold">{filteredModels.length}</span> modèle{filteredModels.length > 1 ? 's' : ''} sur <span className="font-bold">{models.length}</span></>
                 ) : (
-                  <>Aucun modèle ne correspond aux critères</>
+                  <>Aucun modèle ne correspond aux critères de recherche</>
                 )}
               </div>
               
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Trier par:</span>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>Trier par:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => handleSortChange(e.target.value as 'name' | 'date' | 'category')}
-                  className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                  className="input-modern"
                 >
                   <option value="name">Nom</option>
-                  <option value="date">Date</option>
+                  <option value="date">Date d'ajout</option>
                   <option value="category">Catégorie</option>
                 </select>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Gallery */}
-          <GalleryGrid 
-            models={filteredModels} 
-            isLoading={isLoading} 
-            error={error}
-            onRetry={fetchModels}
-          />
+          <motion.div variants={fadeInUp}>
+            <GalleryGrid
+              models={filteredModels}
+              isLoading={isLoading}
+              error={error}
+            />
+          </motion.div>
 
-          {/* Features Section */}
+          {/* Section Features */}
           {!isLoading && models.length > 0 && (
             <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="mt-16 bg-white rounded-xl shadow-sm border border-gray-200 p-8"
+              variants={fadeInUp}
+              className="mt-16 card-modern p-8 sm:p-10"
             >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-                Fonctionnalités
+              <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
+                Fonctionnalités principales
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto"
+                       style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
                     <svg
-                      className="w-6 h-6 text-blue-600"
+                      className="w-8 h-8 sm:w-10 sm:h-10"
+                      style={{ color: 'var(--color-primary)' }}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -360,18 +352,18 @@ export default function HomePage() {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Visualisation 3D
-                  </h3>
-                  <p className="text-gray-600 text-sm">
+                  <h3 className="text-xl font-bold">Visualisation 3D</h3>
+                  <p style={{ color: 'var(--color-text-secondary)' }}>
                     Explorez vos modèles avec des contrôles de caméra intuitifs et une rotation automatique
                   </p>
                 </div>
                 
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto"
+                       style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
                     <svg
-                      className="w-6 h-6 text-green-600"
+                      className="w-8 h-8 sm:w-10 sm:h-10"
+                      style={{ color: 'var(--color-primary)' }}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -384,18 +376,18 @@ export default function HomePage() {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Réalité Augmentée
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    Visualisez vos modèles USDZ en AR directement sur iOS avec Quick Look
+                  <h3 className="text-xl font-bold">Réalité Augmentée</h3>
+                  <p style={{ color: 'var(--color-text-secondary)' }}>
+                    Visualisez vos modèles en AR directement sur mobile avec WebXR et Quick Look iOS
                   </p>
                 </div>
                 
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto"
+                       style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
                     <svg
-                      className="w-6 h-6 text-purple-600"
+                      className="w-8 h-8 sm:w-10 sm:h-10"
+                      style={{ color: 'var(--color-primary)' }}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -408,10 +400,8 @@ export default function HomePage() {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Upload Facile
-                  </h3>
-                  <p className="text-gray-600 text-sm">
+                  <h3 className="text-xl font-bold">Upload Facile</h3>
+                  <p style={{ color: 'var(--color-text-secondary)' }}>
                     Glissez-déposez vos fichiers USDZ, GLB ou GLTF pour les ajouter instantanément
                   </p>
                 </div>
@@ -420,6 +410,21 @@ export default function HomePage() {
           )}
         </motion.div>
       </main>
+
+      {/* Footer simple */}
+      <footer className="py-8 border-t" style={{ borderColor: 'var(--color-bg-tertiary)' }}>
+        <div className="container-modern text-center">
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <div className="w-8 h-8 rounded-xl gradient-bg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">C</span>
+            </div>
+            <span className="text-xl font-bold">Cobi</span>
+          </div>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Plateforme de gestion 3D pour restaurants • © 2024 Cobi
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

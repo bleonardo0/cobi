@@ -29,11 +29,11 @@ export default function GalleryGrid({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, index) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
+        {Array.from({ length: 8 }).map((_, index) => (
           <div
             key={index}
-            className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 animate-pulse"
+            className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 animate-pulse h-80"
           >
             <div className="h-64 bg-gray-200"></div>
             <div className="p-4">
@@ -55,7 +55,7 @@ export default function GalleryGrid({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8"
+        className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8"
       >
         <div className="flex items-center">
           <svg
@@ -79,7 +79,7 @@ export default function GalleryGrid({
         {onRetry && (
           <button
             onClick={onRetry}
-            className="mt-4 text-sm text-red-600 hover:text-red-700 font-medium"
+            className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
           >
             Réessayer
           </button>
@@ -93,12 +93,12 @@ export default function GalleryGrid({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center py-12"
+        className="text-center py-16"
       >
         <div className="max-w-md mx-auto">
-          <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+          <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center">
             <svg
-              className="w-12 h-12 text-gray-400"
+              className="w-12 h-12 text-blue-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -111,16 +111,29 @@ export default function GalleryGrid({
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
             Aucun modèle 3D trouvé
           </h3>
-          <p className="text-gray-500 mb-6">
+          <p className="text-gray-600 mb-8">
             Commencez par télécharger votre premier modèle 3D pour créer votre galerie.
           </p>
           <a
             href="/upload"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="btn-primary inline-flex items-center gap-2"
           >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
             Télécharger un modèle
           </a>
         </div>
@@ -133,7 +146,10 @@ export default function GalleryGrid({
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr"
+      style={{
+        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))'
+      }}
     >
       {models.map((model) => (
         <ModelCard key={model.id} model={model} />
