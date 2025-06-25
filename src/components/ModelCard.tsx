@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Model3D } from "@/types/model";
 import { formatFileSize } from "@/lib/utils";
 import { useModelViews } from "@/hooks/useModelViews";
+import { useScrollPosition } from "@/hooks/useScrollPosition";
 import Link from "next/link";
 
 interface ModelCardProps {
@@ -13,6 +14,7 @@ interface ModelCardProps {
 
 export default function ModelCard({ model }: ModelCardProps) {
   const { views, isLoading: viewsLoading } = useModelViews(model.id);
+  const { saveScrollPosition } = useScrollPosition('gallery', false);
   
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -21,6 +23,11 @@ export default function ModelCard({ model }: ModelCardProps) {
 
   const hoverVariants = {
     scale: 1.02
+  };
+
+  const handleClick = () => {
+    // Sauvegarder la position de scroll avant la navigation
+    saveScrollPosition();
   };
 
   const formatDate = (dateString: string) => {
@@ -44,7 +51,7 @@ export default function ModelCard({ model }: ModelCardProps) {
   };
 
   return (
-    <Link href={`/models/${model.slug}`}>
+    <Link href={`/models/${model.slug}`} onClick={handleClick}>
       <motion.div
         variants={cardVariants}
         initial="hidden"

@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Model3D } from "@/types/model";
 import { formatFileSize } from "@/lib/utils";
+import { useScrollPosition } from "@/hooks/useScrollPosition";
 import Link from "next/link";
 import ModelViewer from "@/components/ModelViewer";
+import BackButton from "@/components/BackButton";
 
 export default function ModelDetailPage() {
   const params = useParams();
@@ -17,6 +19,9 @@ export default function ModelDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Pour gérer la position de scroll lors du retour
+  const { clearScrollPosition } = useScrollPosition('gallery', false);
 
   useEffect(() => {
     if (params.slug) {
@@ -168,12 +173,25 @@ export default function ModelDetailPage() {
           <p className="text-gray-600 mb-6">
             {error || 'Le modèle demandé n&apos;existe pas ou a été supprimé.'}
           </p>
-          <Link
-            href="/"
+          <BackButton 
+            fallbackHref="/" 
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
             Retour à la galerie
-          </Link>
+          </BackButton>
         </div>
       </div>
     );
@@ -186,24 +204,7 @@ export default function ModelDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
-              <Link
-                href="/"
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </Link>
+              <BackButton fallbackHref="/" />
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
                   {model.name}

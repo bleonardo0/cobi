@@ -8,6 +8,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { filterModels, getFilterStats, sortModels } from "@/lib/filtering";
 import { MENU_CATEGORIES } from "@/lib/constants";
+import { useScrollPosition } from "@/hooks/useScrollPosition";
 
 export default function HomePage() {
   const [models, setModels] = useState<Model3D[]>([]);
@@ -15,6 +16,9 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'category'>('name');
+  
+  // Restaurer la position de scroll si l'utilisateur revient de la page d'un modèle
+  useScrollPosition('gallery', true);
 
   useEffect(() => {
     fetchModels();
