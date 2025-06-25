@@ -90,10 +90,10 @@ export default function MenuPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement du menu...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-teal-600">Chargement du menu...</p>
         </div>
       </div>
     );
@@ -101,43 +101,34 @@ export default function MenuPage() {
 
   if (error || !restaurant) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Restaurant non trouvé</h1>
-          <p className="text-gray-600">{error}</p>
+          <h1 className="text-2xl font-bold text-teal-800 mb-2">Restaurant non trouvé</h1>
+          <p className="text-teal-600">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50 font-montserrat">
       {/* Header du restaurant */}
       <div 
-        className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-8"
-        style={restaurant.primaryColor ? { 
-          background: `linear-gradient(to right, ${restaurant.primaryColor}, ${restaurant.secondaryColor || restaurant.primaryColor})` 
-        } : {}}
+        className="text-white py-8"
+        style={{ 
+          background: 'rgb(10, 91, 72)' 
+        }}
       >
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex items-center space-x-4">
-            {restaurant.logo && (
-              <img 
-                src={restaurant.logo} 
-                alt={restaurant.name}
-                className="w-16 h-16 rounded-full bg-white p-2"
-              />
-            )}
             <div>
-              <h1 className="text-3xl font-bold">{restaurant.name}</h1>
-              {restaurant.description && (
-                <p className="text-blue-100 mt-1">{restaurant.description}</p>
-              )}
+              <h1 className="text-3xl font-bold font-montserrat">La Bella Vita</h1>
+              <p className="text-white mt-1 font-montserrat opacity-90">Découvrez notre menu en 3D - Une expérience culinaire immersive</p>
             </div>
           </div>
         </div>
@@ -156,11 +147,12 @@ export default function MenuPage() {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors font-montserrat ${
                     selectedCategory === category
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-100'
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-white text-bella-vita hover:bg-gray-100'
                   }`}
+                  style={selectedCategory !== category ? { color: 'rgb(10, 91, 72)' } : {}}
                 >
                   {categoryInfo?.icon} {categoryInfo?.name || category}
                 </button>
@@ -179,7 +171,7 @@ export default function MenuPage() {
               transition={{ duration: 0.3 }}
               className={`bg-white rounded-xl shadow-sm border-2 transition-all cursor-pointer ${
                 selectedModel?.id === model.id 
-                  ? 'border-blue-500 shadow-lg' 
+                  ? 'border-teal-500 shadow-lg' 
                   : 'border-gray-200 hover:border-gray-300'
               }`}
               onClick={() => handleModelSelect(model)}
@@ -202,7 +194,7 @@ export default function MenuPage() {
                 
                 {/* Badge 3D */}
                 <div className="absolute top-2 right-2">
-                  <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                  <span className="bg-teal-600 text-white text-xs px-2 py-1 rounded-full font-medium">
                     3D
                   </span>
                 </div>
@@ -211,16 +203,16 @@ export default function MenuPage() {
               {/* Informations du plat */}
               <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-gray-900 text-lg">{model.name}</h3>
+                  <h3 className="font-semibold text-lg font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>{model.name}</h3>
                   {model.price && (
-                    <span className="text-blue-600 font-bold text-lg">
+                    <span className="font-bold text-lg font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>
                       {model.price.toFixed(2)}€
                     </span>
                   )}
                 </div>
 
                 {model.shortDescription && (
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                  <p className="text-sm mb-3 line-clamp-2 font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>
                     {model.shortDescription}
                   </p>
                 )}
@@ -261,7 +253,7 @@ export default function MenuPage() {
                 )}
 
                 {/* Bouton d'action */}
-                <button className="w-full mt-3 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                <button className="w-full mt-3 bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium font-montserrat">
                   {selectedModel?.id === model.id ? 'Fermer la vue 3D' : 'Voir en 3D'}
                 </button>
               </div>
@@ -276,8 +268,8 @@ export default function MenuPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun plat trouvé</h3>
-            <p className="text-gray-600">Aucun plat ne correspond à cette catégorie.</p>
+            <h3 className="text-lg font-medium mb-2 font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>Aucun plat trouvé</h3>
+            <p className="font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>Aucun plat ne correspond à cette catégorie.</p>
           </div>
         )}
       </div>
@@ -301,9 +293,9 @@ export default function MenuPage() {
             <div className="p-4 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">{selectedModel.name}</h2>
+                  <h2 className="text-xl font-bold font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>{selectedModel.name}</h2>
                   {selectedModel.price && (
-                    <p className="text-blue-600 font-semibold text-lg">
+                    <p className="font-semibold text-lg font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>
                       {selectedModel.price.toFixed(2)}€
                     </p>
                   )}
@@ -323,18 +315,13 @@ export default function MenuPage() {
               <ModelViewer 
                 src={selectedModel.glbUrl || selectedModel.usdzUrl || selectedModel.url}
                 alt={selectedModel.name}
-                glbSrc={selectedModel.glbUrl}
-                usdzSrc={selectedModel.usdzUrl}
                 className="w-full h-full"
-                fallback360Video={selectedModel.fallback360Video}
-                defaultScale={selectedModel.defaultScale || "0.01m"} // Plats souvent plus petits
-                autoAltText={true}
               />
             </div>
 
             {selectedModel.shortDescription && (
               <div className="p-4 border-t border-gray-200">
-                <p className="text-gray-700">{selectedModel.shortDescription}</p>
+                <p className="font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>{selectedModel.shortDescription}</p>
               </div>
             )}
           </motion.div>

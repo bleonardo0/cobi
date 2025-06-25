@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Montserrat:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* Design System Variables */
@@ -7,6 +7,7 @@
   --color-primary-hover: #1D4ED8;
   --color-text-primary: #1E1E1E;
   --color-text-secondary: #6B7280;
+  --color-bella-vita: rgb(10, 91, 72);
   --color-bg-primary: #FFFFFF;
   --color-bg-secondary: #F9FAFB;
   --color-bg-tertiary: #F3F4F6;
@@ -377,4 +378,13 @@ model-viewer:not([loaded]) .loader {
 .status-info {
   background: var(--color-primary);
   color: white;
+}
+
+/* Montserrat font and Bella Vita color */
+.font-montserrat {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.text-bella-vita {
+  color: var(--color-bella-vita);
 }

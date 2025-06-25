@@ -20,7 +20,7 @@
     "@types/multer": "^1.4.12",
     "clsx": "^2.1.1",
     "formidable": "^3.5.4",
-    "framer-motion": "^12.15.0",
+    "framer-motion": "^12.19.1",
     "multer": "^2.0.0",
     "next": "^15.4.0-canary.59",
     "react": "^19.0.0",

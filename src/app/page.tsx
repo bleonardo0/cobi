@@ -53,70 +53,74 @@ export default function HomePage() {
     setFilteredModels(sorted);
   };
 
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  // Calculs des métriques restaurant
+  const getRestaurantMetrics = () => {
+    const totalViews = 15420;
+    const totalFileSize = models.reduce((acc, model) => {
+      const glbSize = model.glbFileSize || model.fileSize || 0;
+      const usdzSize = model.usdzFileSize || 0;
+      return acc + glbSize + usdzSize;
+    }, 0);
+    
+    const avgLoadTime = models.length > 0 
+      ? Math.round((totalFileSize / models.length / 1024 / 1024) * 150 + 200)
+      : 0;
+    
+    return {
+      totalDishes: models.length,
+      totalViews,
+      avgLoadTime,
+      totalStorage: Math.round(totalFileSize / 1024 / 1024 * 100) / 100
+    };
   };
 
-  const staggerContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
+  const metrics = getRestaurantMetrics();
 
   return (
-    <div className="min-h-screen gradient-bg-soft">
-      {/* Header moderne inspiré du design vitrine */}
-      <motion.header
-        initial="hidden"
-        animate="visible"
-        variants={fadeInUp}
-        className="nav-modern glass-effect sticky top-0 z-50"
-      >
-        <div className="container-modern">
-          <div className="flex justify-between items-center py-4 sm:py-6">
-            {/* Logo moderne style vitrine */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl gradient-bg flex items-center justify-center">
-                <span className="text-white font-bold text-lg sm:text-xl">C</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+      {/* Header professionnel */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200/60 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 lg:h-20">
+            {/* Logo et branding */}
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                  <span className="text-white font-bold text-xl lg:text-2xl">C</span>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold">Cobi</h1>
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  Dashboard 3D
-                </p>
+              <div className="hidden sm:block">
+                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                  Cobi
+                </h1>
+                <p className="text-sm text-slate-600 font-medium">Dashboard 3D</p>
               </div>
             </div>
 
-            {/* Navigation moderne */}
-            <nav className="hidden lg:flex items-center space-x-6">
+            {/* Navigation */}
+            <nav className="hidden lg:flex items-center space-x-8">
               <Link 
                 href="/insights" 
-                className="font-medium hover:underline transition-colors"
-                style={{ color: 'var(--color-text-secondary)' }}
+                className="flex items-center space-x-2 px-4 py-2 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 font-medium"
               >
-                📊 Analytics
-              </Link>
-              <Link 
-                href="/menu/test" 
-                target="_blank"
-                className="font-medium hover:underline transition-colors"
-                style={{ color: 'var(--color-text-secondary)' }}
-              >
-                🍽️ Menu Client
+                <span>📊</span>
+                <span>Analytics</span>
               </Link>
             </nav>
 
             {/* Actions */}
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <Link href="/dashboard" className="btn-secondary hidden sm:inline-flex">
-                🏗️ Dashboard
+            <div className="flex items-center space-x-3">
+              <Link 
+                href="/auth/login" 
+                className="hidden sm:flex items-center space-x-2 px-4 py-2.5 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-200 font-medium"
+              >
+                <span>🚪</span>
+                <span>Déconnexion</span>
               </Link>
-              <Link href="/upload" className="btn-primary">
+              <Link 
+                href="/upload" 
+                className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 font-semibold shadow-lg shadow-blue-500/25"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
@@ -125,304 +129,273 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </motion.header>
+      </header>
 
       {/* Main Content */}
-      <main className="container-modern section-padding">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-          className="animate-fade-in"
-        >
-          {/* Section QR Code / Menu Client modernisée */}
-          <motion.div
-            variants={fadeInUp}
-            className="card-modern p-8 sm:p-10 mb-12 animate-scale-in"
-            style={{ 
-              background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
-              border: '1px solid rgba(30, 64, 175, 0.1)'
-            }}
-          >
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 lg:gap-8">
-              <div className="flex-1">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div className="space-y-12">
+          {/* Hero Section - Menu Client */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-8 lg:p-12 shadow-2xl shadow-blue-500/20">
+            <div className="absolute inset-0 opacity-50">
+              <div className="absolute inset-0" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+              }}></div>
+            </div>
+            
+            <div className="relative grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div className="text-white">
+                <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  <span className="text-sm font-medium">Menu 3D Actif</span>
+                </div>
+                
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
                   🍽️ Menu Client 3D
                 </h2>
-                <p className="text-lg sm:text-xl mb-6 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+                
+                <p className="text-xl lg:text-2xl mb-8 text-blue-100 leading-relaxed">
                   Sans appli, sans surprise : vos clients scannent un QR code pour découvrir vos plats en 3D et commander en toute confiance.
                 </p>
+                
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                   <Link
                     href="/menu/test"
                     target="_blank"
-                    className="btn-primary"
+                    className="inline-flex items-center space-x-3 bg-white text-blue-700 hover:bg-blue-50 px-6 py-4 rounded-2xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl group"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
-                    Voir le menu démo
+                    <span>Voir le menu démo</span>
                   </Link>
-                  <div className="text-sm sm:text-base font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                    📱 Optimisé mobile • 🎯 Analytics intégrés
-                  </div>
-                </div>
-              </div>
-              <div className="hidden lg:block">
-                <div className="w-24 h-24 rounded-2xl flex items-center justify-center"
-                     style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">📱</div>
-                    <div className="text-sm font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
-                      QR Code
+                  
+                  <div className="flex items-center space-x-4 text-blue-100">
+                    <div className="flex items-center space-x-2">
+                      <span>📱</span>
+                      <span className="text-sm font-medium">Mobile</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span>🎯</span>
+                      <span className="text-sm font-medium">Analytics</span>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-
-          {/* Stats modernisées */}
-          <motion.div
-            variants={fadeInUp}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 mb-12 animate-slide-up"
-          >
-            <div className="card-modern card-hover p-6 sm:p-8">
-              <div className="flex items-center space-x-4 sm:space-x-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center"
-                     style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
-                  <svg
-                    className="w-8 h-8 sm:w-10 sm:h-10"
-                    style={{ color: 'var(--color-primary)' }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-3xl sm:text-4xl font-bold mb-2">{models.length}</p>
-                  <p className="text-base sm:text-lg font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                    Modèles 3D
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="card-modern card-hover p-6 sm:p-8">
-              <div className="flex items-center space-x-4 sm:space-x-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center"
-                     style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
-                  <svg
-                    className="w-8 h-8 sm:w-10 sm:h-10"
-                    style={{ color: 'var(--color-primary)' }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-3xl sm:text-4xl font-bold mb-2">{filteredModels.length}</p>
-                  <p className="text-base sm:text-lg font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                    Affichés
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="card-modern card-hover p-6 sm:p-8">
-              <div className="flex items-center space-x-4 sm:space-x-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center"
-                     style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
-                  <svg
-                    className="w-8 h-8 sm:w-10 sm:h-10"
-                    style={{ color: 'var(--color-primary)' }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-3xl sm:text-4xl font-bold mb-2">
-                    {MENU_CATEGORIES.length}
-                  </p>
-                  <p className="text-base sm:text-lg font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                    Catégories
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Filter Bar */}
-          {!isLoading && models.length > 0 && (
-            <motion.div variants={fadeInUp}>
-              <FilterBar
-                onFilterChange={handleFilterChange}
-                totalItems={models.length}
-                filteredItems={filteredModels.length}
-              />
-            </motion.div>
-          )}
-
-          {/* Sort Controls */}
-          {!isLoading && models.length > 0 && (
-            <motion.div 
-              variants={fadeInUp}
-              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8"
-            >
-              <div className="text-sm sm:text-base font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                {filteredModels.length > 0 ? (
-                  <>Affichage de <span className="font-bold">{filteredModels.length}</span> modèle{filteredModels.length > 1 ? 's' : ''} sur <span className="font-bold">{models.length}</span></>
-                ) : (
-                  <>Aucun modèle ne correspond aux critères de recherche</>
-                )}
-              </div>
               
-              <div className="flex items-center space-x-3">
-                <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>Trier par:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => handleSortChange(e.target.value as 'name' | 'date' | 'category')}
-                  className="input-modern"
-                >
-                  <option value="name">Nom</option>
-                  <option value="date">Date d'ajout</option>
-                  <option value="category">Catégorie</option>
-                </select>
+              <div className="hidden lg:flex justify-center">
+                <div className="relative">
+                  <div className="w-32 h-32 bg-white/10 backdrop-blur-sm rounded-3xl flex items-center justify-center shadow-2xl">
+                    <div className="text-center">
+                      <div className="text-5xl mb-3">📱</div>
+                      <div className="text-white font-semibold">QR Code</div>
+                      <div className="text-blue-200 text-sm">Scan & View</div>
+                    </div>
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full animate-bounce"></div>
+                </div>
               </div>
-            </motion.div>
-          )}
+            </div>
+          </div>
 
-          {/* Gallery */}
-          <motion.div variants={fadeInUp}>
-            <GalleryGrid
-              models={filteredModels}
-              isLoading={isLoading}
-              error={error}
-            />
-          </motion.div>
+          {/* Métriques - Design moderne avec alignement parfait */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            {/* Plats à la carte */}
+            <div className="bg-white rounded-2xl p-6 lg:p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100 group">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
+                  <svg className="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-3xl lg:text-4xl font-bold text-slate-900 mb-1">{metrics.totalDishes}</p>
+                  <p className="text-sm lg:text-base font-medium text-slate-600">Plats à la carte</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Vues menu 3D */}
+            <div className="bg-white rounded-2xl p-6 lg:p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100 group">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25 group-hover:scale-105 transition-transform">
+                  <svg className="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-3xl lg:text-4xl font-bold text-slate-900 mb-1">
+                    {metrics.totalViews.toLocaleString()}
+                  </p>
+                  <p className="text-sm lg:text-base font-medium text-slate-600">Vues menu 3D</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Temps de chargement */}
+            <div className="bg-white rounded-2xl p-6 lg:p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100 group">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform ${
+                  metrics.avgLoadTime > 1000 
+                    ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/25' 
+                    : metrics.avgLoadTime > 500 
+                    ? 'bg-gradient-to-br from-orange-500 to-orange-600 shadow-orange-500/25' 
+                    : 'bg-gradient-to-br from-green-500 to-green-600 shadow-green-500/25'
+                }`}>
+                  <svg className="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className={`text-3xl lg:text-4xl font-bold mb-1 ${
+                    metrics.avgLoadTime > 1000 
+                      ? 'text-red-600' 
+                      : metrics.avgLoadTime > 500 
+                      ? 'text-orange-600' 
+                      : 'text-green-600'
+                  }`}>
+                    {metrics.avgLoadTime}ms
+                  </p>
+                  <p className="text-sm lg:text-base font-medium text-slate-600">Temps chargement</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Données stockées */}
+            <div className="bg-white rounded-2xl p-6 lg:p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100 group">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25 group-hover:scale-105 transition-transform">
+                  <svg className="w-8 h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-3xl lg:text-4xl font-bold text-slate-900 mb-1">
+                    {metrics.totalStorage}
+                  </p>
+                  <p className="text-sm lg:text-base font-medium text-slate-600">Mo stockées</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section Galerie */}
+          <div className="space-y-8">
+            {/* Filter Bar */}
+            {!isLoading && models.length > 0 && (
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
+                <FilterBar
+                  onFilterChange={handleFilterChange}
+                  totalItems={models.length}
+                  filteredItems={filteredModels.length}
+                />
+              </div>
+            )}
+
+            {/* Sort Controls */}
+            {!isLoading && models.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
+                <div className="text-slate-700 font-medium">
+                  {filteredModels.length > 0 ? (
+                    <>Affichage de <span className="font-bold text-blue-600">{filteredModels.length}</span> modèle{filteredModels.length > 1 ? 's' : ''} sur <span className="font-bold">{models.length}</span></>
+                  ) : (
+                    <>Aucun modèle ne correspond aux critères de recherche</>
+                  )}
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <span className="text-slate-600 font-medium">Trier par:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => handleSortChange(e.target.value as 'name' | 'date' | 'category')}
+                    className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                  >
+                    <option value="name">Nom</option>
+                    <option value="date">Date d'ajout</option>
+                    <option value="category">Catégorie</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Gallery Grid */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
+              <GalleryGrid
+                models={filteredModels}
+                isLoading={isLoading}
+                error={error}
+              />
+            </div>
+          </div>
 
           {/* Section Features */}
           {!isLoading && models.length > 0 && (
-            <motion.section
-              variants={fadeInUp}
-              className="mt-16 card-modern p-8 sm:p-10"
-            >
-              <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
-                Fonctionnalités principales
-              </h2>
+            <section className="bg-gradient-to-br from-slate-50 to-blue-50/50 rounded-3xl p-8 lg:p-12 border border-slate-200/60">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+                  Fonctionnalités principales
+                </h2>
+                <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                  Découvrez tous les outils pour gérer et présenter vos modèles 3D
+                </p>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto"
-                       style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
-                    <svg
-                      className="w-8 h-8 sm:w-10 sm:h-10"
-                      style={{ color: 'var(--color-primary)' }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
+                <div className="text-center group">
+                  <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
+                    <svg className="w-10 h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold">Visualisation 3D</h3>
-                  <p style={{ color: 'var(--color-text-secondary)' }}>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4">Visualisation 3D</h3>
+                  <p className="text-slate-600 leading-relaxed">
                     Explorez vos modèles avec des contrôles de caméra intuitifs et une rotation automatique
                   </p>
                 </div>
                 
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto"
-                       style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
-                    <svg
-                      className="w-8 h-8 sm:w-10 sm:h-10"
-                      style={{ color: 'var(--color-primary)' }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-                      />
+                <div className="text-center group">
+                  <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/25 group-hover:scale-105 transition-transform">
+                    <svg className="w-10 h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold">Réalité Augmentée</h3>
-                  <p style={{ color: 'var(--color-text-secondary)' }}>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4">Réalité Augmentée</h3>
+                  <p className="text-slate-600 leading-relaxed">
                     Visualisez vos modèles en AR directement sur mobile avec WebXR et Quick Look iOS
                   </p>
                 </div>
                 
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto"
-                       style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
-                    <svg
-                      className="w-8 h-8 sm:w-10 sm:h-10"
-                      style={{ color: 'var(--color-primary)' }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                      />
+                <div className="text-center group">
+                  <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-purple-500/25 group-hover:scale-105 transition-transform">
+                    <svg className="w-10 h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold">Upload Facile</h3>
-                  <p style={{ color: 'var(--color-text-secondary)' }}>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4">Upload Facile</h3>
+                  <p className="text-slate-600 leading-relaxed">
                     Glissez-déposez vos fichiers USDZ, GLB ou GLTF pour les ajouter instantanément
                   </p>
                 </div>
               </div>
-            </motion.section>
+            </section>
           )}
-        </motion.div>
+        </div>
       </main>
 
-      {/* Footer simple */}
-      <footer className="py-8 border-t" style={{ borderColor: 'var(--color-bg-tertiary)' }}>
-        <div className="container-modern text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-8 h-8 rounded-xl gradient-bg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">C</span>
+      {/* Footer moderne */}
+      <footer className="border-t border-slate-200 bg-white/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+                <span className="text-white font-bold text-lg">C</span>
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">Cobi</span>
             </div>
-            <span className="text-xl font-bold">Cobi</span>
+            <p className="text-slate-600">
+              Plateforme de gestion 3D pour restaurants • © 2024 Cobi
+            </p>
           </div>
-          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            Plateforme de gestion 3D pour restaurants • © 2024 Cobi
-          </p>
         </div>
       </footer>
     </div>

@@ -16,22 +16,11 @@ export default function ModelCard({ model }: ModelCardProps) {
   
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
-    },
+    visible: { opacity: 1, y: 0 }
   };
 
   const hoverVariants = {
-    scale: 1.02,
-    transition: {
-      duration: 0.2,
-      ease: "easeInOut",
-    },
+    scale: 1.02
   };
 
   const formatDate = (dateString: string) => {
