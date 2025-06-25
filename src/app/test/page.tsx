@@ -71,6 +71,12 @@ export default function TestMenuPage() {
           description: "Diagnostic et dépannage AR spécifique Android",
           href: "/test-ar-android",
           status: "stable"
+        },
+        {
+          name: "Test AR iOS",
+          description: "Diagnostic et dépannage AR spécifique iPhone/iPad",
+          href: "/test-ios-ar",
+          status: "stable"
         }
       ]
     }

@@ -44,18 +44,31 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
     useEffect(() => {
       const checkArSupport = () => {
         const isAndroid = /android/i.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
         const isChrome = /chrome/i.test(navigator.userAgent);
         const hasWebXR = 'xr' in navigator;
         
-        // Android avec Chrome et WebXR ou Scene Viewer support
+        // iOS support: Safari + iOS = Quick Look AR support
+        const iosArSupport = isIOS && isSafari;
+        
+        // Android support: Chrome + WebXR or Scene Viewer support
         const androidArSupport = isAndroid && isChrome;
-        setArSupported(androidArSupport || hasWebXR);
+        
+        // Overall AR support
+        const arSupported = iosArSupport || androidArSupport || hasWebXR;
+        setArSupported(arSupported);
         
         console.log('🔍 AR Support Check:', {
+          isIOS,
+          isSafari,
           isAndroid,
           isChrome,
           hasWebXR,
-          supported: androidArSupport || hasWebXR
+          iosArSupport,
+          androidArSupport,
+          supported: arSupported,
+          userAgent: navigator.userAgent
         });
       };
 
@@ -367,20 +380,34 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
 
     // Determine AR modes based on device and file type
     const getArModes = () => {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isAndroid = /android/i.test(navigator.userAgent);
+      
+      // For USDZ files, prioritize Quick Look on iOS
       if (isUSDZ) {
-        return 'quick-look'; // iOS only
+        if (isIOS && isSafari) {
+          return 'quick-look'; // iOS Safari + USDZ = Quick Look
+        } else {
+          return ''; // USDZ only works on iOS Safari
+        }
       }
       
       if (!arSupported) {
         return ''; // No AR support
       }
 
+      // iOS Safari: Quick Look for USDZ, WebXR for GLB
+      if (isIOS && isSafari) {
+        return 'webxr quick-look';
+      }
+
       // Android: prefer Scene Viewer over WebXR for stability
-      const isAndroid = /android/i.test(navigator.userAgent);
       if (isAndroid) {
         return 'scene-viewer webxr quick-look';
       }
       
+      // Default: all modes for maximum compatibility
       return 'webxr scene-viewer quick-look';
     };
 
@@ -567,6 +594,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
                 reveal="auto"
                 style="width: 100%; height: 100%; display: block; background: transparent; visibility: visible;"
                 ${arSupported ? `ar ar-modes="${getArModes()}"` : ''}
+                ${arSupported && isUSDZ ? `ios-src="${currentSrc}"` : ''}
                 ${arSupported ? 'ar-scale="auto"' : ''}
                 ${arSupported ? 'ar-placement="floor"' : ''}
                 interaction-prompt="auto"
