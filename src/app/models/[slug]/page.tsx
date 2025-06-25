@@ -288,7 +288,7 @@ export default function ModelDetailPage() {
               <div className="relative h-96 lg:h-[600px] bg-gradient-to-br from-gray-50 to-gray-100">
                 <ModelViewer
                   ref={modelViewerRef}
-                  src={model.url}
+                  src={model.glbUrl || model.usdzUrl || model.url}
                   alt={model.name}
                   className="w-full h-full"
                   style={{
@@ -296,32 +296,6 @@ export default function ModelDetailPage() {
                     height: '100%',
                     backgroundColor: 'transparent',
                   }}
-                  glbSrc={model.glbUrl}
-                  usdzSrc={model.usdzUrl}
-                  fallback360Video={model.fallback360Video}
-                  defaultScale={model.defaultScale || "1m"}
-                  autoAltText={true}
-                  hotspots={
-                    // Hotspots d'exemple seulement pour les modèles GLB
-                    (model.glbUrl || !model.mimeType.includes('usdz')) ? [
-                      {
-                        id: 'detail1',
-                        position: '0 1 0.5',
-                        normal: '0 1 0',
-                        title: 'Point d\'intérêt',
-                        description: 'Ceci est un point d\'intérêt sur le modèle 3D. Vous pouvez ajouter des descriptions et des informations détaillées.',
-                        icon: '🔍'
-                      },
-                      {
-                        id: 'info1',
-                        position: '-0.5 0.5 0',
-                        normal: '-1 0 0',
-                        title: 'Information',
-                        description: 'Zone importante du modèle avec des détails techniques ou artistiques.',
-                        icon: '💡'
-                      }
-                    ] : []
-                  }
                 />
               </div>
               

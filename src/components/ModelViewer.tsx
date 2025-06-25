@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, forwardRef, useState, useRef } from 'react';
+import ModelRecovery from '@/lib/model-recovery';
 
 interface ModelViewerProps {
   src: string;
@@ -16,7 +17,10 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
     const [isError, setIsError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [arSupported, setArSupported] = useState(false);
+    const [isInAR, setIsInAR] = useState(false);
+    const [arJustExited, setArJustExited] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const modelViewerRef = useRef<any>(null);
 
     // Convert Supabase URL to proxy URL
     const getProxyUrl = (originalUrl: string): string => {
@@ -55,6 +59,26 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
       checkArSupport();
     }, []);
 
+    // Reset error state after AR exit
+    useEffect(() => {
+      if (arJustExited) {
+        console.log('🔄 Recovering from AR exit...');
+        setIsError(false);
+        setIsLoading(true);
+        
+        // Wait a bit then mark as loaded to avoid error state
+        const recoveryTimer = setTimeout(() => {
+          console.log('✅ AR recovery complete');
+          setIsLoaded(true);
+          setIsLoading(false);
+          setIsError(false);
+          setArJustExited(false);
+        }, 1000);
+
+        return () => clearTimeout(recoveryTimer);
+      }
+    }, [arJustExited]);
+
     useEffect(() => {
       let isMounted = true;
       let loadTimeout: NodeJS.Timeout;
@@ -74,20 +98,23 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           // Wait a bit for the DOM to be ready
           await new Promise(resolve => setTimeout(resolve, 100));
 
-          // Set error timeout
+          // Set error timeout (longer if just exited AR)
+          const timeoutDuration = arJustExited ? 5000 : 15000;
           loadTimeout = setTimeout(() => {
-            if (isMounted && !isLoaded) {
+            if (isMounted && !isLoaded && !arJustExited) {
               console.log('⏰ Timeout: Model failed to load');
               setIsError(true);
               setIsLoading(false);
             }
-          }, 15000);
+          }, timeoutDuration);
 
         } catch (error) {
           if (!isMounted) return;
           console.error('💥 Failed to load ModelViewer:', error);
-          setIsError(true);
-          setIsLoading(false);
+          if (!arJustExited) {
+            setIsError(true);
+            setIsLoading(false);
+          }
         }
       };
 
@@ -99,7 +126,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           clearTimeout(loadTimeout);
         }
       };
-    }, [src]);
+    }, [src, arJustExited]);
 
     // Listen for model-viewer events
     useEffect(() => {
@@ -111,9 +138,16 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         setIsLoaded(true);
         setIsLoading(false);
         setIsError(false);
+        setArJustExited(false);
       };
 
       const handleError = (event: any) => {
+        // Don't show error if we just exited AR or are in AR
+        if (isInAR || arJustExited) {
+          console.log('⚠️ Model error ignored (AR context):', event);
+          return;
+        }
+        
         console.error('❌ Model failed to load:', event);
         setIsError(true);
         setIsLoading(false);
@@ -122,27 +156,73 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
 
       const handleProgress = (event: any) => {
         console.log('📈 Loading progress:', event.detail?.totalProgress || 'unknown');
+        
+        // If we have progress, we're loading properly
+        if (event.detail?.totalProgress > 0) {
+          setIsError(false);
+        }
       };
 
       // Handle AR events
       const handleArStatus = (event: any) => {
-        console.log('🥽 AR Status:', event.detail?.status);
-        if (event.detail?.status === 'failed') {
-          console.error('❌ AR failed to start');
-          // Fallback: try to restart without AR
-          setTimeout(() => {
-            const modelViewer = container.querySelector('model-viewer');
-            if (modelViewer) {
-              console.log('🔄 Restarting without AR...');
-              // Remove AR attributes temporarily
-              modelViewer.removeAttribute('ar');
-              setTimeout(() => {
-                if (arSupported) {
-                  modelViewer.setAttribute('ar', '');
+        const status = event.detail?.status;
+        console.log('🥽 AR Status:', status);
+        
+        switch (status) {
+          case 'session-started':
+            console.log('🚀 AR session started');
+            setIsInAR(true);
+            setIsError(false);
+            break;
+            
+          case 'object-placed':
+            console.log('📍 Object placed in AR');
+            break;
+            
+          case 'failed':
+            console.error('❌ AR failed to start');
+            setIsInAR(false);
+            // Fallback: try to restart without AR
+            setTimeout(() => {
+              const modelViewer = container.querySelector('model-viewer');
+              if (modelViewer) {
+                console.log('🔄 Restarting without AR...');
+                modelViewer.removeAttribute('ar');
+                setTimeout(() => {
+                  if (arSupported) {
+                    modelViewer.setAttribute('ar', '');
+                  }
+                }, 1000);
+              }
+            }, 1000);
+            break;
+            
+          case 'not-presenting':
+          case 'session-ended':
+            console.log('🔚 AR session ended');
+            setIsInAR(false);
+            setArJustExited(true);
+            // Use ModelRecovery for post-AR recovery
+            setTimeout(async () => {
+              const modelViewer = container.querySelector('model-viewer') as any;
+              if (modelViewer) {
+                try {
+                  const success = await ModelRecovery.recoverFromAR(modelViewer, proxyUrl);
+                  if (success) {
+                    console.log('✅ Post-AR recovery successful');
+                    setIsLoaded(true);
+                    setIsLoading(false);
+                    setIsError(false);
+                    setArJustExited(false);
+                  } else {
+                    console.log('⚠️ Post-AR recovery failed, will try on next interaction');
+                  }
+                } catch (error) {
+                  console.error('❌ Post-AR recovery error:', error);
                 }
-              }, 1000);
-            }
-          }, 1000);
+              }
+            }, 500);
+            break;
         }
       };
 
@@ -150,6 +230,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
       const checkAndAddListeners = () => {
         const modelViewer = container.querySelector('model-viewer');
         if (modelViewer) {
+          modelViewerRef.current = modelViewer;
           modelViewer.addEventListener('load', handleLoad);
           modelViewer.addEventListener('error', handleError);
           modelViewer.addEventListener('progress', handleProgress);
@@ -181,7 +262,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         if (cleanup1) cleanup1();
         clearTimeout(timeoutId);
       };
-    }, [src, arSupported]);
+    }, [src, arSupported, isInAR, arJustExited]);
 
     // Determine AR modes based on device and file type
     const getArModes = () => {
@@ -202,6 +283,41 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
       return 'webxr scene-viewer quick-look';
     };
 
+    // Manual retry function
+    const handleRetry = async () => {
+      console.log('🔄 Manual retry triggered');
+      setIsError(false);
+      setIsLoading(true);
+      setIsLoaded(false);
+      setArJustExited(false);
+      
+      // Use ModelRecovery for intelligent retry
+      const modelViewer = modelViewerRef.current;
+      if (modelViewer) {
+        try {
+          const success = await ModelRecovery.recoverModel(proxyUrl, modelViewer, {
+            maxRetries: 3,
+            retryDelay: 1000,
+            fallbackToProxy: true,
+            logErrors: true
+          });
+          
+          if (success) {
+            setIsLoaded(true);
+            setIsLoading(false);
+            setIsError(false);
+          } else {
+            setIsError(true);
+            setIsLoading(false);
+          }
+        } catch (error) {
+          console.error('❌ Recovery failed:', error);
+          setIsError(true);
+          setIsLoading(false);
+        }
+      }
+    };
+
     return (
       <div
         ref={containerRef}
@@ -216,7 +332,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         }}
       >
         {/* Loading state - IMPORTANT: Never use display: none, it causes AR crashes */}
-        {isLoading && !isError && (
+        {(isLoading && !isError && !isInAR) && (
           <div 
             className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 z-10"
             style={{ visibility: 'visible', opacity: 1 }}
@@ -224,7 +340,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600 text-sm font-medium">
-                Chargement du modèle 3D...
+                {arJustExited ? 'Récupération après AR...' : 'Chargement du modèle 3D...'}
               </p>
               <p className="text-gray-400 text-xs mt-1">
                 {isUSDZ ? 'Fichier USDZ' : 'Fichier GLB/GLTF'}
@@ -238,8 +354,28 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           </div>
         )}
         
-        {/* Error state */}
-        {isError && (
+        {/* AR Active Indicator */}
+        {isInAR && (
+          <div 
+            className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-20"
+            style={{ visibility: 'visible', opacity: 1 }}
+          >
+            <div className="text-center text-white">
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Mode AR Actif</h3>
+              <p className="text-sm opacity-75">
+                Utilisez votre appareil pour voir le modèle en réalité augmentée
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {/* Error state - only show if not in AR and not just exited */}
+        {(isError && !isInAR && !arJustExited) && (
           <div 
             className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 z-10"
             style={{ visibility: 'visible', opacity: 1 }}
@@ -259,11 +395,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
               </p>
               <div className="flex space-x-2 justify-center">
                 <button 
-                  onClick={() => {
-                    setIsLoading(true);
-                    setIsError(false);
-                    setIsLoaded(false);
-                  }} 
+                  onClick={handleRetry}
                   className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   🔄 Réessayer
@@ -281,7 +413,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         )}
         
         {/* Success indicator */}
-        {isLoaded && !isError && (
+        {(isLoaded && !isError && !isInAR) && (
           <div className="absolute top-4 right-4 z-10">
             <span className="bg-green-600 text-white text-sm px-3 py-1 rounded-full shadow-lg">
               ✓ Modèle chargé
@@ -290,7 +422,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         )}
 
         {/* AR Support indicator */}
-        {isLoaded && arSupported && !isError && (
+        {(isLoaded && arSupported && !isError && !isInAR) && (
           <div className="absolute top-4 left-4 z-10">
             <span className="bg-blue-600 text-white text-sm px-3 py-1 rounded-full shadow-lg">
               🥽 AR
@@ -303,7 +435,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           style={{ 
             width: '100%', 
             height: '100%',
-            opacity: isError ? 0.3 : 1,
+            opacity: isError && !isInAR && !arJustExited ? 0.3 : 1,
             transition: 'opacity 0.3s ease',
             visibility: 'visible' // Force visibility to prevent AR crashes
           }}

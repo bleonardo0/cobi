@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import ModelViewer from '@/components/ModelViewer';
+import ModelRecovery from '@/lib/model-recovery';
 
 export default function TestARAndroidPage() {
   const [deviceInfo, setDeviceInfo] = useState<any>({});
@@ -121,6 +122,35 @@ export default function TestARAndroidPage() {
     addLog(`Scene Viewer: ${isSceneViewerSupported ? '✅ Supporté' : '❌ Non supporté'}`);
   };
 
+  const diagnoseSelectedModel = async () => {
+    if (!selectedModel) {
+      addLog('❌ Aucun modèle sélectionné');
+      return;
+    }
+
+    addLog('🔍 Diagnostic du modèle...');
+    
+    try {
+      const diagnosis = await ModelRecovery.diagnoseModel(selectedModel);
+      
+      addLog(`📡 Accessible: ${diagnosis.isReachable ? '✅ Oui' : '❌ Non'}`);
+      addLog(`📄 Format valide: ${diagnosis.isValidFormat ? '✅ Oui' : '❌ Non'}`);
+      
+      if (diagnosis.fileSize) {
+        const sizeMB = (diagnosis.fileSize / (1024 * 1024)).toFixed(2);
+        addLog(`📦 Taille: ${sizeMB} MB`);
+      }
+      
+      if (diagnosis.error) {
+        addLog(`❌ Erreur: ${diagnosis.error}`);
+      } else {
+        addLog('✅ Modèle semble OK');
+      }
+    } catch (error) {
+      addLog(`❌ Erreur diagnostic: ${error}`);
+    }
+  };
+
   const clearLogs = () => {
     setArLogs([]);
     addLog('🧹 Logs effacés');
@@ -217,13 +247,22 @@ export default function TestARAndroidPage() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200">
+            <div className="p-6 border-t border-gray-200 space-y-3">
               <button
                 onClick={testARCapabilities}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 🔍 Tester les capacités AR
               </button>
+              
+              {selectedModel && (
+                <button
+                  onClick={diagnoseSelectedModel}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  🩺 Diagnostiquer le modèle
+                </button>
+              )}
             </div>
           </motion.div>
 
