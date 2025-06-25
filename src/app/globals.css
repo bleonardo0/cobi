@@ -1,34 +1,48 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Montserrat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* Design System Variables */
+/* Navy/Cream Design System Variables */
 :root {
-  --color-primary: #1E40AF;
-  --color-primary-hover: #1D4ED8;
-  --color-text-primary: #1E1E1E;
-  --color-text-secondary: #6B7280;
-  --color-bella-vita: rgb(10, 91, 72);
-  --color-bg-primary: #FFFFFF;
-  --color-bg-secondary: #F9FAFB;
-  --color-bg-tertiary: #F3F4F6;
-  --shadow-soft: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-strong: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  /* Navy Color Palette */
+  --navy-50: #e9ecf1;
+  --navy-100: #c9d0db;
+  --navy-200: #a7b3c4;
+  --navy-300: #8497ad;
+  --navy-400: #627a96;
+  --navy-500: #425f7f;
+  --navy-600: #304a65;
+  --navy-700: #22354a;
+  --navy-800: #162234;
+  --navy-900: #09111d;
+  
+  /* Main Colors */
+  --color-navy: #1f2d3d;
+  --color-cream: #fbfaf5;
+  --color-accent: #8b94a3;
+  
+  /* Design System */
+  --color-primary: var(--color-navy);
+  --color-primary-hover: var(--navy-800);
+  --color-text-primary: var(--color-navy);
+  --color-text-secondary: var(--color-accent);
+  --color-bg-primary: var(--color-cream);
+  --color-bg-secondary: #f8f7f2;
+  --color-bg-tertiary: var(--navy-50);
+  --shadow-soft: 0 10px 15px -3px rgba(31, 45, 61, 0.1), 0 4px 6px -2px rgba(31, 45, 61, 0.05);
+  --shadow-strong: 0 25px 50px -12px rgba(31, 45, 61, 0.25);
   --border-radius-base: 0.75rem;
   --border-radius-large: 1rem;
   --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
   
-  /* Compatibility with existing theme */
-  --background: var(--color-bg-secondary);
+  /* Legacy compatibility */
+  --color-bella-vita: var(--color-navy);
+  --background: var(--color-bg-primary);
   --foreground: var(--color-text-primary);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
 }
 
 /* Custom Animations */
@@ -78,25 +92,25 @@
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: var(--color-text-primary);
-  background-color: var(--color-bg-secondary);
+  background-color: var(--color-bg-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* Typography with DM Serif Display for headings */
+h1, h2, h3 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  color: var(--color-text-primary);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+h4, h5, h6 {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--color-text-primary);
   font-weight: 600;
   line-height: 1.3;
-}
-
-h1, h2 {
-  font-weight: 700;
-}
-
-h3, h4 {
-  font-weight: 600;
 }
 
 /* Custom Animation Classes */
@@ -121,7 +135,7 @@ h3, h4 {
   background: var(--color-bg-primary);
   border-radius: var(--border-radius-large);
   box-shadow: var(--shadow-soft);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(31, 45, 61, 0.06);
   transition: var(--transition-base);
   overflow: hidden;
 }
@@ -138,7 +152,7 @@ h3, h4 {
 /* Enhanced Button Styles */
 .btn-primary {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-cream);
   padding: 0.875rem 1.75rem;
   border-radius: var(--border-radius-base);
   font-weight: 500;
@@ -168,7 +182,7 @@ h3, h4 {
   font-weight: 500;
   font-family: 'Inter', sans-serif;
   transition: var(--transition-base);
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--navy-200);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -188,13 +202,13 @@ h3, h4 {
 /* Glass Effect */
 .glass-effect {
   backdrop-filter: blur(20px);
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(251, 250, 245, 0.9);
+  border: 1px solid rgba(31, 45, 61, 0.1);
 }
 
 /* Gradient Backgrounds */
 .gradient-bg {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #3B82F6 100%);
+  background: linear-gradient(135deg, var(--color-navy) 0%, var(--navy-700) 100%);
 }
 
 .gradient-bg-soft {
@@ -203,44 +217,42 @@ h3, h4 {
 
 /* Text Gradient */
 .text-gradient {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #3B82F6 100%);
+  background: linear-gradient(135deg, var(--color-navy) 0%, var(--navy-600) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Form Elements */
+/* Input Styles */
 .input-modern {
-  padding: 0.875rem 1rem;
-  border: 1px solid #E5E7EB;
-  border-radius: var(--border-radius-base);
   background: var(--color-bg-primary);
-  color: var(--color-text-primary);
+  border: 1px solid var(--navy-200);
+  border-radius: var(--border-radius-base);
+  padding: 0.75rem 1rem;
   font-family: 'Inter', sans-serif;
+  color: var(--color-text-primary);
   transition: var(--transition-base);
   font-size: 0.95rem;
-  width: 100%;
 }
 
 .input-modern:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+  box-shadow: 0 0 0 3px rgba(31, 45, 61, 0.1);
 }
 
 .input-modern::placeholder {
-  color: var(--color-text-secondary);
+  color: var(--color-accent);
 }
 
 /* Navigation */
 .nav-modern {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  transition: var(--transition-base);
+  background: var(--color-bg-primary);
+  border-bottom: 1px solid var(--navy-100);
+  box-shadow: var(--shadow-soft);
 }
 
-/* Scrollbar Styling */
+/* Scrollbar Styles */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -250,94 +262,91 @@ h3, h4 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-text-secondary);
+  background: var(--color-accent);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-primary);
+  background: var(--color-navy);
 }
 
 /* Model Viewer Styles */
 model-viewer {
   width: 100%;
   height: 100%;
-  background-color: transparent;
-  border-radius: var(--border-radius-large);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-base);
 }
 
 .model-viewer-container {
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 400px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-base);
   overflow: hidden;
-  border-radius: var(--border-radius-large);
-  background: var(--color-bg-primary);
-  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--navy-100);
 }
 
-/* Ensure model-viewer takes full space */
 .model-viewer-container model-viewer {
-  display: block;
-  width: 100% !important;
-  height: 100% !important;
-  border-radius: var(--border-radius-large);
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
 }
 
-/* Hide default loading spinner */
 model-viewer:not([loaded]) .loader {
-  display: none;
+  display: block;
 }
 
-/* Custom loading animation */
 .model-viewer-loading {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 10;
-  background: var(--color-bg-primary);
-  border-radius: var(--border-radius-base);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: var(--color-text-secondary);
+  font-family: 'Inter', sans-serif;
 }
 
-/* Text Truncation Utilities */
+/* Text Utilities */
 .line-clamp-1 {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
 }
 
 .line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
-/* Responsive Design Helpers */
+/* Layout Utilities */
 .section-padding {
-  padding: 3rem 0;
+  padding: 2rem 1rem;
 }
 
 @media (min-width: 640px) {
   .section-padding {
-    padding: 4rem 0;
+    padding: 3rem 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .section-padding {
-    padding: 5rem 0;
+    padding: 4rem 2rem;
   }
 }
 
@@ -359,32 +368,45 @@ model-viewer:not([loaded]) .loader {
   }
 }
 
-/* Status Indicators */
+/* Status Styles */
 .status-success {
-  background: #10B981;
-  color: white;
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .status-warning {
-  background: #F59E0B;
-  color: white;
+  background: rgba(245, 158, 11, 0.1);
+  color: #D97706;
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .status-error {
-  background: #EF4444;
-  color: white;
+  background: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .status-info {
-  background: var(--color-primary);
-  color: white;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--color-navy);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
-/* Montserrat font and Bella Vita color */
+/* Font Classes */
+.font-serif {
+  font-family: 'DM Serif Display', Georgia, serif;
+}
+
+.font-sans {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Legacy compatibility */
 .font-montserrat {
-  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .text-bella-vita {
-  color: var(--color-bella-vita);
+  color: var(--color-navy);
 }
