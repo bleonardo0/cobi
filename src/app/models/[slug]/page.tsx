@@ -129,14 +129,7 @@ export default function ModelDetailPage() {
 
   const pageVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut",
-      },
-    },
+    visible: { opacity: 1, y: 0 },
   };
 
   if (isLoading) {
@@ -280,6 +273,7 @@ export default function ModelDetailPage() {
           variants={pageVariants}
           initial="hidden"
           animate="visible"
+          transition={{ duration: 0.6, ease: "easeOut" }}
           className="grid grid-cols-1 lg:grid-cols-3 gap-8"
         >
           {/* Model Viewer */}

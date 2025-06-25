@@ -1,18 +1,30 @@
 // Utilitaires pour la récupération des erreurs de modèles 3D
 
-export interface ModelRecoveryOptions {
+interface RecoveryOptions {
   maxRetries?: number;
   retryDelay?: number;
   fallbackToProxy?: boolean;
   logErrors?: boolean;
+  timeoutMs?: number;
 }
 
-export class ModelRecovery {
-  private static defaultOptions: ModelRecoveryOptions = {
+interface ModelViewerElement extends HTMLElement {
+  src: string;
+  loaded: boolean;
+  addEventListener(type: string, listener: EventListener): void;
+  removeEventListener(type: string, listener: EventListener): void;
+  dismissPoster(): void;
+  updateFraming(): void;
+  jumpCameraToGoal(): void;
+}
+
+class ModelRecovery {
+  private static readonly DEFAULT_OPTIONS: Required<RecoveryOptions> = {
     maxRetries: 3,
-    retryDelay: 1000,
+    retryDelay: 1500,
     fallbackToProxy: true,
-    logErrors: true
+    logErrors: true,
+    timeoutMs: 10000
   };
 
   /**
@@ -58,158 +70,9 @@ export class ModelRecovery {
   }
 
   /**
-   * Tente de récupérer un modèle avec différentes stratégies
+   * Convert Supabase URL to proxy URL for better reliability
    */
-  static async recoverModel(
-    originalSrc: string, 
-    modelViewer: any,
-    options: ModelRecoveryOptions = {}
-  ): Promise<boolean> {
-    const opts = { ...this.defaultOptions, ...options };
-    
-    if (opts.logErrors) {
-      console.log('🔄 Tentative de récupération du modèle:', originalSrc);
-    }
-
-    // Stratégie 1: Retry simple
-    for (let attempt = 1; attempt <= opts.maxRetries!; attempt++) {
-      try {
-        if (opts.logErrors) {
-          console.log(`🔄 Tentative ${attempt}/${opts.maxRetries}`);
-        }
-
-        await this.reloadModel(modelViewer, originalSrc);
-        await this.waitForLoad(modelViewer, 5000);
-        
-        if (opts.logErrors) {
-          console.log('✅ Récupération réussie');
-        }
-        return true;
-      } catch (error) {
-        if (opts.logErrors) {
-          console.log(`❌ Tentative ${attempt} échouée:`, error);
-        }
-        
-        if (attempt < opts.maxRetries!) {
-          await this.delay(opts.retryDelay!);
-        }
-      }
-    }
-
-    // Stratégie 2: Proxy fallback (si Supabase)
-    if (opts.fallbackToProxy && originalSrc.includes('supabase.co')) {
-      try {
-        const proxyUrl = this.getProxyUrl(originalSrc);
-        if (opts.logErrors) {
-          console.log('🔄 Tentative avec proxy URL:', proxyUrl);
-        }
-
-        await this.reloadModel(modelViewer, proxyUrl);
-        await this.waitForLoad(modelViewer, 5000);
-        
-        if (opts.logErrors) {
-          console.log('✅ Récupération via proxy réussie');
-        }
-        return true;
-      } catch (error) {
-        if (opts.logErrors) {
-          console.log('❌ Proxy fallback échoué:', error);
-        }
-      }
-    }
-
-    // Stratégie 3: Cache bust
-    try {
-      const cacheBustUrl = this.addCacheBuster(originalSrc);
-      if (opts.logErrors) {
-        console.log('🔄 Tentative avec cache bust:', cacheBustUrl);
-      }
-
-      await this.reloadModel(modelViewer, cacheBustUrl);
-      await this.waitForLoad(modelViewer, 5000);
-      
-      if (opts.logErrors) {
-        console.log('✅ Récupération avec cache bust réussie');
-      }
-      return true;
-    } catch (error) {
-      if (opts.logErrors) {
-        console.log('❌ Cache bust échoué:', error);
-      }
-    }
-
-    if (opts.logErrors) {
-      console.log('❌ Toutes les stratégies de récupération ont échoué');
-    }
-    return false;
-  }
-
-  /**
-   * Recharge un modèle dans model-viewer
-   */
-  static async reloadModel(modelViewer: any, src: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!modelViewer) {
-        reject(new Error('ModelViewer non disponible'));
-        return;
-      }
-
-      // Forcer le rechargement
-      modelViewer.setAttribute('src', '');
-      
-      setTimeout(() => {
-        modelViewer.setAttribute('src', src);
-        resolve();
-      }, 100);
-    });
-  }
-
-  /**
-   * Attend le chargement du modèle
-   */
-  static async waitForLoad(modelViewer: any, timeout: number = 10000): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!modelViewer) {
-        reject(new Error('ModelViewer non disponible'));
-        return;
-      }
-
-      const timeoutId = setTimeout(() => {
-        cleanup();
-        reject(new Error('Timeout de chargement'));
-      }, timeout);
-
-      const handleLoad = () => {
-        cleanup();
-        resolve();
-      };
-
-      const handleError = (event: any) => {
-        cleanup();
-        reject(new Error('Erreur de chargement: ' + event.detail?.message || 'Inconnue'));
-      };
-
-      const cleanup = () => {
-        clearTimeout(timeoutId);
-        modelViewer.removeEventListener('load', handleLoad);
-        modelViewer.removeEventListener('error', handleError);
-      };
-
-      modelViewer.addEventListener('load', handleLoad);
-      modelViewer.addEventListener('error', handleError);
-
-      // Si déjà chargé
-      if (modelViewer.loaded) {
-        cleanup();
-        resolve();
-      }
-    });
-  }
-
-  /**
-   * Convertit une URL Supabase en URL proxy
-   */
-  static getProxyUrl(originalUrl: string): string {
+  private static getProxyUrl(originalUrl: string): string {
     if (originalUrl.includes('supabase.co/storage/v1/object/public/')) {
       const match = originalUrl.match(/\/storage\/v1\/object\/public\/[^\/]+\/(.+)$/);
       if (match) {
@@ -221,49 +84,353 @@ export class ModelRecovery {
   }
 
   /**
-   * Ajoute un cache buster à l'URL
+   * Generate cache-busting URL
    */
-  static addCacheBuster(url: string): string {
+  private static getCacheBustUrl(url: string): string {
     const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}_cb=${Date.now()}`;
+    return `${url}${separator}_cb=${Date.now()}&_retry=${Math.random().toString(36).substr(2, 9)}`;
   }
 
   /**
-   * Délai utilitaire
+   * Check if URL is accessible
    */
-  static delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  private static async checkUrlAccessibility(url: string): Promise<boolean> {
+    try {
+      const response = await fetch(url, { 
+        method: 'HEAD',
+        mode: 'cors',
+        cache: 'no-cache'
+      });
+      return response.ok;
+    } catch (error) {
+      console.warn('🔍 URL check failed:', url, error);
+      return false;
+    }
   }
 
   /**
-   * Récupération automatique après sortie d'AR
+   * Get fallback URLs in order of preference
    */
-  static async recoverFromAR(modelViewer: any, originalSrc: string): Promise<boolean> {
-    console.log('🔄 Récupération post-AR...');
+  private static getFallbackUrls(originalUrl: string): string[] {
+    const urls: string[] = [];
+    
+    // 1. Original URL
+    urls.push(originalUrl);
+    
+    // 2. Proxy URL (if different)
+    const proxyUrl = this.getProxyUrl(originalUrl);
+    if (proxyUrl !== originalUrl) {
+      urls.push(proxyUrl);
+    }
+    
+    // 3. Cache-busted original
+    urls.push(this.getCacheBustUrl(originalUrl));
+    
+    // 4. Cache-busted proxy (if different)
+    if (proxyUrl !== originalUrl) {
+      urls.push(this.getCacheBustUrl(proxyUrl));
+    }
+    
+    return urls;
+  }
+
+  /**
+   * Safely set model-viewer src with error handling
+   */
+  private static async safeSetSrc(
+    modelViewer: ModelViewerElement, 
+    url: string, 
+    timeoutMs: number = 10000
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      let resolved = false;
+      let loadTimeout: NodeJS.Timeout;
+      
+      const cleanup = () => {
+        if (loadTimeout) clearTimeout(loadTimeout);
+        modelViewer.removeEventListener('load', onLoad);
+        modelViewer.removeEventListener('error', onError);
+      };
+      
+      const resolveOnce = (success: boolean) => {
+        if (resolved) return;
+        resolved = true;
+        cleanup();
+        resolve(success);
+      };
+      
+      const onLoad = () => {
+        console.log('✅ Model loaded successfully:', url);
+        resolveOnce(true);
+      };
+      
+      const onError = (event: any) => {
+        console.warn('❌ Model load error:', url, event);
+        resolveOnce(false);
+      };
+      
+      // Set timeout
+      loadTimeout = setTimeout(() => {
+        console.warn('⏰ Model load timeout:', url);
+        resolveOnce(false);
+      }, timeoutMs);
+      
+      // Add listeners
+      modelViewer.addEventListener('load', onLoad);
+      modelViewer.addEventListener('error', onError);
+      
+      // Check if already loaded with this URL
+      if (modelViewer.src === url && modelViewer.loaded) {
+        console.log('✅ Model already loaded:', url);
+        resolveOnce(true);
+        return;
+      }
+      
+      try {
+        // Update src
+        modelViewer.src = url;
+        console.log('🔄 Attempting to load:', url);
+        
+        // Force update if model-viewer is already initialized
+        if (typeof modelViewer.updateFraming === 'function') {
+          setTimeout(() => {
+            try {
+              modelViewer.updateFraming();
+            } catch (e) {
+              console.warn('⚠️ updateFraming failed:', e);
+            }
+          }, 100);
+        }
+        
+      } catch (error) {
+        console.error('💥 Failed to set src:', error);
+        resolveOnce(false);
+      }
+    });
+  }
+
+  /**
+   * Recover a model with multiple fallback strategies
+   */
+  static async recoverModel(
+    originalUrl: string,
+    modelViewer: ModelViewerElement,
+    options: RecoveryOptions = {}
+  ): Promise<boolean> {
+    const opts = { ...this.DEFAULT_OPTIONS, ...options };
+    
+    if (opts.logErrors) {
+      console.log('🔧 Starting model recovery for:', originalUrl);
+    }
+    
+    const fallbackUrls = this.getFallbackUrls(originalUrl);
+    
+    for (let attempt = 0; attempt < opts.maxRetries; attempt++) {
+      for (const url of fallbackUrls) {
+        try {
+          if (opts.logErrors) {
+            console.log(`🔄 Recovery attempt ${attempt + 1}/${opts.maxRetries} with URL:`, url);
+          }
+          
+          // Optional: Check URL accessibility first (can be slow)
+          if (attempt > 0) {
+            const isAccessible = await this.checkUrlAccessibility(url);
+            if (!isAccessible) {
+              console.warn('⚠️ URL not accessible, skipping:', url);
+              continue;
+            }
+          }
+          
+          const success = await this.safeSetSrc(modelViewer, url, opts.timeoutMs);
+          
+          if (success) {
+            if (opts.logErrors) {
+              console.log('✅ Model recovery successful with:', url);
+            }
+            return true;
+          }
+          
+          // Small delay between URL attempts
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+        } catch (error) {
+          if (opts.logErrors) {
+            console.error('💥 Recovery attempt failed:', error);
+          }
+        }
+      }
+      
+      // Delay between retry cycles
+      if (attempt < opts.maxRetries - 1) {
+        if (opts.logErrors) {
+          console.log(`⏳ Waiting ${opts.retryDelay}ms before next retry cycle...`);
+        }
+        await new Promise(resolve => setTimeout(resolve, opts.retryDelay));
+      }
+    }
+    
+    if (opts.logErrors) {
+      console.error('❌ Model recovery failed after all attempts');
+    }
+    return false;
+  }
+
+  /**
+   * Recover from AR session end with special handling
+   */
+  static async recoverFromAR(
+    modelViewer: ModelViewerElement,
+    originalUrl: string,
+    options: RecoveryOptions = {}
+  ): Promise<boolean> {
+    const opts = { ...this.DEFAULT_OPTIONS, ...options, retryDelay: 2000 };
+    
+    console.log('🥽 Recovering from AR session...');
+    
+    // Wait for AR session to fully end
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     try {
-      // Attendre un peu que l'AR se termine complètement
-      await this.delay(500);
+      // Force refresh the model viewer state
+      if (typeof modelViewer.dismissPoster === 'function') {
+        modelViewer.dismissPoster();
+      }
       
-      // Forcer le rechargement
-      await this.reloadModel(modelViewer, originalSrc);
-      
-      // Attendre le chargement avec un timeout plus court
-      await this.waitForLoad(modelViewer, 3000);
-      
-      console.log('✅ Récupération post-AR réussie');
-      return true;
-    } catch (error) {
-      console.log('❌ Récupération post-AR échouée, tentative de récupération complète...');
-      
-      // Fallback vers récupération complète
-      return await this.recoverModel(originalSrc, modelViewer, {
-        maxRetries: 2,
-        retryDelay: 500,
-        fallbackToProxy: true,
-        logErrors: true
+      // Try to recover with a longer timeout for post-AR
+      const success = await this.recoverModel(originalUrl, modelViewer, {
+        ...opts,
+        timeoutMs: 15000, // Longer timeout after AR
+        maxRetries: 2 // Fewer retries but with longer timeout
       });
+      
+      if (success) {
+        // Additional post-AR cleanup
+        setTimeout(() => {
+          try {
+            if (typeof modelViewer.jumpCameraToGoal === 'function') {
+              modelViewer.jumpCameraToGoal();
+            }
+            if (typeof modelViewer.updateFraming === 'function') {
+              modelViewer.updateFraming();
+            }
+          } catch (e) {
+            console.warn('⚠️ Post-AR cleanup failed:', e);
+          }
+        }, 500);
+      }
+      
+      return success;
+      
+    } catch (error) {
+      console.error('💥 AR recovery failed:', error);
+      return false;
     }
+  }
+
+  /**
+   * Quick recovery for simple reload scenarios
+   */
+  static async quickRecover(
+    modelViewer: ModelViewerElement,
+    originalUrl: string
+  ): Promise<boolean> {
+    console.log('⚡ Quick recovery attempt...');
+    
+    try {
+      // Try cache-busted version first for quick recovery
+      const cacheBustUrl = this.getCacheBustUrl(originalUrl);
+      const success = await this.safeSetSrc(modelViewer, cacheBustUrl, 5000);
+      
+      if (success) {
+        console.log('✅ Quick recovery successful');
+        return true;
+      }
+      
+      // Fallback to proxy if available
+      const proxyUrl = this.getProxyUrl(originalUrl);
+      if (proxyUrl !== originalUrl) {
+        const proxySuccess = await this.safeSetSrc(modelViewer, proxyUrl, 5000);
+        if (proxySuccess) {
+          console.log('✅ Quick recovery successful with proxy');
+          return true;
+        }
+      }
+      
+      console.warn('⚠️ Quick recovery failed');
+      return false;
+      
+    } catch (error) {
+      console.error('💥 Quick recovery error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Preload and validate a model URL
+   */
+  static async preloadModel(url: string): Promise<boolean> {
+    try {
+      console.log('🔍 Preloading model:', url);
+      
+      // Check basic accessibility
+      const isAccessible = await this.checkUrlAccessibility(url);
+      if (!isAccessible) {
+        console.warn('⚠️ Model URL not accessible:', url);
+        return false;
+      }
+      
+      // Try to fetch a small portion to validate
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Range': 'bytes=0-1023' // First 1KB
+        },
+        mode: 'cors',
+        cache: 'no-cache'
+      });
+      
+      if (response.ok || response.status === 206) {
+        console.log('✅ Model preload successful:', url);
+        return true;
+      } else {
+        console.warn('⚠️ Model preload failed:', response.status, url);
+        return false;
+      }
+      
+    } catch (error) {
+      console.warn('⚠️ Model preload error:', url, error);
+      return false;
+    }
+  }
+
+  /**
+   * Get the best URL for a model based on current conditions
+   */
+  static async getBestUrl(originalUrl: string): Promise<string> {
+    const fallbackUrls = this.getFallbackUrls(originalUrl);
+    
+    // Test URLs in parallel for speed
+    const tests = fallbackUrls.map(async (url) => {
+      const isGood = await this.checkUrlAccessibility(url);
+      return { url, isGood };
+    });
+    
+    try {
+      const results = await Promise.allSettled(tests);
+      
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value.isGood) {
+          console.log('✅ Best URL found:', result.value.url);
+          return result.value.url;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ URL testing failed:', error);
+    }
+    
+    // Fallback to original if all tests fail
+    console.log('🔄 Using original URL as fallback:', originalUrl);
+    return originalUrl;
   }
 }
 

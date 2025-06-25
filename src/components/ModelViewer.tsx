@@ -19,8 +19,11 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
     const [arSupported, setArSupported] = useState(false);
     const [isInAR, setIsInAR] = useState(false);
     const [arJustExited, setArJustExited] = useState(false);
+    const [loadAttempts, setLoadAttempts] = useState(0);
+    const [currentSrc, setCurrentSrc] = useState(src);
     const containerRef = useRef<HTMLDivElement>(null);
     const modelViewerRef = useRef<any>(null);
+    const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Convert Supabase URL to proxy URL
     const getProxyUrl = (originalUrl: string): string => {
@@ -59,6 +62,18 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
       checkArSupport();
     }, []);
 
+    // Reset when src changes
+    useEffect(() => {
+      console.log('🔄 Source changed:', src);
+      console.log('📊 Current state before reset:', { isLoaded, isError, isLoading, loadAttempts });
+      setCurrentSrc(src);
+      setLoadAttempts(0);
+      setIsError(false);
+      setIsLoading(true);
+      setIsLoaded(false);
+      setArJustExited(false);
+    }, [src]);
+
     // Reset error state after AR exit
     useEffect(() => {
       if (arJustExited) {
@@ -73,7 +88,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           setIsLoading(false);
           setIsError(false);
           setArJustExited(false);
-        }, 1000);
+        }, 1500); // Increased timeout
 
         return () => clearTimeout(recoveryTimer);
       }
@@ -81,28 +96,65 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
 
     useEffect(() => {
       let isMounted = true;
-      let loadTimeout: NodeJS.Timeout;
 
       const loadModelViewer = async () => {
         try {
-          console.log('🔄 Loading ModelViewer for:', src);
+          console.log('🔄 Loading ModelViewer for:', currentSrc);
+          console.log('📊 Environment check:', {
+            userAgent: navigator.userAgent,
+            hasWebXR: 'xr' in navigator,
+            isHTTPS: window.location.protocol === 'https:',
+            currentUrl: window.location.href
+          });
+          
+          // Clear any existing timeout
+          if (loadTimeoutRef.current) {
+            clearTimeout(loadTimeoutRef.current);
+          }
           
           setIsLoading(true);
           setIsError(false);
           setIsLoaded(false);
           
           // Import model-viewer dynamically
+          console.log('📦 Importing @google/model-viewer...');
           await import('@google/model-viewer');
-          console.log('✅ @google/model-viewer loaded');
+          console.log('✅ @google/model-viewer loaded successfully');
 
           // Wait a bit for the DOM to be ready
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 200));
 
-          // Set error timeout (longer if just exited AR)
-          const timeoutDuration = arJustExited ? 5000 : 15000;
-          loadTimeout = setTimeout(() => {
+          // Set error timeout with progressive increase
+          const baseTimeout = 8000;
+          const timeoutDuration = baseTimeout + (loadAttempts * 2000); // Increase timeout with attempts
+          
+          console.log(`⏰ Setting timeout for ${timeoutDuration}ms (attempt ${loadAttempts + 1})`);
+          
+          loadTimeoutRef.current = setTimeout(() => {
             if (isMounted && !isLoaded && !arJustExited) {
-              console.log('⏰ Timeout: Model failed to load');
+              console.log(`⏰ Timeout after ${timeoutDuration}ms: Model failed to load`);
+              console.log('📊 State at timeout:', { isLoaded, isError, isLoading, arJustExited });
+              setLoadAttempts(prev => prev + 1);
+              
+              // Try different strategies based on attempt number
+              if (loadAttempts === 0) {
+                // First attempt: try proxy URL
+                const newSrc = getProxyUrl(currentSrc);
+                if (newSrc !== currentSrc) {
+                  console.log('🔄 Trying proxy URL:', newSrc);
+                  setCurrentSrc(newSrc);
+                  return;
+                }
+              } else if (loadAttempts === 1) {
+                // Second attempt: try with cache buster
+                const cacheBustSrc = `${currentSrc}${currentSrc.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
+                console.log('🔄 Trying cache bust:', cacheBustSrc);
+                setCurrentSrc(cacheBustSrc);
+                return;
+              }
+              
+              // Final attempt failed
+              console.log('❌ All recovery attempts failed');
               setIsError(true);
               setIsLoading(false);
             }
@@ -111,6 +163,12 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         } catch (error) {
           if (!isMounted) return;
           console.error('💥 Failed to load ModelViewer:', error);
+          console.error('📊 Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : 'No stack trace',
+            currentSrc,
+            loadAttempts
+          });
           if (!arJustExited) {
             setIsError(true);
             setIsLoading(false);
@@ -122,23 +180,33 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
 
       return () => {
         isMounted = false;
-        if (loadTimeout) {
-          clearTimeout(loadTimeout);
+        if (loadTimeoutRef.current) {
+          clearTimeout(loadTimeoutRef.current);
         }
       };
-    }, [src, arJustExited]);
+    }, [currentSrc, arJustExited, loadAttempts]);
 
     // Listen for model-viewer events
     useEffect(() => {
       const container = containerRef.current;
-      if (!container) return;
+      if (!container) {
+        console.log('⚠️ Container ref not available');
+        return;
+      }
+
+      console.log('🎧 Setting up event listeners for container:', container);
 
       const handleLoad = () => {
         console.log('✅ Model loaded successfully');
+        console.log('📊 Load event state:', { currentSrc, loadAttempts, isInAR, arJustExited });
+        if (loadTimeoutRef.current) {
+          clearTimeout(loadTimeoutRef.current);
+        }
         setIsLoaded(true);
         setIsLoading(false);
         setIsError(false);
         setArJustExited(false);
+        setLoadAttempts(0); // Reset attempts on success
       };
 
       const handleError = (event: any) => {
@@ -149,17 +217,50 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         }
         
         console.error('❌ Model failed to load:', event);
+        console.error('📊 Error event details:', {
+          type: event.type,
+          detail: event.detail,
+          target: event.target,
+          currentSrc,
+          loadAttempts
+        });
+        
+        // Clear timeout since we got an explicit error
+        if (loadTimeoutRef.current) {
+          clearTimeout(loadTimeoutRef.current);
+        }
+        
+        setLoadAttempts(prev => prev + 1);
+        
+        // Try fallback strategies
+        if (loadAttempts === 0) {
+          // First error: try proxy URL
+          const newSrc = getProxyUrl(currentSrc);
+          if (newSrc !== currentSrc) {
+            console.log('🔄 Error fallback: trying proxy URL');
+            setCurrentSrc(newSrc);
+            return;
+          }
+        }
+        
         setIsError(true);
         setIsLoading(false);
         setIsLoaded(false);
       };
 
       const handleProgress = (event: any) => {
-        console.log('📈 Loading progress:', event.detail?.totalProgress || 'unknown');
+        const progress = event.detail?.totalProgress || 0;
+        console.log('📈 Loading progress:', progress, event.detail);
         
         // If we have progress, we're loading properly
-        if (event.detail?.totalProgress > 0) {
+        if (progress > 0) {
           setIsError(false);
+          setIsLoading(true);
+        }
+        
+        // If progress is 100%, model should be loaded soon
+        if (progress >= 1) {
+          console.log('📦 Model fully downloaded');
         }
       };
 
@@ -207,7 +308,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
               const modelViewer = container.querySelector('model-viewer') as any;
               if (modelViewer) {
                 try {
-                  const success = await ModelRecovery.recoverFromAR(modelViewer, proxyUrl);
+                  const success = await ModelRecovery.recoverFromAR(modelViewer, currentSrc);
                   if (success) {
                     console.log('✅ Post-AR recovery successful');
                     setIsLoaded(true);
@@ -221,7 +322,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
                   console.error('❌ Post-AR recovery error:', error);
                 }
               }
-            }, 500);
+            }, 1000); // Increased delay
             break;
         }
       };
@@ -262,7 +363,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         if (cleanup1) cleanup1();
         clearTimeout(timeoutId);
       };
-    }, [src, arSupported, isInAR, arJustExited]);
+    }, [currentSrc, arSupported, isInAR, arJustExited, loadAttempts]);
 
     // Determine AR modes based on device and file type
     const getArModes = () => {
@@ -290,12 +391,16 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
       setIsLoading(true);
       setIsLoaded(false);
       setArJustExited(false);
+      setLoadAttempts(0);
+      
+      // Reset to original source
+      setCurrentSrc(src);
       
       // Use ModelRecovery for intelligent retry
       const modelViewer = modelViewerRef.current;
       if (modelViewer) {
         try {
-          const success = await ModelRecovery.recoverModel(proxyUrl, modelViewer, {
+          const success = await ModelRecovery.recoverModel(src, modelViewer, {
             maxRetries: 3,
             retryDelay: 1000,
             fallbackToProxy: true,
@@ -340,7 +445,9 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600 text-sm font-medium">
-                {arJustExited ? 'Récupération après AR...' : 'Chargement du modèle 3D...'}
+                {arJustExited ? 'Récupération après AR...' : 
+                 loadAttempts > 0 ? `Tentative ${loadAttempts + 1}...` : 
+                 'Chargement du modèle 3D...'}
               </p>
               <p className="text-gray-400 text-xs mt-1">
                 {isUSDZ ? 'Fichier USDZ' : 'Fichier GLB/GLTF'}
@@ -348,6 +455,11 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
               {arSupported && (
                 <p className="text-green-600 text-xs mt-1">
                   ✓ AR disponible
+                </p>
+              )}
+              {loadAttempts > 0 && (
+                <p className="text-orange-600 text-xs mt-1">
+                  Stratégie de récupération en cours...
                 </p>
               )}
             </div>
@@ -390,7 +502,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
               <p className="text-gray-600 text-sm mb-4">
                 {isUSDZ 
                   ? 'Fichier USDZ incompatible avec ce navigateur'
-                  : 'Impossible de charger le modèle 3D'
+                  : `Impossible de charger le modèle 3D${loadAttempts > 0 ? ` (${loadAttempts + 1} tentatives)` : ''}`
                 }
               </p>
               <div className="flex space-x-2 justify-center">
@@ -401,13 +513,18 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
                   🔄 Réessayer
                 </button>
                 <a 
-                  href={proxyUrl}
+                  href={src}
                   target="_blank"
                   className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
                 >
                   📥 Télécharger
                 </a>
               </div>
+              {loadAttempts > 2 && (
+                <p className="text-xs text-gray-500 mt-3">
+                  Plusieurs tentatives ont échoué. Vérifiez votre connexion internet.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -442,7 +559,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           dangerouslySetInnerHTML={{
             __html: `
               <model-viewer
-                src="${proxyUrl}"
+                src="${currentSrc}"
                 alt="${alt}"
                 auto-rotate
                 camera-controls
