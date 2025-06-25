@@ -15,6 +15,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
     const [isLoaded, setIsLoaded] = useState(false);
     const [isError, setIsError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [arSupported, setArSupported] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Convert Supabase URL to proxy URL
@@ -31,6 +32,28 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
 
     const proxyUrl = getProxyUrl(src);
     const isUSDZ = src.toLowerCase().includes('.usdz');
+
+    // Detect AR support
+    useEffect(() => {
+      const checkArSupport = () => {
+        const isAndroid = /android/i.test(navigator.userAgent);
+        const isChrome = /chrome/i.test(navigator.userAgent);
+        const hasWebXR = 'xr' in navigator;
+        
+        // Android avec Chrome et WebXR ou Scene Viewer support
+        const androidArSupport = isAndroid && isChrome;
+        setArSupported(androidArSupport || hasWebXR);
+        
+        console.log('🔍 AR Support Check:', {
+          isAndroid,
+          isChrome,
+          hasWebXR,
+          supported: androidArSupport || hasWebXR
+        });
+      };
+
+      checkArSupport();
+    }, []);
 
     useEffect(() => {
       let isMounted = true;
@@ -101,6 +124,28 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         console.log('📈 Loading progress:', event.detail?.totalProgress || 'unknown');
       };
 
+      // Handle AR events
+      const handleArStatus = (event: any) => {
+        console.log('🥽 AR Status:', event.detail?.status);
+        if (event.detail?.status === 'failed') {
+          console.error('❌ AR failed to start');
+          // Fallback: try to restart without AR
+          setTimeout(() => {
+            const modelViewer = container.querySelector('model-viewer');
+            if (modelViewer) {
+              console.log('🔄 Restarting without AR...');
+              // Remove AR attributes temporarily
+              modelViewer.removeAttribute('ar');
+              setTimeout(() => {
+                if (arSupported) {
+                  modelViewer.setAttribute('ar', '');
+                }
+              }, 1000);
+            }
+          }, 1000);
+        }
+      };
+
       // Add event listeners when model-viewer is ready
       const checkAndAddListeners = () => {
         const modelViewer = container.querySelector('model-viewer');
@@ -108,6 +153,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           modelViewer.addEventListener('load', handleLoad);
           modelViewer.addEventListener('error', handleError);
           modelViewer.addEventListener('progress', handleProgress);
+          modelViewer.addEventListener('ar-status', handleArStatus);
           
           // Check if already loaded
           if ((modelViewer as any).loaded) {
@@ -118,6 +164,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
             modelViewer.removeEventListener('load', handleLoad);
             modelViewer.removeEventListener('error', handleError);
             modelViewer.removeEventListener('progress', handleProgress);
+            modelViewer.removeEventListener('ar-status', handleArStatus);
           };
         }
         return null;
@@ -134,7 +181,26 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         if (cleanup1) cleanup1();
         clearTimeout(timeoutId);
       };
-    }, [src]);
+    }, [src, arSupported]);
+
+    // Determine AR modes based on device and file type
+    const getArModes = () => {
+      if (isUSDZ) {
+        return 'quick-look'; // iOS only
+      }
+      
+      if (!arSupported) {
+        return ''; // No AR support
+      }
+
+      // Android: prefer Scene Viewer over WebXR for stability
+      const isAndroid = /android/i.test(navigator.userAgent);
+      if (isAndroid) {
+        return 'scene-viewer webxr quick-look';
+      }
+      
+      return 'webxr scene-viewer quick-look';
+    };
 
     return (
       <div
@@ -149,9 +215,12 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
         }}
       >
-        {/* Loading state */}
+        {/* Loading state - IMPORTANT: Never use display: none, it causes AR crashes */}
         {isLoading && !isError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 z-10">
+          <div 
+            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 z-10"
+            style={{ visibility: 'visible', opacity: 1 }}
+          >
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600 text-sm font-medium">
@@ -160,13 +229,21 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
               <p className="text-gray-400 text-xs mt-1">
                 {isUSDZ ? 'Fichier USDZ' : 'Fichier GLB/GLTF'}
               </p>
+              {arSupported && (
+                <p className="text-green-600 text-xs mt-1">
+                  ✓ AR disponible
+                </p>
+              )}
             </div>
           </div>
         )}
         
         {/* Error state */}
         {isError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 z-10">
+          <div 
+            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 z-10"
+            style={{ visibility: 'visible', opacity: 1 }}
+          >
             <div className="text-center max-w-md px-4">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,13 +289,23 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
           </div>
         )}
 
-        {/* Model viewer - Always render */}
+        {/* AR Support indicator */}
+        {isLoaded && arSupported && !isError && (
+          <div className="absolute top-4 left-4 z-10">
+            <span className="bg-blue-600 text-white text-sm px-3 py-1 rounded-full shadow-lg">
+              🥽 AR
+            </span>
+          </div>
+        )}
+
+        {/* Model viewer - Always render, never use display: none */}
         <div 
           style={{ 
             width: '100%', 
             height: '100%',
             opacity: isError ? 0.3 : 1,
-            transition: 'opacity 0.3s ease'
+            transition: 'opacity 0.3s ease',
+            visibility: 'visible' // Force visibility to prevent AR crashes
           }}
           dangerouslySetInnerHTML={{
             __html: `
@@ -229,8 +316,13 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
                 camera-controls
                 loading="eager"
                 reveal="auto"
-                style="width: 100%; height: 100%; display: block; background: transparent;"
-                ${isUSDZ ? 'ar ar-modes="quick-look"' : 'ar ar-modes="webxr scene-viewer quick-look"'}
+                style="width: 100%; height: 100%; display: block; background: transparent; visibility: visible;"
+                ${arSupported ? `ar ar-modes="${getArModes()}"` : ''}
+                ${arSupported ? 'ar-scale="auto"' : ''}
+                ${arSupported ? 'ar-placement="floor"' : ''}
+                interaction-prompt="auto"
+                interaction-prompt-style="wiggle"
+                interaction-prompt-threshold="2000"
               ></model-viewer>
             `
           }}

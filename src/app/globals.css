@@ -276,6 +276,9 @@ model-viewer {
   height: 100%;
   background-color: var(--color-bg-secondary);
   border-radius: var(--border-radius-base);
+  /* IMPORTANT: Never use display: none on model-viewer or its container - causes AR crashes */
+  visibility: visible !important;
+  opacity: 1;
 }
 
 .model-viewer-container {
@@ -286,12 +289,25 @@ model-viewer {
   border-radius: var(--border-radius-base);
   overflow: hidden;
   border: 1px solid var(--navy-100);
+  /* IMPORTANT: Force visibility to prevent AR crashes */
+  visibility: visible !important;
 }
 
 .model-viewer-container model-viewer {
   width: 100%;
   height: 100%;
   background-color: transparent;
+  /* IMPORTANT: Force visibility and display to prevent AR crashes */
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* AR-specific styles */
+model-viewer[ar-status="session-started"] {
+  /* Ensure proper visibility during AR session */
+  visibility: visible !important;
+  display: block !important;
+  opacity: 1 !important;
 }
 
 model-viewer:not([loaded]) .loader {
@@ -309,6 +325,43 @@ model-viewer:not([loaded]) .loader {
   gap: 1rem;
   color: var(--color-text-secondary);
   font-family: 'Inter', sans-serif;
+  /* IMPORTANT: Use visibility instead of display: none */
+  visibility: visible;
+  opacity: 1;
+}
+
+/* AR Button Styles */
+model-viewer > .ar-button {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+model-viewer > .ar-button:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Prevent AR crashes with proper container handling */
+.ar-safe-container {
+  /* Never use display: none on AR containers */
+  visibility: visible !important;
+  opacity: 1;
+  position: relative;
+}
+
+.ar-safe-container.hidden {
+  /* Use opacity and pointer-events instead of display: none */
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 /* Text Utilities */

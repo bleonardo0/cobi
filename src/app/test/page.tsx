@@ -65,6 +65,12 @@ export default function TestMenuPage() {
           description: "Suivi des interactions et statistiques",
           href: "/test-analytics",
           status: "beta"
+        },
+        {
+          name: "Test AR Android",
+          description: "Diagnostic et dépannage AR spécifique Android",
+          href: "/test-ar-android",
+          status: "stable"
         }
       ]
     }
