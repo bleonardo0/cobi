@@ -90,21 +90,7 @@ export default function ModelDetailPage() {
     }
   };
 
-  const handleResetView = () => {
-    if (modelViewerRef.current) {
-      try {
-        const modelViewer = modelViewerRef.current as any;
-        if (typeof modelViewer.resetTurntableRotation === 'function') {
-          modelViewer.resetTurntableRotation();
-        }
-        if (typeof modelViewer.cameraControls?.reset === 'function') {
-          modelViewer.cameraControls.reset();
-        }
-      } catch (error) {
-        console.error('Erreur lors de la réinitialisation:', error);
-      }
-    }
-  };
+
 
   const handleDeleteModel = async () => {
     if (!model) return;
@@ -296,19 +282,8 @@ export default function ModelDetailPage() {
               
               {/* Controls */}
               <div className="p-4 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
-                    Utilisez votre souris ou vos doigts pour explorer le modèle
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={handleResetView}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      Réinitialiser
-                    </button>
-                  </div>
+                <div className="text-sm text-gray-600">
+                  Utilisez votre souris ou vos doigts pour explorer le modèle
                 </div>
               </div>
             </div>

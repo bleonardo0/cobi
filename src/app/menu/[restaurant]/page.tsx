@@ -6,8 +6,11 @@ import { motion } from "framer-motion";
 import { Model3D } from "@/types/model";
 import { Restaurant } from "@/types/analytics";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { usePOSConfig } from "@/hooks/usePOSConfig";
+import { useCart } from "@/hooks/useCart";
 import { getCategoryInfo, getAllergenInfo } from "@/lib/constants";
 import ModelViewer from "@/components/ModelViewer";
+import Cart from "@/components/Cart";
 
 export default function MenuPage() {
   const params = useParams();
@@ -19,8 +22,30 @@ export default function MenuPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const { trackModelView, trackModelViewEnd, trackSessionStart } = useAnalytics(restaurant?.id);
+  
+  // Configuration POS
+  const { config: posConfig, isEnabled: posEnabled, canOrder } = usePOSConfig(restaurant?.id || '');
+  
+  // Gestion du panier
+  const {
+    cart,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    getItemCount,
+    isInCart,
+    getItemQuantity,
+    isEmpty: isCartEmpty,
+    isLoading: isCartLoading,
+    error: cartError
+  } = useCart({ 
+    restaurantId: restaurant?.id || '', 
+    config: posConfig || undefined 
+  });
 
   useEffect(() => {
     fetchRestaurantData();
@@ -88,6 +113,13 @@ export default function MenuPage() {
 
   const categories = ['all', ...Object.keys(groupedModels)];
 
+  // Handlers pour le panier
+  const handleCheckout = () => {
+    // TODO: Rediriger vers la page de checkout
+    console.log('Checkout avec panier:', cart);
+    alert('Fonctionnalité de checkout à implémenter');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50 flex items-center justify-center">
@@ -125,11 +157,36 @@ export default function MenuPage() {
         }}
       >
         <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold font-montserrat">La Bella Vita</h1>
-              <p className="text-white mt-1 font-montserrat opacity-90">Découvrez notre menu en 3D - Une expérience culinaire immersive</p>
+              <p className="text-white mt-1 font-montserrat opacity-90">
+                Découvrez notre menu en 3D - Une expérience culinaire immersive
+                {posEnabled && canOrder && (
+                  <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-500 text-white">
+                    📱 Commande en ligne
+                  </span>
+                )}
+              </p>
             </div>
+            
+            {/* Bouton Panier */}
+            {posEnabled && canOrder && (
+              <button
+                onClick={() => setIsCartOpen(true)}
+                className="relative bg-white text-teal-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6 0H9.5" />
+                </svg>
+                <span>Panier</span>
+                {!isCartEmpty && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
+                    {getItemCount()}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -252,10 +309,93 @@ export default function MenuPage() {
                   </div>
                 )}
 
-                {/* Bouton d'action */}
-                <button className="w-full mt-3 bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium font-montserrat">
-                  {selectedModel?.id === model.id ? 'Fermer la vue 3D' : 'Voir en 3D'}
-                </button>
+                {/* Boutons d'action */}
+                <div className="mt-3 space-y-2">
+                  <button 
+                    className="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium font-montserrat"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleModelSelect(model);
+                    }}
+                  >
+                    {selectedModel?.id === model.id ? 'Fermer la vue 3D' : 'Voir en 3D'}
+                  </button>
+                  
+                  {/* Bouton Ajouter au panier (si POS activé) */}
+                  {posEnabled && canOrder && model.price && model.price > 0 && (
+                    <div className="flex items-center space-x-2">
+                      {/* Boutons quantité si déjà dans le panier */}
+                      {isInCart(model.id) ? (
+                        <div className="flex items-center space-x-2 w-full">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const currentQty = getItemQuantity(model.id);
+                              if (currentQty > 1) {
+                                // Trouver l'item dans le panier et décrémenter
+                                const cartItem = cart?.items.find(item => item.modelId === model.id);
+                                if (cartItem) {
+                                  updateQuantity(cartItem.id, currentQty - 1);
+                                }
+                              } else {
+                                // Supprimer du panier
+                                const cartItem = cart?.items.find(item => item.modelId === model.id);
+                                if (cartItem) {
+                                  removeFromCart(cartItem.id);
+                                }
+                              }
+                            }}
+                            className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                          </button>
+                          
+                          <span className="flex-1 text-center font-medium text-sm">
+                            {getItemQuantity(model.id)} dans le panier
+                          </span>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const currentQty = getItemQuantity(model.id);
+                              const cartItem = cart?.items.find(item => item.modelId === model.id);
+                              if (cartItem) {
+                                updateQuantity(cartItem.id, currentQty + 1);
+                              }
+                            }}
+                            disabled={isCartLoading}
+                            className="w-8 h-8 bg-teal-600 hover:bg-teal-700 text-white rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(model, 1);
+                          }}
+                          disabled={isCartLoading}
+                          className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium font-montserrat disabled:opacity-50 flex items-center justify-center space-x-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          <span>{isCartLoading ? 'Ajout...' : `Ajouter • ${model.price.toFixed(2)}€`}</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Message d'erreur panier */}
+                  {cartError && (
+                    <p className="text-red-600 text-xs mt-1">{cartError}</p>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}
@@ -326,6 +466,20 @@ export default function MenuPage() {
             )}
           </motion.div>
         </motion.div>
+      )}
+
+      {/* Composant Panier */}
+      {posEnabled && canOrder && (
+        <Cart
+          cart={cart}
+          config={posConfig || undefined}
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          onUpdateQuantity={updateQuantity}
+          onRemoveItem={removeFromCart}
+          onCheckout={handleCheckout}
+          onClearCart={clearCart}
+        />
       )}
     </div>
   );

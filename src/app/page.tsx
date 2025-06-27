@@ -111,6 +111,14 @@ export default function HomePage() {
                 <span>📊</span>
                 <span>Analytics</span>
               </Link>
+              <Link 
+                href="/admin" 
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 font-medium hover:bg-navy-50"
+                style={{ color: '#1f2d3d' }}
+              >
+                <span>⚙️</span>
+                <span>Administration</span>
+              </Link>
             </nav>
 
             {/* Actions */}
