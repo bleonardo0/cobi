@@ -27,11 +27,11 @@ interface SessionRecord {
 let viewsStorage: ViewRecord[] = [];
 let sessionsStorage: SessionRecord[] = [];
 
-// Initialiser avec quelques données de base pour la démo
-let baseDataInitialized = false;
+// Pas de données de base automatiques - les restaurants commencent avec des données vides
 
-const initializeBaseData = async () => {
-  if (baseDataInitialized || viewsStorage.length > 0) return;
+const initializeBaseDataForRestaurant = async (restaurantId: string) => {
+  // Cette fonction n'est plus utilisée - les restaurants commencent avec des données vides
+  return;
   
   try {
     // Importer getAllModels dynamiquement pour éviter les problèmes de circular imports
@@ -44,41 +44,105 @@ const initializeBaseData = async () => {
     const realModelIds = models.map(m => m.id);
     const baseViews: ViewRecord[] = [];
     
-    for (let i = 0; i < 50; i++) {
-      const date = new Date();
-      date.setHours(date.getHours() - Math.floor(Math.random() * 168)); // Dernière semaine
-      
-      baseViews.push({
-        id: `base_view_${i}`,
-        modelId: realModelIds[Math.floor(Math.random() * realModelIds.length)],
-        restaurantId: 'restaurant-test-123',
-        timestamp: date.toISOString(),
-        sessionId: `base_session_${Math.floor(i / 3)}`,
-        interactionType: 'view',
-        deviceType: ['mobile', 'tablet', 'desktop'][Math.floor(Math.random() * 3)] as any,
-        viewDuration: Math.floor(Math.random() * 180) + 30,
-        endedAt: new Date(date.getTime() + (Math.floor(Math.random() * 180) + 30) * 1000).toISOString(),
-      });
-    }
+    // Vérifier si des données de base existent déjà pour ce restaurant
+    const hasBaseDataForRestaurant = viewsStorage.some(
+      view => view.id.startsWith(`base_${restaurantId}_`)
+    );
     
-    viewsStorage = baseViews;
-    baseDataInitialized = true;
-    console.log('📊 Données de base initialisées avec', realModelIds.length, 'modèles réels');
+    if (!hasBaseDataForRestaurant) {
+      // Générer des données de base personnalisées pour chaque restaurant
+      const restaurantSeed = getRestaurantSeed(restaurantId);
+      const fixedData = generateFixedDataForRestaurant(restaurantSeed);
+      
+      let viewId = 0;
+      fixedData.forEach((modelData, modelIndex) => {
+        const modelId = realModelIds[modelData.modelIndex % realModelIds.length];
+        
+        // Générer les vues pour ce modèle
+        for (let i = 0; i < modelData.views; i++) {
+          const date = new Date();
+          // Répartir les vues sur 7 jours avec des patterns fixes
+          const dayOffset = (viewId % 7) * 24 + (viewId % 24);
+          date.setHours(date.getHours() - dayOffset);
+          
+          baseViews.push({
+            id: `base_${restaurantId}_${viewId}`,
+            modelId: modelId,
+            restaurantId: restaurantId,
+            timestamp: date.toISOString(),
+            sessionId: `base_session_${restaurantId}_${Math.floor(viewId / 3)}`,
+            interactionType: 'view',
+            deviceType: modelData.deviceType,
+            viewDuration: modelData.avgDuration + (viewId % 10) - 5,
+            endedAt: new Date(date.getTime() + (modelData.avgDuration + (viewId % 10) - 5) * 1000).toISOString(),
+          });
+          viewId++;
+        }
+      });
+      
+      // Ajouter les données de base aux vues existantes
+      viewsStorage.push(...baseViews);
+      console.log(`📊 Données de base ajoutées pour ${restaurantId}:`, baseViews.length, 'vues');
+    } else {
+      console.log(`📊 Données de base déjà présentes pour ${restaurantId}`);
+    }
   } catch (error) {
-    console.error('Erreur lors de l\'initialisation des données de base:', error);
+    console.error(`Erreur lors de l'initialisation des données pour ${restaurantId}:`, error);
   }
+};
+
+// Générer un seed personnalisé pour chaque restaurant
+const getRestaurantSeed = (restaurantId: string): number => {
+  let hash = 0;
+  for (let i = 0; i < restaurantId.length; i++) {
+    const char = restaurantId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+};
+
+// Générer des données fixes personnalisées selon le restaurant
+const generateFixedDataForRestaurant = (seed: number) => {
+  const random = (min: number, max: number) => {
+    seed = (seed * 9301 + 49297) % 233280; // Générateur pseudo-aléatoire déterministe
+    return min + (seed / 233280) * (max - min);
+  };
+
+  const deviceTypes = ['mobile', 'tablet', 'desktop'] as const;
+  const data = [];
+  
+  for (let i = 0; i < 5; i++) {
+    data.push({
+      modelIndex: i,
+      views: Math.floor(random(8, 20)), // Entre 8 et 20 vues
+      avgDuration: Math.floor(random(90, 150)), // Entre 90 et 150 secondes
+      deviceType: deviceTypes[Math.floor(random(0, 3))]
+    });
+  }
+  
+  // Trier par nombre de vues décroissant pour avoir un classement cohérent
+  return data.sort((a, b) => b.views - a.views);
+};
+
+// Pas d'initialisation automatique - les restaurants commencent avec des données vides
+const initializeRestaurantOnFirstVisit = async (restaurantId: string) => {
+  console.log(`📊 Analytics pour ${restaurantId} - commence avec des données vides`);
+  // Pas d'initialisation automatique, les données commencent à zéro
+  // Seules les vraies vues des utilisateurs seront trackées
 };
 
 export const analyticsStorage = {
   // Ajouter une vue
   addView: async (view: Omit<ViewRecord, 'id'>) => {
-    await initializeBaseData();
+    // Ne pas initialiser automatiquement avec des données de base
+    // Les vraies vues des utilisateurs s'ajouteront naturellement
     const newView: ViewRecord = {
       id: `view_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       ...view,
     };
     viewsStorage.push(newView);
-    console.log('📊 Vue ajoutée:', newView);
+    console.log('📊 Vue ajoutée (vraie vue d\'utilisateur):', newView);
     return newView;
   },
 
@@ -137,7 +201,7 @@ export const analyticsStorage = {
 
   // Calculer les statistiques
   getModelStats: async (restaurantId?: string) => {
-    await initializeBaseData();
+    // Pas d'initialisation automatique - les restaurants commencent avec des données vides
     const relevantViews = restaurantId 
       ? viewsStorage.filter(v => v.restaurantId === restaurantId)
       : viewsStorage;
@@ -177,7 +241,7 @@ export const analyticsStorage = {
 
   // Obtenir les stats générales
   getGeneralStats: async (restaurantId?: string) => {
-    await initializeBaseData();
+    // Pas d'initialisation automatique - les restaurants commencent avec des données vides
     const relevantViews = restaurantId 
       ? viewsStorage.filter(v => v.restaurantId === restaurantId)
       : viewsStorage;
@@ -212,7 +276,7 @@ export const analyticsStorage = {
 
   // Obtenir les vues par jour (7 derniers jours)
   getViewsByDay: async (restaurantId?: string) => {
-    await initializeBaseData();
+    // Pas d'initialisation automatique - les restaurants commencent avec des données vides
     const relevantViews = restaurantId 
       ? viewsStorage.filter(v => v.restaurantId === restaurantId)
       : viewsStorage;
@@ -243,16 +307,71 @@ export const analyticsStorage = {
   reset: () => {
     viewsStorage = [];
     sessionsStorage = [];
-    baseDataInitialized = false;
     console.log('🔄 Analytics storage reset');
   },
 
   // Forcer la réinitialisation avec les vrais modèles
-  forceReinitialize: async () => {
-    viewsStorage = [];
-    sessionsStorage = [];
-    baseDataInitialized = false;
-    await initializeBaseData();
-    console.log('🔄 Analytics storage réinitialisé avec les vrais modèles');
+  forceReinitialize: async (restaurantId?: string) => {
+    if (restaurantId) {
+      // Réinitialiser seulement pour un restaurant spécifique
+      viewsStorage = viewsStorage.filter(v => v.restaurantId !== restaurantId);
+      sessionsStorage = sessionsStorage.filter(s => s.restaurantId !== restaurantId);
+      console.log(`🔄 Analytics storage réinitialisé pour ${restaurantId}`);
+    } else {
+      // Réinitialiser tout
+      viewsStorage = [];
+      sessionsStorage = [];
+      console.log('🔄 Analytics storage réinitialisé complètement');
+    }
+  },
+
+  // Remettre à zéro les analytics d'un restaurant (admin uniquement)
+  resetRestaurantAnalytics: async (restaurantId: string, completeReset: boolean = true) => {
+    try {
+      console.log(`🔍 État avant reset pour ${restaurantId}:`);
+      console.log(`   • Total vues en mémoire: ${viewsStorage.length}`);
+      console.log(`   • Total sessions en mémoire: ${sessionsStorage.length}`);
+      
+      // Supprimer toutes les vues du restaurant
+      const viewsBeforeReset = viewsStorage.filter(v => v.restaurantId === restaurantId);
+      console.log(`   • Vues à supprimer pour ${restaurantId}:`, viewsBeforeReset.length);
+      console.log(`   • IDs des vues à supprimer:`, viewsBeforeReset.map(v => v.id));
+      
+      viewsStorage = viewsStorage.filter(v => v.restaurantId !== restaurantId);
+      
+      // Supprimer toutes les sessions du restaurant
+      const sessionsBeforeReset = sessionsStorage.filter(s => s.restaurantId === restaurantId);
+      console.log(`   • Sessions à supprimer pour ${restaurantId}:`, sessionsBeforeReset.length);
+      
+      sessionsStorage = sessionsStorage.filter(s => s.restaurantId !== restaurantId);
+      
+      console.log(`🔍 État après suppression:`);
+      console.log(`   • Total vues restantes: ${viewsStorage.length}`);
+      console.log(`   • Total sessions restantes: ${sessionsStorage.length}`);
+      
+      let regeneratedData = false;
+      if (completeReset) {
+        // Régénérer les données de base seulement si demandé
+        console.log(`🔄 Régénération des données de base pour ${restaurantId}...`);
+        await initializeBaseDataForRestaurant(restaurantId);
+        regeneratedData = true;
+        console.log(`   • Vues après régénération: ${viewsStorage.filter(v => v.restaurantId === restaurantId).length}`);
+      }
+      
+      const result = {
+        success: true,
+        restaurantId,
+        viewsRemoved: viewsBeforeReset.length,
+        sessionsRemoved: sessionsBeforeReset.length,
+        regeneratedData,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log(`🗑️ Analytics ${completeReset ? 'réinitialisé' : 'remis à zéro'} pour ${restaurantId}:`, result);
+      return result;
+    } catch (error) {
+      console.error(`❌ Erreur lors du reset des analytics pour ${restaurantId}:`, error);
+      throw error;
+    }
   },
 }; 

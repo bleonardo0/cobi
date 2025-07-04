@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
 
     // Obtenir les stats générales
     const generalStats = await analyticsStorage.getGeneralStats(restaurantId || undefined);
+    console.log('📈 Stats générales récupérées:', generalStats);
     
     // Obtenir les stats par modèle
     const modelStats = await analyticsStorage.getModelStats(restaurantId || undefined);

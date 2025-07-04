@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { Model3D } from "@/types/model";
 import { getAllModels } from "@/lib/models";
 
@@ -39,13 +40,46 @@ export default function InsightsPage() {
     fetchAnalyticsData();
   }, []);
 
+  // Fonction pour obtenir l'ID du restaurant (peut être étendue plus tard)
+  const getRestaurantId = (): string => {
+    // Pour l'instant, utiliser bella-vita par défaut
+    // Plus tard, ceci pourrait être un paramètre URL ou récupéré depuis l'utilisateur
+    const defaultRestaurantId = 'restaurant-bella-vita-1';
+    
+    // Vérifier s'il y a un paramètre URL (pour le futur)
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const restaurantParam = urlParams.get('restaurant');
+      
+      if (restaurantParam) {
+        const restaurantMapping: Record<string, string> = {
+          'bella-vita': 'restaurant-bella-vita-1',
+          'le-gourmet': 'restaurant-test-123',
+          'test': 'restaurant-test-123'
+        };
+        return restaurantMapping[restaurantParam] || defaultRestaurantId;
+      }
+    }
+    
+    return defaultRestaurantId;
+  };
+
   const fetchAnalyticsData = async () => {
     try {
       if (!analyticsData) {
         setIsLoading(true);
       }
       
-      const response = await fetch('/api/analytics/stats?restaurantId=restaurant-test-123');
+      const restaurantId = getRestaurantId();
+      console.log('🔄 Rechargement des analytics pour:', restaurantId);
+      
+      const response = await fetch(`/api/analytics/stats?restaurantId=${restaurantId}`, {
+        cache: 'no-store', // Forcer le rechargement des données
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      });
+      
       if (!response.ok) {
         throw new Error('Erreur lors du chargement des analytics');
       }
@@ -54,6 +88,7 @@ export default function InsightsPage() {
       if (data.success) {
         setAnalyticsData(data.data);
         setLastRefresh(new Date().toLocaleTimeString('fr-FR'));
+        console.log('📊 Analytics rechargés:', data.data.general);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des analytics:', error);
@@ -92,15 +127,26 @@ export default function InsightsPage() {
                 </p>
               )}
             </div>
-            <button
-              onClick={fetchAnalyticsData}
-              className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-            >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Actualiser
-            </button>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/restaurant/dashboard"
+                className="inline-flex items-center px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Dashboard
+              </Link>
+              <button
+                onClick={fetchAnalyticsData}
+                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Actualiser
+              </button>
+            </div>
           </div>
           
           {/* Filtres de temps */}
@@ -140,7 +186,7 @@ export default function InsightsPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-xs text-green-600 mt-2">+12% vs période précédente</p>
+            <p className="text-xs text-gray-500 mt-2">Période actuelle</p>
           </motion.div>
 
           <motion.div
@@ -160,7 +206,7 @@ export default function InsightsPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-xs text-green-600 mt-2">+8% vs période précédente</p>
+            <p className="text-xs text-gray-500 mt-2">Période actuelle</p>
           </motion.div>
 
           <motion.div

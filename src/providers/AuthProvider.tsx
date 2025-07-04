@@ -37,27 +37,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkAuthStatus = async () => {
     try {
-      // D'abord, essayer de récupérer depuis localStorage
+      // Vérifier si nous sommes côté client (pas SSR)
+      if (typeof window === 'undefined') {
+        setIsLoading(false);
+        return;
+      }
+
+      // Récupérer depuis localStorage
       const savedUser = localStorage.getItem('user');
       if (savedUser) {
         const userData = JSON.parse(savedUser);
-        setUser(userData);
-      }
-
-      // Puis vérifier avec le serveur
-      const response = await fetch('/api/auth/me');
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      } else {
-        // Token invalide ou expiré
-        localStorage.removeItem('user');
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-      localStorage.removeItem('user');
+        
+        // Vérifier que les données sont valides
+        if (userData && userData.id && userData.email && userData.role) {
+          setUser(userData);
+          console.log('✅ Utilisateur récupéré depuis localStorage:', userData.email);
+                 } else {
+           // Données corrompues
+           localStorage.removeItem('user');
+           setUser(null);
+           console.log('❌ Données utilisateur corrompues, suppression');
+         }
+       } else {
+         setUser(null);
+         console.log('ℹ️ Aucun utilisateur sauvegardé');
+       }
+     } catch (error) {
+       console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+       if (typeof window !== 'undefined') {
+         localStorage.removeItem('user');
+       }
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -67,47 +76,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simuler l'appel API de login avec comptes de démonstration
+      // Comptes de démonstration pour les tests
       const demoUsers: Record<string, User> = {
-        'owner@demo.com': {
-          id: 'owner-1',
-          email: 'owner@demo.com',
-          name: 'Pierre Proprietaire',
-          role: 'owner',
-          restaurantId: 'restaurant-1',
+        'admin@cobi.com': {
+          id: 'admin-uuid',
+          email: 'admin@cobi.com',
+          name: 'Administrateur Cobi',
+          role: 'admin',
+          restaurantId: undefined,
           createdAt: new Date().toISOString(),
           isActive: true,
           avatar: undefined,
           lastLogin: new Date().toISOString()
         },
-        'manager@demo.com': {
-          id: 'manager-1',
-          email: 'manager@demo.com',
-          name: 'Marie Manager',
-          role: 'manager',
-          restaurantId: 'restaurant-1',
-          createdAt: new Date().toISOString(),
-          isActive: true,
-          avatar: undefined,
-          lastLogin: new Date().toISOString()
-        },
-        'photographer@demo.com': {
-          id: 'photographer-1',
-          email: 'photographer@demo.com',
-          name: 'Paul Photographe',
-          role: 'photographer',
-          restaurantId: 'restaurant-1',
-          createdAt: new Date().toISOString(),
-          isActive: true,
-          avatar: undefined,
-          lastLogin: new Date().toISOString()
-        },
-        'viewer@demo.com': {
-          id: 'viewer-1',
-          email: 'viewer@demo.com',
-          name: 'Victor Viewer',
-          role: 'viewer',
-          restaurantId: 'restaurant-1',
+        'bellavita@cobi.com': {
+          id: 'bellavita-uuid',
+          email: 'bellavita@cobi.com',
+          name: 'Manager Bella Vita',
+          role: 'restaurateur',
+          restaurantId: 'bella-vita-uuid',
           createdAt: new Date().toISOString(),
           isActive: true,
           avatar: undefined,
@@ -115,11 +102,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       };
 
-      // Vérifier les comptes de démonstration
+      // Vérifier les comptes de démonstration (mot de passe simple pour les tests)
       if (demoUsers[email] && password === 'demo123') {
         const userData = demoUsers[email];
         setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // Sauvegarder en localStorage si côté client
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+        
+        console.log('✅ Connexion réussie:', userData.email);
         return;
       }
 
@@ -137,7 +130,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const data = await response.json();
       setUser(data.user);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Sauvegarder en localStorage si côté client
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -148,10 +145,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
     
-    // Optionnel: appel API pour invalider le token côté serveur
-    fetch('/api/auth/logout', { method: 'POST' }).catch(console.error);
+    // Vérifier si nous sommes côté client avant d'accéder à localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user');
+    }
+    
+    console.log('🚪 Utilisateur déconnecté');
   };
 
   const canPerform = (resource: Permission['resource'], action: Permission['action']): boolean => {

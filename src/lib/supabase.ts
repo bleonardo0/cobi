@@ -26,6 +26,71 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 export interface Database {
   public: {
     Tables: {
+      restaurants: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          address: string;
+          phone: string | null;
+          email: string | null;
+          website: string | null;
+          description: string | null;
+          short_description: string | null;
+          logo_url: string | null;
+          primary_color: string | null;
+          secondary_color: string | null;
+          rating: number | null;
+          allergens: string[] | null;
+          subscription_status: 'active' | 'inactive' | 'pending';
+          subscription_plan: 'basic' | 'premium';
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          slug: string;
+          address: string;
+          phone?: string | null;
+          email?: string | null;
+          website?: string | null;
+          description?: string | null;
+          short_description?: string | null;
+          logo_url?: string | null;
+          primary_color?: string | null;
+          secondary_color?: string | null;
+          rating?: number | null;
+          allergens?: string[] | null;
+          subscription_status?: 'active' | 'inactive' | 'pending';
+          subscription_plan?: 'basic' | 'premium';
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          slug?: string;
+          address?: string;
+          phone?: string | null;
+          email?: string | null;
+          website?: string | null;
+          description?: string | null;
+          short_description?: string | null;
+          logo_url?: string | null;
+          primary_color?: string | null;
+          secondary_color?: string | null;
+          rating?: number | null;
+          allergens?: string[] | null;
+          subscription_status?: 'active' | 'inactive' | 'pending';
+          subscription_plan?: 'basic' | 'premium';
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       models_3d: {
         Row: {
           id: string;

@@ -1,20 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase';
 
-// Restaurant fictif pour le test
-const TEST_RESTAURANT = {
-  id: 'restaurant-test-123',
-  name: 'Le Gourmet 3D',
-  slug: 'le-gourmet-3d',
-  description: 'Découvrez notre menu en 3D - Une expérience culinaire immersive',
-  address: '123 Rue de la Gastronomie, 75001 Paris',
-  phone: '+33 1 23 45 67 89',
-  website: 'https://legourmet3d.fr',
-  logo: '/api/placeholder/logo-restaurant.png',
-  primaryColor: '#2563eb',
-  secondaryColor: '#7c3aed',
-  isActive: true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
+// Restaurants fictifs pour le test
+const TEST_RESTAURANTS = {
+  'le-gourmet-3d': {
+    id: 'restaurant-test-123',
+    name: 'Le Gourmet 3D',
+    slug: 'le-gourmet-3d',
+    description: 'Découvrez notre menu en 3D - Une expérience culinaire immersive',
+    address: '123 Rue de la Gastronomie, 75001 Paris',
+    phone: '+33 1 23 45 67 89',
+    website: 'https://legourmet3d.fr',
+    logo: '/api/placeholder/logo-restaurant.png',
+    primaryColor: '#2563eb',
+    secondaryColor: '#7c3aed',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  'bella-vita': {
+    id: 'restaurant-bella-vita-1',
+    name: 'La Bella Vita',
+    slug: 'bella-vita',
+    description: 'Découvrez notre menu italien en 3D - Une expérience culinaire immersive',
+    address: '123 Rue de la Paix, 75001 Paris',
+    phone: '+33 1 42 86 87 88',
+    website: 'https://bellavita.fr',
+    logo: '/api/placeholder/logo-bellavita.png',
+    primaryColor: '#0a5b48',
+    secondaryColor: '#d97706',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
 };
 
 export async function GET(
@@ -26,11 +44,60 @@ export async function GET(
     
     console.log(`🏪 Fetching restaurant with slug: ${slug}`);
     
-    // Pour le moment, on utilise un restaurant fictif
-    if (slug === 'le-gourmet-3d' || slug === 'test') {
+    // Si Supabase est configuré, essayer de récupérer depuis la base
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('restaurants')
+          .select('*')
+          .eq('slug', slug)
+          .eq('is_active', true)
+          .single();
+
+        if (!error && data) {
+          // Restaurant trouvé dans Supabase
+          const restaurant = {
+            id: data.id,
+            name: data.name,
+            slug: data.slug,
+            description: data.description || data.short_description,
+            address: data.adress, // Note: conversion du typo
+            phone: data.phone,
+            website: data.website,
+            logo: data.logo_url,
+            primaryColor: data.primary_color,
+            secondaryColor: data.secondary_color,
+            isActive: data.is_active,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
+          };
+
+          return NextResponse.json({
+            success: true,
+            restaurant: restaurant,
+          });
+        }
+      } catch (supabaseError) {
+        console.warn('Erreur Supabase, fallback vers données fictives:', supabaseError);
+      }
+    }
+
+
+    
+    // Fallback: utiliser les restaurants fictifs par défaut
+    const restaurant = TEST_RESTAURANTS[slug as keyof typeof TEST_RESTAURANTS];
+    if (restaurant) {
       return NextResponse.json({
         success: true,
-        restaurant: TEST_RESTAURANT,
+        restaurant: restaurant,
+      });
+    }
+    
+    // Support pour le slug 'test' (redirige vers le-gourmet-3d)
+    if (slug === 'test') {
+      return NextResponse.json({
+        success: true,
+        restaurant: TEST_RESTAURANTS['le-gourmet-3d'],
       });
     }
     

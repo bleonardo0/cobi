@@ -13,8 +13,8 @@ export async function GET(
     // Récupérer tous les modèles
     const allModels = await getAllModels();
     
-    // Pour le restaurant de test, on retourne tous les modèles existants
-    if (slug === 'le-gourmet-3d' || slug === 'test') {
+    // Pour les restaurants de test, on retourne tous les modèles existants
+    if (slug === 'le-gourmet-3d' || slug === 'bella-vita' || slug === 'test') {
       return NextResponse.json({
         success: true,
         models: allModels,

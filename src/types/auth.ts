@@ -1,5 +1,5 @@
 // Types pour l'authentification et l'autorisation
-export type UserRole = 'owner' | 'manager' | 'photographer' | 'viewer';
+export type UserRole = 'admin' | 'restaurateur';
 
 export interface User {
   id: string;
@@ -7,14 +7,14 @@ export interface User {
   name: string;
   avatar?: string;
   role: UserRole;
-  restaurantId: string;
+  restaurantId?: string; // nullable pour les admins
   createdAt: string;
   lastLogin?: string;
   isActive: boolean;
 }
 
 export interface Permission {
-  resource: 'models' | 'users' | 'analytics' | 'settings';
+  resource: 'models' | 'users' | 'analytics' | 'settings' | 'restaurants' | 'subscriptions';
   action: 'create' | 'read' | 'update' | 'delete' | 'manage';
 }
 
@@ -28,9 +28,9 @@ export interface RolePermissions {
 
 // Définition des permissions par rôle
 export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
-  owner: {
-    role: 'owner',
-    description: 'Accès complet au système',
+  admin: {
+    role: 'admin',
+    description: 'Accès complet au système - Gestion globale',
     color: 'red',
     icon: '👑',
     permissions: [
@@ -38,40 +38,19 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       { resource: 'users', action: 'manage' },
       { resource: 'analytics', action: 'manage' },
       { resource: 'settings', action: 'manage' },
+      { resource: 'restaurants', action: 'manage' },
+      { resource: 'subscriptions', action: 'manage' },
     ]
   },
-  manager: {
-    role: 'manager',
-    description: 'Gestion des modèles et utilisateurs',
+  restaurateur: {
+    role: 'restaurateur',
+    description: 'Gestion complète de son restaurant',
     color: 'blue',
-    icon: '🎯',
+    icon: '🍽️',
     permissions: [
       { resource: 'models', action: 'manage' },
-      { resource: 'users', action: 'read' },
       { resource: 'analytics', action: 'read' },
-      { resource: 'settings', action: 'read' },
-    ]
-  },
-  photographer: {
-    role: 'photographer',
-    description: 'Upload et édition des modèles 3D',
-    color: 'green',
-    icon: '📸',
-    permissions: [
-      { resource: 'models', action: 'create' },
-      { resource: 'models', action: 'read' },
-      { resource: 'models', action: 'update' },
-      { resource: 'analytics', action: 'read' },
-    ]
-  },
-  viewer: {
-    role: 'viewer',
-    description: 'Consultation uniquement',
-    color: 'gray',
-    icon: '👁️',
-    permissions: [
-      { resource: 'models', action: 'read' },
-      { resource: 'analytics', action: 'read' },
+      { resource: 'settings', action: 'update' },
     ]
   }
 };
