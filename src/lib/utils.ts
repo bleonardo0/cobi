@@ -6,27 +6,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function generateSlug(filename: string): string {
-  const baseSlug = filename
-    .toLowerCase()
-    .replace(/\.[^/.]+$/, "") // Remove file extension
-    .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric with hyphens
-    .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
-  
-  // Add timestamp to ensure uniqueness
-  const timestamp = Date.now().toString(36); // Convert to base36 for shorter string
-  return `${baseSlug}-${timestamp}`;
-}
-
 export function validateFileType(file: File): boolean {
   const supportedTypes: SupportedMimeTypes[] = [
-    'model/vnd.usdz+zip',
     'model/gltf-binary',
     'model/gltf+json'
   ];
   
   return supportedTypes.includes(file.type as SupportedMimeTypes) ||
-         file.name.toLowerCase().endsWith('.usdz') ||
          file.name.toLowerCase().endsWith('.glb') ||
          file.name.toLowerCase().endsWith('.gltf');
 }
@@ -44,7 +30,7 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
   if (!validateFileType(file)) {
     return {
       valid: false,
-      error: `Le fichier ${file.name} n'est pas un format supporté (USDZ, GLB, GLTF)`
+      error: `Le fichier ${file.name} n'est pas un format supporté (GLB, GLTF)`
     };
   }
 
@@ -53,11 +39,9 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
 
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
-  
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
@@ -65,8 +49,6 @@ export function getMimeTypeFromExtension(filename: string): SupportedMimeTypes {
   const extension = filename.toLowerCase().split('.').pop();
   
   switch (extension) {
-    case 'usdz':
-      return 'model/vnd.usdz+zip';
     case 'glb':
       return 'model/gltf-binary';
     case 'gltf':
@@ -74,4 +56,28 @@ export function getMimeTypeFromExtension(filename: string): SupportedMimeTypes {
     default:
       return 'model/gltf-binary';
   }
+}
+
+export function isModelFile(filename: string): boolean {
+  const extension = filename.toLowerCase().split('.').pop();
+  return extension === 'glb' || extension === 'gltf';
+}
+
+export function getFileExtension(filename: string): string {
+  return filename.toLowerCase().split('.').pop() || '';
+}
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function generateSlug(text: string): string {
+  const baseSlug = slugify(text);
+  const timestamp = Date.now().toString(36);
+  return `${baseSlug}-${timestamp}`;
 } 

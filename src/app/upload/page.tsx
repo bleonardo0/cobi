@@ -16,14 +16,13 @@ export default function UploadPage() {
   };
 
   const pageVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: {
+      opacity: 0,
+      y: 20,
+    },
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut",
-      },
     },
   };
 
@@ -57,7 +56,7 @@ export default function UploadPage() {
                   Télécharger un modèle
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  Ajoutez vos modèles 3D USDZ, GLB ou GLTF à la galerie
+                  Ajoutez vos modèles 3D GLB ou GLTF à la galerie
                 </p>
               </div>
             </div>
@@ -133,7 +132,7 @@ export default function UploadPage() {
                       <div>
                         <p className="font-medium text-gray-900">{model.name}</p>
                         <p className="text-sm text-gray-500">
-                          {model.mimeType.includes('usdz') ? 'USDZ' : 'GLB/GLTF'}
+                          {model.filename.toLowerCase().endsWith('.glb') ? 'GLB' : 'GLTF'}
                         </p>
                       </div>
                     </div>
@@ -178,12 +177,15 @@ export default function UploadPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
               <div>
-                <h4 className="font-medium mb-2">Formats recommandés :</h4>
+                <h4 className="font-medium mb-2">Formats supportés :</h4>
                 <ul className="space-y-1">
-                  <li>• <strong>USDZ</strong> : Optimal pour la réalité augmentée sur iOS</li>
-                  <li>• <strong>GLB</strong> : Format binaire compact pour le web</li>
+                  <li>• <strong>GLB</strong> : Format binaire compact et universel</li>
                   <li>• <strong>GLTF</strong> : Format JSON avec assets séparés</li>
+                  <li>• <strong>Compatibilité</strong> : Fonctionne sur tous les appareils</li>
                 </ul>
+                <div className="mt-2 text-xs bg-blue-100 rounded p-2">
+                  <strong>AR incluse :</strong> WebXR + Quick Look sur iPhone
+                </div>
               </div>
               
               <div>
@@ -201,17 +203,26 @@ export default function UploadPage() {
                   <li>• Limitez la taille des fichiers (max 50MB)</li>
                   <li>• Optimisez les textures pour le web</li>
                   <li>• Réduisez le nombre de polygones si nécessaire</li>
+                  <li>• Utilisez la compression Draco si possible</li>
                 </ul>
               </div>
               
               <div>
-                <h4 className="font-medium mb-2">Conseils :</h4>
+                <h4 className="font-medium mb-2">Avantages GLB/GLTF :</h4>
                 <ul className="space-y-1">
-                  <li>• L'image de prévisualisation améliore l'apparence dans la galerie</li>
-                  <li>• Sans image, le modèle 3D sera affiché directement</li>
-                  <li>• Vous pouvez toujours ajouter une image plus tard</li>
+                  <li>• Fonctionne sur iPhone, Android, PC, Mac</li>
+                  <li>• Réalité augmentée native sur mobile</li>
+                  <li>• Chargement plus rapide</li>
+                  <li>• Standard de l'industrie</li>
                 </ul>
               </div>
+            </div>
+            
+            <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+              <p className="text-sm text-blue-900">
+                <strong>💡 Astuce :</strong> Les fichiers GLB offrent la meilleure compatibilité et fonctionnent parfaitement 
+                pour la visualisation 3D et la réalité augmentée sur tous les appareils, y compris iPhone via Safari.
+              </p>
             </div>
           </motion.div>
         </motion.div>

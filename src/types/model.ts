@@ -11,14 +11,6 @@ export interface Model3D {
   storagePath: string;
   thumbnailUrl?: string;
   thumbnailPath?: string;
-  // Nouveaux champs pour supporter GLB + USDZ
-  glbUrl?: string;
-  glbPath?: string;
-  glbFileSize?: number;
-  usdzUrl?: string;
-  usdzPath?: string;
-  usdzFileSize?: number;
-  format?: string;
   // Nouveaux champs pour la catégorisation
   category?: string;
   tags?: string[];
@@ -45,10 +37,58 @@ export interface ModelsResponse {
   total: number;
 }
 
+// Types de fichiers supportés (GLB/GLTF seulement)
 export type SupportedMimeTypes = 
-  | 'model/vnd.usdz+zip'
   | 'model/gltf-binary'
   | 'model/gltf+json';
+
+// Extensions de fichiers supportées
+export const SUPPORTED_EXTENSIONS = ['.glb', '.gltf'] as const;
+export type SupportedExtensions = typeof SUPPORTED_EXTENSIONS[number];
+
+// Modèles de test pour le développement
+export const SAMPLE_MODELS: Model3D[] = [
+  {
+    id: '1',
+    name: 'Pizza Margherita',
+    filename: 'pizza-margherita.glb',
+    originalName: 'pizza-margherita.glb',
+    url: '/models/pizza-margherita.glb',
+    fileSize: 2457600, // 2.4MB
+    uploadDate: new Date('2024-01-20').toISOString(),
+    mimeType: 'model/gltf-binary',
+    slug: 'pizza-margherita',
+    storagePath: 'models/pizza-margherita.glb',
+    thumbnailUrl: '/models/pizza-margherita-thumb.jpg',
+    category: 'plats',
+    tags: ['italien', 'végétarien'],
+    description: 'Pizza traditionnelle italienne avec mozzarella et basilic frais',
+    ingredients: ['Pâte à pizza', 'Sauce tomate', 'Mozzarella', 'Basilic'],
+    price: 12.50,
+    shortDescription: 'Pizza italienne classique',
+    allergens: ['gluten', 'lactose']
+  },
+  {
+    id: '2',
+    name: 'Tiramisu',
+    filename: 'tiramisu.glb',
+    originalName: 'tiramisu.glb',
+    url: '/models/tiramisu.glb',
+    fileSize: 1843200, // 1.8MB
+    uploadDate: new Date('2024-01-21').toISOString(),
+    mimeType: 'model/gltf-binary',
+    slug: 'tiramisu',
+    storagePath: 'models/tiramisu.glb',
+    thumbnailUrl: '/models/tiramisu-thumb.jpg',
+    category: 'desserts',
+    tags: ['italien', 'café'],
+    description: 'Dessert italien traditionnel au café et mascarpone',
+    ingredients: ['Mascarpone', 'Café espresso', 'Biscuits ladyfingers', 'Cacao'],
+    price: 6.90,
+    shortDescription: 'Dessert italien au café',
+    allergens: ['lactose', 'œufs', 'gluten']
+  }
+];
 
 // Types pour le système de catégorisation
 export type MenuCategory = 
@@ -93,14 +133,6 @@ export interface SupabaseModel {
   updated_at: string;
   thumbnail_url?: string;
   thumbnail_path?: string;
-  // Nouveaux champs pour GLB + USDZ
-  glb_url?: string;
-  glb_path?: string;
-  glb_file_size?: number;
-  usdz_url?: string;
-  usdz_path?: string;
-  usdz_file_size?: number;
-  format?: string;
   // Nouveaux champs pour la catégorisation
   category?: string;
   tags?: string[];
@@ -131,14 +163,6 @@ export function convertSupabaseToModel(supabaseModel: SupabaseModel): Model3D {
     storagePath: supabaseModel.storage_path,
     thumbnailUrl: supabaseModel.thumbnail_url,
     thumbnailPath: supabaseModel.thumbnail_path,
-    // Nouveaux champs GLB + USDZ
-    glbUrl: supabaseModel.glb_url,
-    glbPath: supabaseModel.glb_path,
-    glbFileSize: supabaseModel.glb_file_size,
-    usdzUrl: supabaseModel.usdz_url,
-    usdzPath: supabaseModel.usdz_path,
-    usdzFileSize: supabaseModel.usdz_file_size,
-    format: supabaseModel.format,
     // Nouveaux champs catégorisation
     category: supabaseModel.category,
     tags: supabaseModel.tags,

@@ -35,7 +35,7 @@ export default function LoginPage() {
         } else if (currentUser.role === 'restaurateur') {
           router.push('/restaurant/dashboard');
         } else {
-          router.push('/dashboard'); // fallback
+          router.push('/restaurant/dashboard'); // fallback
         }
       }, 100);
     } catch (error) {

@@ -10,7 +10,7 @@ interface BackButtonProps {
 }
 
 export default function BackButton({ 
-  fallbackHref = '/', 
+  fallbackHref = '/restaurant/dashboard', 
   className = "text-gray-500 hover:text-gray-700 transition-colors",
   title = "Retour",
   children 

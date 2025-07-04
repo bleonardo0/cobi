@@ -151,10 +151,10 @@ export default function TestMenuPage() {
               <span className="hidden sm:block text-teal-700 font-medium">Centre de Tests</span>
             </div>
             <Link
-              href="/"
+              href="/restaurant/dashboard"
               className="px-4 py-2 bg-white text-teal-700 border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors text-sm font-medium"
             >
-              ← Retour au Dashboard
+              ← Retour au Dashboard Restaurant
             </Link>
           </div>
         </div>

@@ -190,21 +190,27 @@ export default function ModelDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
-              <BackButton fallbackHref="/" />
+              <Link href="/restaurant/dashboard" className="text-gray-500 hover:text-gray-700 transition-colors" title="Retour au dashboard">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </Link>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
                   {model.name}
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  Modèle 3D • {(() => {
-                    const formats = [];
-                    if (model.glbUrl) formats.push('GLB');
-                    if (model.usdzUrl) formats.push('USDZ');
-                    if (formats.length === 0) {
-                      return model.mimeType.includes('usdz') ? 'USDZ' : 'GLB/GLTF';
-                    }
-                    return formats.join(' + ');
-                  })()}
+                  Modèle 3D • GLB/GLTF
                 </p>
               </div>
             </div>
@@ -269,7 +275,7 @@ export default function ModelDetailPage() {
               <div className="relative h-96 lg:h-[600px] bg-gradient-to-br from-gray-50 to-gray-100">
                 <ModelViewer
                   ref={modelViewerRef}
-                  src={model.glbUrl || model.usdzUrl || model.url}
+                  src={model.url}
                   alt={model.name}
                   className="w-full h-full"
                   style={{
@@ -319,38 +325,12 @@ export default function ModelDetailPage() {
                 
                 <div>
                   <label className="text-sm font-medium text-gray-500">Format(s)</label>
-                  <p className="text-gray-900">
-                    {(() => {
-                      const formats = [];
-                      if (model.glbUrl) formats.push('GLB/GLTF');
-                      if (model.usdzUrl) formats.push('USDZ');
-                      if (formats.length === 0) {
-                        return model.mimeType.includes('usdz') ? 'USDZ' : 'GLB/GLTF';
-                      }
-                      return formats.join(' + ');
-                    })()}
-                  </p>
+                  <p className="text-gray-900">GLB/GLTF</p>
                 </div>
                 
                 <div>
                   <label className="text-sm font-medium text-gray-500">Taille</label>
-                  <div className="text-gray-900">
-                    {model.glbUrl && model.usdzUrl ? (
-                      <div className="space-y-1">
-                        <div className="text-sm">
-                          <span className="font-medium">GLB:</span> {formatFileSize(model.glbFileSize || model.fileSize)}
-                        </div>
-                        <div className="text-sm">
-                          <span className="font-medium">USDZ:</span> {formatFileSize(model.usdzFileSize || 0)}
-                        </div>
-                        <div className="text-xs text-gray-500 pt-1">
-                          Total: {formatFileSize((model.glbFileSize || model.fileSize) + (model.usdzFileSize || 0))}
-                        </div>
-                      </div>
-                    ) : (
-                      <p>{formatFileSize(model.fileSize)}</p>
-                    )}
-                  </div>
+                  <p className="text-gray-900">{formatFileSize(model.fileSize)}</p>
                 </div>
                 
                 <div>
@@ -410,39 +390,35 @@ export default function ModelDetailPage() {
                   <span className="text-gray-900">Contrôles de caméra</span>
                 </div>
                 
-                {(model.usdzUrl || model.mimeType === 'model/vnd.usdz+zip') && (
-                  <div className="flex items-center">
-                    <svg
-                      className="w-5 h-5 text-green-600 mr-3"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-gray-900">Réalité augmentée (iOS/Safari)</span>
-                  </div>
-                )}
+                <div className="flex items-center">
+                  <svg
+                    className="w-5 h-5 text-green-600 mr-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="text-gray-900">Réalité augmentée (iOS/Safari)</span>
+                </div>
                 
-                {model.glbUrl && (
-                  <div className="flex items-center">
-                    <svg
-                      className="w-5 h-5 text-green-600 mr-3"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-gray-900">Hotspots interactifs</span>
-                  </div>
-                )}
+                <div className="flex items-center">
+                  <svg
+                    className="w-5 h-5 text-green-600 mr-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="text-gray-900">Hotspots interactifs</span>
+                </div>
                 
                 <div className="flex items-center">
                   <svg

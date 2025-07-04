@@ -1,178 +1,339 @@
 'use client';
 
-import { useRef, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Model3D } from "@/types/model";
-import { formatFileSize } from "@/lib/utils";
-import { useModelViews } from "@/hooks/useModelViews";
-import { useScrollPosition } from "@/hooks/useScrollPosition";
-import Link from "next/link";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { Model3D } from '@/types/model';
+import { formatFileSize } from '@/lib/utils';
 
 interface ModelCardProps {
   model: Model3D;
+  onDelete?: (id: string) => void;
+  onEdit?: (model: Model3D) => void;
+  showActions?: boolean;
+  isAdmin?: boolean;
+  clickable?: boolean;
 }
 
-export default function ModelCard({ model }: ModelCardProps) {
-  const { views, isLoading: viewsLoading } = useModelViews(model.id);
-  const { saveScrollPosition } = useScrollPosition('gallery', false);
-  
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
+const ModelCard = ({
+  model,
+  onDelete,
+  onEdit,
+  showActions = false,
+  isAdmin = false,
+  clickable = true
+}: ModelCardProps) => {
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const hoverVariants = {
-    scale: 1.02
-  };
-
-  const handleClick = () => {
-    // Sauvegarder la position de scroll avant la navigation
-    saveScrollPosition();
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR');
-  };
-
-  const getFileFormats = (model: Model3D) => {
-    const formats = [];
-    if (model.glbUrl) formats.push('GLB');
-    if (model.usdzUrl) formats.push('USDZ');
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onDelete) return;
     
-    // Fallback vers l'ancien système si pas de nouveaux champs
-    if (formats.length === 0) {
-      if (model.mimeType.includes('usdz')) return ['USDZ'];
-      if (model.mimeType.includes('gltf-binary')) return ['GLB'];
-      if (model.mimeType.includes('gltf')) return ['GLTF'];
-      return ['Unknown'];
+    setIsDeleting(true);
+    try {
+      await onDelete(model.id);
+    } catch (error) {
+      console.error('Error deleting model:', error);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
-    
-    return formats;
   };
 
-  return (
-    <Link href={`/models/${model.slug}`} onClick={handleClick}>
-      <motion.div
-        variants={cardVariants}
-        initial="hidden"
-        animate="visible"
-        whileHover={hoverVariants}
-        className="card-modern card-hover overflow-hidden cursor-pointer animate-scale-in h-96 flex flex-col"
-      >
-        {/* Preview Area */}
-        <div className="relative h-56 gradient-bg-soft flex-shrink-0">
-          {model.thumbnailUrl ? (
-            // Afficher l'image de prévisualisation si disponible
-            <img
-              src={model.thumbnailUrl}
-              alt={`Prévisualisation de ${model.name}`}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            // Placeholder simple si pas d'image
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="text-center animate-pulse-soft">
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                     style={{ backgroundColor: 'rgba(30, 64, 175, 0.1)' }}>
-                  <svg
-                    className="w-10 h-10"
-                    style={{ color: 'var(--color-primary)' }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                    />
-                  </svg>
-                </div>
-                <p className="text-base font-semibold mb-1">Modèle 3D</p>
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  {getFileFormats(model).join(' + ')}
-                </p>
+  const handleEdit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onEdit?.(model);
+  };
+
+  const handleImageLoad = () => {
+    setIsImageLoaded(true);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setIsImageLoaded(true);
+  };
+
+  const getFileExtension = (filename: string) => {
+    return filename.split('.').pop()?.toUpperCase() || 'GLB';
+  };
+
+  const formatUploadDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getCategoryIcon = (category?: string) => {
+    switch (category) {
+      case 'entrees':
+        return '🥗';
+      case 'plats':
+        return '🍽️';
+      case 'desserts':
+        return '🍰';
+      case 'boissons':
+        return '🥤';
+      default:
+        return '📦';
+    }
+  };
+
+  const getCategoryName = (category?: string) => {
+    switch (category) {
+      case 'entrees':
+        return 'Entrées';
+      case 'plats':
+        return 'Plats';
+      case 'desserts':
+        return 'Desserts';
+      case 'boissons':
+        return 'Boissons';
+      default:
+        return 'Autres';
+    }
+  };
+
+  const cardContent = (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 group ${
+        clickable ? 'cursor-pointer' : ''
+      }`}
+    >
+      {/* Image/Thumbnail Section */}
+      <div className="relative aspect-square bg-gray-100 overflow-hidden">
+        {model.thumbnailUrl && !imageError ? (
+          <img
+            src={model.thumbnailUrl}
+            alt={model.name}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${
+              isImageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="text-center">
+              <div className="text-4xl mb-2">🎲</div>
+              <div className="text-xs text-gray-500 font-medium">
+                {getFileExtension(model.filename)}
               </div>
             </div>
-          )}
-          
-          {/* Format Badge */}
-          <div className="absolute top-3 right-3">
-            <span className="glass-effect px-2.5 py-1.5 rounded-lg text-xs font-semibold"
-                  style={{ color: 'var(--color-text-primary)' }}>
-              {getFileFormats(model).join(' + ')}
+          </div>
+        )}
+
+        {/* Loading overlay */}
+        {!isImageLoaded && model.thumbnailUrl && !imageError && (
+          <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
+        {/* Category badge */}
+        {model.category && (
+          <div className="absolute top-2 left-2">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white/90 text-gray-700 backdrop-blur-sm">
+              <span className="mr-1">{getCategoryIcon(model.category)}</span>
+              {getCategoryName(model.category)}
             </span>
           </div>
+        )}
 
-          {/* AR Badge for AR-compatible files */}
-          {(model.usdzUrl || model.mimeType === 'model/vnd.usdz+zip' || model.glbUrl || model.mimeType === 'model/gltf-binary') && (
-            <div className="absolute top-3 left-3">
-              <span 
-                className="text-white px-2.5 py-1.5 rounded-lg text-xs font-bold"
-                style={{ backgroundColor: 'var(--color-primary)' }}
-                title={
-                  model.usdzUrl || model.mimeType === 'model/vnd.usdz+zip' 
-                    ? 'AR disponible sur iOS/Safari'
-                    : 'AR disponible via WebXR sur mobile'
-                }
+        {/* Format badge */}
+        <div className="absolute top-2 right-2">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            {getFileExtension(model.filename)}
+          </span>
+        </div>
+
+        {/* Actions overlay */}
+        {showActions && (
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center space-x-2">
+            <button
+              onClick={handleEdit}
+              className="bg-white/90 text-gray-800 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white transition-colors"
+            >
+              Modifier
+            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="bg-red-600/90 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
               >
-                AR
-              </span>
+                Supprimer
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Navigation hint for clickable cards */}
+        {clickable && !showActions && (
+          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+            <div className="bg-white/90 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium backdrop-blur-sm">
+              Voir les détails →
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Content Section */}
+      <div className="p-4">
+        <div className="space-y-3">
+          {/* Title and price */}
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 truncate">
+                {model.name}
+              </h3>
+              {model.shortDescription && (
+                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                  {model.shortDescription}
+                </p>
+              )}
+            </div>
+            {model.price && (
+              <div className="ml-3 flex-shrink-0">
+                <span className="text-lg font-bold text-green-600">
+                  {model.price.toFixed(2)}€
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Tags */}
+          {model.tags && model.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {model.tags.slice(0, 3).map((tag, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
+                >
+                  {tag}
+                </span>
+              ))}
+              {model.tags.length > 3 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                  +{model.tags.length - 3}
+                </span>
+              )}
             </div>
           )}
 
-          {/* Views Badge */}
-          <div className="absolute bottom-3 left-3">
-            <span className="bg-black/80 backdrop-blur-sm text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <span>{viewsLoading ? '...' : views}</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-5 flex-1 flex flex-col">
-          <div className="flex items-start justify-between mb-3">
-            <h3 className="text-lg font-bold line-clamp-2 flex-1">
-              {model.name}
-            </h3>
-          </div>
-
-          <div className="space-y-2 text-sm mb-4 flex-1">
-            <div className="flex justify-between">
-              <span className="font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                Taille:
-              </span>
-              <span className="font-semibold">
-                {(() => {
-                  if (model.glbUrl && model.usdzUrl) {
-                    const totalSize = (model.glbFileSize || model.fileSize) + (model.usdzFileSize || 0);
-                    return formatFileSize(totalSize);
-                  }
-                  return formatFileSize(model.fileSize);
-                })()}
-              </span>
+          {/* Allergens */}
+          {model.allergens && model.allergens.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {model.allergens.slice(0, 3).map((allergen, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200"
+                >
+                  ⚠️ {allergen}
+                </span>
+              ))}
+              {model.allergens.length > 3 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200">
+                  +{model.allergens.length - 3}
+                </span>
+              )}
             </div>
-            <div className="flex justify-between">
-              <span className="font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                Ajouté:
-              </span>
-              <span className="font-semibold">{formatDate(model.uploadDate)}</span>
-            </div>
-          </div>
+          )}
 
-          <div className="pt-3 border-t mt-auto" style={{ borderColor: 'var(--color-bg-secondary)' }}>
-            <div className="inline-flex items-center font-semibold text-sm transition-colors hover:underline"
-                 style={{ color: 'var(--color-primary)' }}>
-              Voir détails →
+          {/* File info */}
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center space-x-4">
+              <span className="flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                {formatFileSize(model.fileSize)}
+              </span>
+              <span className="flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {formatUploadDate(model.uploadDate)}
+              </span>
             </div>
           </div>
         </div>
-      </motion.div>
-    </Link>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg p-6 max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Supprimer le modèle
+                </h3>
+                <p className="text-gray-600">
+                  Êtes-vous sûr de vouloir supprimer "{model.name}" ? Cette action est irréversible.
+                </p>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 bg-gray-100 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                  disabled={isDeleting}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {isDeleting ? 'Suppression...' : 'Supprimer'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
-} 
+
+  if (clickable && !showActions) {
+    return (
+      <Link href={`/models/${model.slug}`} className="block">
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return cardContent;
+};
+
+export default ModelCard; 
