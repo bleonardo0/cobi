@@ -23,6 +23,7 @@ export default function MenuPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [hotspotsEnabled, setHotspotsEnabled] = useState(true);
 
   const { trackModelView, trackModelViewEnd, trackSessionStart } = useAnalytics(restaurant?.id);
   
@@ -170,23 +171,42 @@ export default function MenuPage() {
               </p>
             </div>
             
-            {/* Bouton Panier */}
-            {posEnabled && canOrder && (
-              <button
-                onClick={() => setIsCartOpen(true)}
-                className="relative bg-white text-teal-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center space-x-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6 0H9.5" />
-                </svg>
-                <span>Panier</span>
-                {!isCartEmpty && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
-                    {getItemCount()}
-                  </span>
-                )}
-              </button>
-            )}
+            <div className="flex items-center space-x-4">
+              {/* Toggle Hotspots */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-white">Hotspots</span>
+                <button
+                  onClick={() => setHotspotsEnabled(!hotspotsEnabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    hotspotsEnabled ? 'bg-green-600' : 'bg-gray-400'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      hotspotsEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              
+              {/* Bouton Panier */}
+              {posEnabled && canOrder && (
+                <button
+                  onClick={() => setIsCartOpen(true)}
+                  className="relative bg-white text-teal-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6 0H9.5" />
+                  </svg>
+                  <span>Panier</span>
+                  {!isCartEmpty && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
+                      {getItemCount()}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -453,7 +473,7 @@ export default function MenuPage() {
             
             <div className="h-96">
               <ModelViewer 
-                src={selectedModel.glbUrl || selectedModel.usdzUrl || selectedModel.url}
+                src={selectedModel.url}
                 alt={selectedModel.name}
                 className="w-full h-full"
               />

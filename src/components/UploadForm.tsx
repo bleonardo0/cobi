@@ -5,6 +5,9 @@ import { motion } from 'framer-motion';
 import { Model3D, SupportedMimeTypes, MenuCategory } from '@/types/model';
 import { formatFileSize } from '@/lib/utils';
 import { MENU_CATEGORIES, PREDEFINED_TAGS, PREDEFINED_ALLERGENS, getCategoryInfo, getTagInfo, getAllergenInfo } from '@/lib/constants';
+import ModelViewer from '@/components/ModelViewer';
+import HotspotButton from '@/components/HotspotButton';
+import HotspotEditor from '@/components/HotspotEditor';
 
 interface UploadFormProps {
   onUploadSuccess: (model: Model3D) => void;
@@ -132,6 +135,17 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
   const [showAllergenDropdown, setShowAllergenDropdown] = useState(false);
   const allergenDropdownRef = useRef<HTMLDivElement>(null);
+
+  // États pour les hotspots
+  const [hotspotsEnabled, setHotspotsEnabled] = useState<boolean>(false);
+  const [nutriScore, setNutriScore] = useState<'A' | 'B' | 'C' | 'D' | 'E' | ''>('');
+  const [securityRisk, setSecurityRisk] = useState<boolean>(false);
+  const [originCountry, setOriginCountry] = useState<string>('');
+  const [transportDistance, setTransportDistance] = useState<string>('');
+  const [carbonFootprint, setCarbonFootprint] = useState<string>('');
+  
+  // État pour l'éditeur de hotspots
+  const [hotspotsConfig, setHotspotsConfig] = useState<any[]>([]);
 
   // Fermer les dropdowns quand on clique ailleurs
   useEffect(() => {
@@ -294,6 +308,25 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
         formData.append('shortDescription', shortDescription);
       }
       formData.append('allergens', JSON.stringify(selectedAllergens));
+      
+      // Ajouter les données des hotspots
+      formData.append('hotspotsEnabled', hotspotsEnabled.toString());
+      if (nutriScore) {
+        formData.append('nutriScore', nutriScore);
+      }
+      formData.append('securityRisk', securityRisk.toString());
+      if (originCountry) {
+        formData.append('originCountry', originCountry);
+      }
+      if (transportDistance) {
+        formData.append('transportDistance', transportDistance);
+      }
+      if (carbonFootprint) {
+        formData.append('carbonFootprint', carbonFootprint);
+      }
+      
+      // Ajouter la configuration des hotspots
+      formData.append('hotspotsConfig', JSON.stringify(hotspotsConfig));
 
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -343,6 +376,15 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
     setShortDescription('');
     setSelectedAllergens([]);
     setShowAllergenDropdown(false);
+    
+    // Reset hotspots
+    setHotspotsEnabled(false);
+    setNutriScore('');
+    setSecurityRisk(false);
+    setOriginCountry('');
+    setTransportDistance('');
+    setCarbonFootprint('');
+    setHotspotsConfig([]);
     
     // Reset file inputs
     const modelInput = document.querySelector('input[type="file"][accept*=".glb"]') as HTMLInputElement;
@@ -778,6 +820,216 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
                 </div>
               </div>
             </div>
+
+            {/* Configuration des hotspots */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-3">Configuration des hotspots</h3>
+              
+              <div className="space-y-4">
+                {/* Toggle principal */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">🎯 Activer les hotspots</h4>
+                    <p className="text-xs text-gray-500">Ajouter des points interactifs sur le modèle 3D</p>
+                  </div>
+                  <button
+                    onClick={() => !isUploading && setHotspotsEnabled(!hotspotsEnabled)}
+                    disabled={isUploading}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      hotspotsEnabled ? 'bg-green-600' : 'bg-gray-200'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        hotspotsEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Configuration des hotspots (visible seulement si activé) */}
+                {hotspotsEnabled && (
+                  <div className="space-y-4 pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      
+                      {/* Sécurité alimentaire */}
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-medium text-gray-900 flex items-center">
+                          <span className="mr-2">🛡️</span>
+                          Sécurité alimentaire
+                        </h5>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-xs text-gray-700">
+                            Nutri-Score
+                          </label>
+                          <select
+                            value={nutriScore}
+                            onChange={(e) => setNutriScore(e.target.value as 'A' | 'B' | 'C' | 'D' | 'E' | '')}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            disabled={isUploading}
+                          >
+                            <option value="">Sélectionner</option>
+                            <option value="A">A - Excellent</option>
+                            <option value="B">B - Bon</option>
+                            <option value="C">C - Moyen</option>
+                            <option value="D">D - Mauvais</option>
+                            <option value="E">E - Très mauvais</option>
+                          </select>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="securityRisk"
+                            checked={securityRisk}
+                            onChange={(e) => setSecurityRisk(e.target.checked)}
+                            className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                            disabled={isUploading}
+                          />
+                          <label htmlFor="securityRisk" className="text-xs text-gray-700">
+                            ⚠️ Risque de sécurité alimentaire
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Traçabilité */}
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-medium text-gray-900 flex items-center">
+                          <span className="mr-2">📍</span>
+                          Traçabilité
+                        </h5>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-xs text-gray-700">
+                            Pays d'origine
+                          </label>
+                          <input
+                            type="text"
+                            value={originCountry}
+                            onChange={(e) => setOriginCountry(e.target.value)}
+                            placeholder="ex: France"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            disabled={isUploading}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-xs text-gray-700">
+                            Distance de transport (km)
+                          </label>
+                          <input
+                            type="number"
+                            value={transportDistance}
+                            onChange={(e) => setTransportDistance(e.target.value)}
+                            placeholder="ex: 150"
+                            min="0"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            disabled={isUploading}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Empreinte carbone */}
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-medium text-gray-900 flex items-center">
+                          <span className="mr-2">🌱</span>
+                          Empreinte carbone
+                        </h5>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-xs text-gray-700">
+                            Émissions CO2 (kg)
+                          </label>
+                          <input
+                            type="number"
+                            value={carbonFootprint}
+                            onChange={(e) => setCarbonFootprint(e.target.value)}
+                            placeholder="ex: 2.5"
+                            min="0"
+                            step="0.1"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            disabled={isUploading}
+                          />
+                          <p className="text-xs text-gray-500">
+                            Émissions de CO2 liées à la production et transport
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Aperçu des hotspots activés */}
+                {hotspotsEnabled && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <h5 className="text-xs font-medium text-blue-900 mb-2">
+                      Aperçu des hotspots qui seront disponibles :
+                    </h5>
+                    <div className="flex flex-wrap gap-1">
+                      {nutriScore && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          🛡️ Nutri-Score {nutriScore}
+                        </span>
+                      )}
+                      {securityRisk && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          ⚠️ Risque sécurité
+                        </span>
+                      )}
+                      {originCountry && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          📍 {originCountry}
+                        </span>
+                      )}
+                      {transportDistance && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          🚚 {transportDistance} km
+                        </span>
+                      )}
+                      {carbonFootprint && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          🌱 {carbonFootprint} kg CO2
+                        </span>
+                      )}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        ⭐ Notation
+                      </span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        📤 Partage
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Éditeur de hotspots interactif */}
+            {hotspotsEnabled && selectedModelFile && modelPreviewUrl && (
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-medium text-gray-900 mb-3">🎯 Éditeur de hotspots</h3>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <div className="flex items-start">
+                    <svg className="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-blue-800">
+                        Placez les hotspots en cliquant sur le modèle 3D. Vous pourrez les repositionner en mode édition.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <HotspotEditor
+                  modelSrc={modelPreviewUrl}
+                  modelName={modelName || selectedModelFile.name}
+                  initialHotspots={hotspotsConfig}
+                  onHotspotsChange={setHotspotsConfig}
+                  className="scale-90"
+                />
+              </div>
+            )}
 
             {/* Error message */}
             {uploadError && (

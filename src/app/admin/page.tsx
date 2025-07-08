@@ -60,18 +60,7 @@ export default function AdminDashboard() {
         value: stats.activeRestaurants
       }
     },
-    {
-      id: 'models',
-      title: 'Gestion des modèles',
-      description: 'Upload, édition et organisation des modèles 3D',
-      icon: '🎯',
-      href: '/upload',
-      color: 'from-blue-500 to-blue-600',
-      stats: {
-        label: 'Modèles totaux',
-        value: stats.totalModels
-      }
-    },
+
     {
       id: 'analytics',
       title: 'Analytics & Insights',

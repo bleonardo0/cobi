@@ -28,6 +28,16 @@ interface Model3D {
   fileSize: number;
   createdAt: string;
   publicUrl: string;
+  slug?: string;
+  // Champs hotspots
+  hotspotsEnabled?: boolean;
+  nutriScore?: 'A' | 'B' | 'C' | 'D' | 'E';
+  securityRisk?: boolean;
+  originCountry?: string;
+  transportDistance?: number;
+  carbonFootprint?: number;
+  averageRating?: number;
+  ratingCount?: number;
 }
 
 export default function RestaurantManagePage() {
@@ -47,6 +57,7 @@ export default function RestaurantManagePage() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
 
   const { user } = useAuth();
 
@@ -116,14 +127,24 @@ export default function RestaurantManagePage() {
         if (modelsResponse.ok) {
           const modelsData = await modelsResponse.json();
           if (modelsData.models && Array.isArray(modelsData.models)) {
-            realModels = modelsData.models.map((model: any) => ({
-              id: model.id,
-              name: model.name,
-              category: model.category,
-              fileSize: model.fileSize || 0,
-              createdAt: model.createdAt,
-              publicUrl: model.publicUrl
-            }));
+                      realModels = modelsData.models.map((model: any) => ({
+            id: model.id,
+            name: model.name,
+            category: model.category,
+            fileSize: model.fileSize || 0,
+            createdAt: model.createdAt,
+            publicUrl: model.publicUrl,
+            slug: model.slug,
+            // Champs hotspots
+            hotspotsEnabled: model.hotspotsEnabled || false,
+            nutriScore: model.nutriScore,
+            securityRisk: model.securityRisk || false,
+            originCountry: model.originCountry,
+            transportDistance: model.transportDistance,
+            carbonFootprint: model.carbonFootprint,
+            averageRating: model.averageRating,
+            ratingCount: model.ratingCount || 0
+          }));
             console.log('🔍 Vrais modèles récupérés:', realModels.length, 'modèles');
           }
         }
@@ -194,6 +215,28 @@ export default function RestaurantManagePage() {
     // TODO: Appel API pour supprimer le modèle
     setModels(models.filter(m => m.id !== modelId));
     alert('Modèle supprimé');
+  };
+
+  const toggleHotspots = async (modelId: string) => {
+    setModels(models.map(model => 
+      model.id === modelId 
+        ? { ...model, hotspotsEnabled: !model.hotspotsEnabled }
+        : model
+    ));
+    // TODO: Appel API pour sauvegarder
+  };
+
+  const updateHotspotData = async (modelId: string, field: string, value: any) => {
+    setModels(models.map(model => 
+      model.id === modelId 
+        ? { ...model, [field]: value }
+        : model
+    ));
+    // TODO: Appel API pour sauvegarder
+  };
+
+  const toggleExpandModel = (modelId: string) => {
+    setExpandedModelId(expandedModelId === modelId ? null : modelId);
   };
 
   const handleSaveRestaurant = async (e: React.FormEvent) => {
@@ -581,47 +624,201 @@ export default function RestaurantManagePage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold" style={{ color: '#1f2d3d' }}>Modèles 3D ({models.length})</h3>
-                <button className="px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:shadow-md" style={{ backgroundColor: '#10b981', color: 'white' }}>
+                <Link 
+                  href="/upload"
+                  className="px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:shadow-md" 
+                  style={{ backgroundColor: '#10b981', color: 'white' }}
+                >
                   + Ajouter un modèle
-                </button>
+                </Link>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-4">
                 {models.map((model) => (
                   <div key={model.id} className="border rounded-xl p-4" style={{ backgroundColor: '#f8f7f2', borderColor: '#c9d0db' }}>
+                    {/* En-tête du modèle */}
                     <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-semibold" style={{ color: '#1f2d3d' }}>{model.name}</h4>
-                        <p className="text-sm" style={{ color: '#6b7280' }}>Catégorie: {model.category || 'Non définie'}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">📦</span>
+                          <div>
+                            <h4 className="font-semibold text-lg" style={{ color: '#1f2d3d' }}>{model.name}</h4>
+                            <p className="text-sm" style={{ color: '#6b7280' }}>Catégorie: {model.category || 'Non définie'}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4 mt-2">
+                          <p className="text-xs" style={{ color: '#6b7280' }}>
+                            Taille: {(model.fileSize / 1024 / 1024).toFixed(1)} MB
+                          </p>
+                          <p className="text-xs" style={{ color: '#6b7280' }}>
+                            Créé: {new Date(model.createdAt).toLocaleDateString()}
+                          </p>
+                          {model.averageRating && (
+                            <div className="flex items-center space-x-1">
+                              <span className="text-xs" style={{ color: '#6b7280' }}>Note:</span>
+                              <span className="text-xs font-semibold" style={{ color: '#1f2d3d' }}>
+                                {model.averageRating.toFixed(1)} ⭐
+                              </span>
+                              <span className="text-xs" style={{ color: '#6b7280' }}>
+                                ({model.ratingCount || 0})
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-2xl">📦</span>
+                      
+                      <div className="flex items-center space-x-2">
+                        {/* Toggle hotspots */}
+                        <button
+                          onClick={() => toggleHotspots(model.id)}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                            model.hotspotsEnabled 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {model.hotspotsEnabled ? '🎯 Hotspots ON' : '🎯 Hotspots OFF'}
+                        </button>
+                        
+                        {/* Bouton d'expansion */}
+                        <button
+                          onClick={() => toggleExpandModel(model.id)}
+                          className="px-3 py-1 rounded-lg text-xs font-semibold transition-all bg-blue-100 text-blue-700 hover:bg-blue-200"
+                        >
+                          {expandedModelId === model.id ? '▼ Réduire' : '▶ Configurer'}
+                        </button>
+                      </div>
                     </div>
                     
-                    <div className="space-y-1 mb-4">
-                      <p className="text-xs" style={{ color: '#6b7280' }}>
-                        Taille: {(model.fileSize / 1024 / 1024).toFixed(1)} MB
-                      </p>
-                      <p className="text-xs" style={{ color: '#6b7280' }}>
-                        Créé: {new Date(model.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => window.open(model.publicUrl, '_blank')}
-                        className="flex-1 px-3 py-2 text-center rounded-lg text-xs font-semibold transition-all duration-200 hover:shadow-md"
-                        style={{ backgroundColor: '#1f2d3d', color: '#fbfaf5' }}
-                      >
-                        Voir
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteModel(model.id)}
-                        className="px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 hover:shadow-md"
-                        style={{ backgroundColor: '#f97316', color: 'white' }}
-                      >
-                        Supprimer
-                      </button>
-                    </div>
+                    {/* Section expandable pour la configuration */}
+                    {expandedModelId === model.id && (
+                      <div className="mt-4 pt-4 border-t space-y-4" style={{ borderColor: '#c9d0db' }}>
+                        {/* Configuration des hotspots */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Sécurité alimentaire */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium" style={{ color: '#1f2d3d' }}>
+                              🛡️ Sécurité alimentaire
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <select
+                                value={model.nutriScore || ''}
+                                onChange={(e) => updateHotspotData(model.id, 'nutriScore', e.target.value)}
+                                className="px-3 py-2 rounded-lg border text-xs"
+                                style={{ backgroundColor: '#fbfaf5', borderColor: '#c9d0db' }}
+                              >
+                                <option value="">Nutri-Score</option>
+                                <option value="A">A - Excellent</option>
+                                <option value="B">B - Bon</option>
+                                <option value="C">C - Moyen</option>
+                                <option value="D">D - Mauvais</option>
+                                <option value="E">E - Très mauvais</option>
+                              </select>
+                              <button
+                                onClick={() => updateHotspotData(model.id, 'securityRisk', !model.securityRisk)}
+                                className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                                  model.securityRisk 
+                                    ? 'bg-red-100 text-red-700' 
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                {model.securityRisk ? '⚠️ Risque' : '✅ Sûr'}
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Traçabilité */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium" style={{ color: '#1f2d3d' }}>
+                              📍 Traçabilité
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="text"
+                                placeholder="Pays d'origine"
+                                value={model.originCountry || ''}
+                                onChange={(e) => updateHotspotData(model.id, 'originCountry', e.target.value)}
+                                className="px-3 py-2 rounded-lg border text-xs flex-1"
+                                style={{ backgroundColor: '#fbfaf5', borderColor: '#c9d0db' }}
+                              />
+                              <input
+                                type="number"
+                                placeholder="km"
+                                value={model.transportDistance || ''}
+                                onChange={(e) => updateHotspotData(model.id, 'transportDistance', parseInt(e.target.value))}
+                                className="px-3 py-2 rounded-lg border text-xs w-16"
+                                style={{ backgroundColor: '#fbfaf5', borderColor: '#c9d0db' }}
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Empreinte carbone */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium" style={{ color: '#1f2d3d' }}>
+                              🌱 Empreinte carbone
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="number"
+                                step="0.1"
+                                placeholder="kg CO2"
+                                value={model.carbonFootprint || ''}
+                                onChange={(e) => updateHotspotData(model.id, 'carbonFootprint', parseFloat(e.target.value))}
+                                className="px-3 py-2 rounded-lg border text-xs"
+                                style={{ backgroundColor: '#fbfaf5', borderColor: '#c9d0db' }}
+                              />
+                              <span className="text-xs" style={{ color: '#6b7280' }}>kg CO2</span>
+                            </div>
+                          </div>
+                          
+                          {/* Statistiques */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium" style={{ color: '#1f2d3d' }}>
+                              📊 Statistiques
+                            </label>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs" style={{ color: '#6b7280' }}>
+                                Note: {model.averageRating?.toFixed(1) || 'N/A'} ⭐
+                              </span>
+                              <span className="text-xs" style={{ color: '#6b7280' }}>
+                                ({model.ratingCount || 0} avis)
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Actions */}
+                        <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: '#c9d0db' }}>
+                          <div className="flex items-center space-x-2">
+                            <button 
+                              onClick={() => window.open(model.publicUrl, '_blank')}
+                              className="px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 hover:shadow-md"
+                              style={{ backgroundColor: '#1f2d3d', color: '#fbfaf5' }}
+                            >
+                              👁️ Voir le modèle
+                            </button>
+                            {model.slug && (
+                              <Link 
+                                href={`/models/${model.slug}/edit`}
+                                className="px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 hover:shadow-md"
+                                style={{ backgroundColor: '#3b82f6', color: 'white' }}
+                              >
+                                ✏️ Modifier
+                              </Link>
+                            )}
+                          </div>
+                          
+                          <button 
+                            onClick={() => handleDeleteModel(model.id)}
+                            className="px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 hover:shadow-md"
+                            style={{ backgroundColor: '#f97316', color: 'white' }}
+                          >
+                            🗑️ Supprimer
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

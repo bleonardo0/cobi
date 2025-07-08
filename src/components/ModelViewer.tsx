@@ -38,7 +38,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
     };
 
     const proxyUrl = getProxyUrl(src);
-    const isUSDZ = src.toLowerCase().includes('.usdz');
+    const isGLB = src.toLowerCase().includes('.glb') || src.toLowerCase().includes('.gltf');
 
     // Detect AR support
     useEffect(() => {
@@ -384,12 +384,15 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       const isAndroid = /android/i.test(navigator.userAgent);
       
-      // For USDZ files, prioritize Quick Look on iOS
-      if (isUSDZ) {
+      // For GLB files, use WebXR when available
+      if (isGLB) {
+        // iOS Safari: prefer WebXR for GLB
         if (isIOS && isSafari) {
-          return 'quick-look'; // iOS Safari + USDZ = Quick Look
-        } else {
-          return ''; // USDZ only works on iOS Safari
+          return 'webxr quick-look';
+        }
+        // Android: prefer Scene Viewer
+        if (isAndroid) {
+          return 'scene-viewer webxr';
         }
       }
       
@@ -477,7 +480,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
                  'Chargement du modèle 3D...'}
               </p>
               <p className="text-gray-400 text-xs mt-1">
-                {isUSDZ ? 'Fichier USDZ' : 'Fichier GLB/GLTF'}
+                {isGLB ? 'Fichier GLB/GLTF' : 'Fichier 3D'}
               </p>
               {arSupported && (
                 <p className="text-green-600 text-xs mt-1">
@@ -527,10 +530,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Erreur de chargement</h3>
               <p className="text-gray-600 text-sm mb-4">
-                {isUSDZ 
-                  ? 'Fichier USDZ incompatible avec ce navigateur'
-                  : `Impossible de charger le modèle 3D${loadAttempts > 0 ? ` (${loadAttempts + 1} tentatives)` : ''}`
-                }
+                {`Impossible de charger le modèle 3D${loadAttempts > 0 ? ` (${loadAttempts + 1} tentatives)` : ''}`}
               </p>
               <div className="flex space-x-2 justify-center">
                 <button 
@@ -594,7 +594,6 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
                 reveal="auto"
                 style="width: 100%; height: 100%; display: block; background: transparent; visibility: visible;"
                 ${arSupported ? `ar ar-modes="${getArModes()}"` : ''}
-                ${arSupported && isUSDZ ? `ios-src="${currentSrc}"` : ''}
                 ${arSupported ? 'ar-scale="auto"' : ''}
                 ${arSupported ? 'ar-placement="floor"' : ''}
                 interaction-prompt="auto"

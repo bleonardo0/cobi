@@ -24,6 +24,18 @@ export interface Model3D {
   fallback360Video?: string; // URL de la vidéo 360° de fallback
   defaultScale?: string; // Échelle par défaut (ex: "0.01m" pour corriger les unités)
   autoAltText?: boolean; // Active la génération automatique du texte alternatif
+  
+  // Nouveaux champs pour les hotspots
+  hotspotsEnabled?: boolean;
+  hotspotsConfig?: HotspotsConfig;
+  nutriScore?: 'A' | 'B' | 'C' | 'D' | 'E';
+  securityRisk?: boolean;
+  originCountry?: string;
+  transportDistance?: number; // en km
+  carbonFootprint?: number; // en kg CO2
+  drinkPairings?: DrinkPairing[];
+  averageRating?: number;
+  ratingCount?: number;
 }
 
 export interface UploadResponse {
@@ -116,6 +128,35 @@ export interface TagInfo {
   id: string;
   name: string;
   color: string;
+}
+
+// Types pour les hotspots
+export interface HotspotsConfig {
+  allergens?: { x: number; y: number; z: number };
+  traceability?: { x: number; y: number; z: number };
+  pairings?: { x: number; y: number; z: number };
+  rating?: { x: number; y: number; z: number };
+  share?: { x: number; y: number; z: number };
+}
+
+export interface DrinkPairing {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl?: string;
+  category: 'wine' | 'beer' | 'cocktail' | 'non-alcoholic';
+}
+
+export interface ModelRating {
+  id: string;
+  modelId: string;
+  userSession: string;
+  rating: number; // 1-5
+  isPositive?: boolean; // pour thumbs up/down
+  feedbackText?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Type pour la conversion entre Supabase et notre interface

@@ -7,6 +7,9 @@ import { Model3D, SupportedMimeTypes, MenuCategory } from "@/types/model";
 import { formatFileSize } from "@/lib/utils";
 import { MENU_CATEGORIES, PREDEFINED_TAGS, PREDEFINED_ALLERGENS, getCategoryInfo, getTagInfo, getAllergenInfo } from "@/lib/constants";
 import Link from "next/link";
+import ModelViewer from "@/components/ModelViewer";
+import HotspotButton from "@/components/HotspotButton";
+import HotspotEditor from "@/components/HotspotEditor";
 
 export default function EditModelPage() {
   const params = useParams();
@@ -20,11 +23,9 @@ export default function EditModelPage() {
 
   // États pour les fichiers
   const [selectedGlbFile, setSelectedGlbFile] = useState<File | null>(null);
-  const [selectedUsdzFile, setSelectedUsdzFile] = useState<File | null>(null);
   const [selectedThumbnail, setSelectedThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [removeGlb, setRemoveGlb] = useState(false);
-  const [removeUsdz, setRemoveUsdz] = useState(false);
   const [removeThumbnail, setRemoveThumbnail] = useState(false);
   
   // État pour le nom du modèle
@@ -42,6 +43,17 @@ export default function EditModelPage() {
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
   const [showAllergenDropdown, setShowAllergenDropdown] = useState(false);
   const allergenDropdownRef = useRef<HTMLDivElement>(null);
+
+  // États pour les hotspots
+  const [hotspotsEnabled, setHotspotsEnabled] = useState<boolean>(false);
+  const [nutriScore, setNutriScore] = useState<'A' | 'B' | 'C' | 'D' | 'E' | ''>('');
+  const [securityRisk, setSecurityRisk] = useState<boolean>(false);
+  const [originCountry, setOriginCountry] = useState<string>('');
+  const [transportDistance, setTransportDistance] = useState<string>('');
+  const [carbonFootprint, setCarbonFootprint] = useState<string>('');
+  
+  // État pour l'éditeur de hotspots
+  const [hotspotsConfig, setHotspotsConfig] = useState<any[]>([]);
 
   useEffect(() => {
     if (params.slug) {
@@ -98,6 +110,15 @@ export default function EditModelPage() {
       setPrice(foundModel.price ? foundModel.price.toString() : '');
       setShortDescription(foundModel.shortDescription || '');
       setSelectedAllergens(foundModel.allergens || []);
+      
+      // Initialiser les hotspots
+      setHotspotsEnabled(foundModel.hotspotsEnabled || false);
+      setNutriScore(foundModel.nutriScore || '');
+      setSecurityRisk(foundModel.securityRisk || false);
+      setOriginCountry(foundModel.originCountry || '');
+      setTransportDistance(foundModel.transportDistance ? foundModel.transportDistance.toString() : '');
+      setCarbonFootprint(foundModel.carbonFootprint ? foundModel.carbonFootprint.toString() : '');
+      
       console.log('🔍 Model loaded for editing:', foundModel);
     } catch (error) {
       console.error('Error fetching model:', error);
@@ -114,12 +135,7 @@ export default function EditModelPage() {
     }
   };
 
-  const handleUsdzInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      handleUsdzSelection(files[0]);
-    }
-  };
+
 
   const handleThumbnailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -158,35 +174,7 @@ export default function EditModelPage() {
     setRemoveGlb(false);
   };
 
-  const handleUsdzSelection = (file: File) => {
-    setUpdateError(null);
-    
-    const maxSize = 50 * 1024 * 1024; // 50MB
-    const allowedTypes = ['model/vnd.usdz+zip'];
-    const hasValidExtension = /\.usdz$/i.test(file.name);
-    
-    if (file.size > maxSize) {
-      setUpdateError('Le fichier USDZ ne doit pas dépasser 50MB');
-      return;
-    }
-    
-    if (!allowedTypes.includes(file.type) && !hasValidExtension) {
-      setUpdateError('Format non supporté. Utilisez USDZ');
-      return;
-    }
 
-    // Vérifier si le nom de fichier est valide
-    if (file.name.length > 255) {
-      setUpdateError('Le nom de fichier est trop long (max 255 caractères)');
-      return;
-    }
-
-    // Conseils pour éviter les conflits
-    console.log(`📁 Fichier USDZ sélectionné: ${file.name}`);
-    
-    setSelectedUsdzFile(file);
-    setRemoveUsdz(false);
-  };
 
   const handleThumbnailSelection = (file: File) => {
     setUpdateError(null);
@@ -249,6 +237,25 @@ export default function EditModelPage() {
         formData.append('shortDescription', shortDescription);
       }
       formData.append('allergens', JSON.stringify(selectedAllergens));
+      
+      // Ajouter les données des hotspots
+      formData.append('hotspotsEnabled', hotspotsEnabled.toString());
+      if (nutriScore) {
+        formData.append('nutriScore', nutriScore);
+      }
+      formData.append('securityRisk', securityRisk.toString());
+      if (originCountry) {
+        formData.append('originCountry', originCountry);
+      }
+      if (transportDistance) {
+        formData.append('transportDistance', transportDistance);
+      }
+      if (carbonFootprint) {
+        formData.append('carbonFootprint', carbonFootprint);
+      }
+      
+      // Ajouter la configuration des hotspots
+      formData.append('hotspotsConfig', JSON.stringify(hotspotsConfig));
 
       const response = await fetch(`/api/models/${model.id}`, {
         method: 'PATCH',
@@ -264,7 +271,14 @@ export default function EditModelPage() {
           tags: selectedTags,
           price: price ? parseFloat(price) : undefined,
           shortDescription: shortDescription || undefined,
-          allergens: selectedAllergens
+          allergens: selectedAllergens,
+          // Mettre à jour les données des hotspots
+          hotspotsEnabled: hotspotsEnabled,
+          nutriScore: nutriScore || undefined,
+          securityRisk: securityRisk,
+          originCountry: originCountry || undefined,
+          transportDistance: transportDistance ? parseFloat(transportDistance) : undefined,
+          carbonFootprint: carbonFootprint ? parseFloat(carbonFootprint) : undefined
         } : null);
       } else {
         setUpdateError(data.error || 'Erreur lors de la mise à jour');
@@ -324,9 +338,6 @@ export default function EditModelPage() {
       if (selectedGlbFile) {
         formData.append('glbFile', selectedGlbFile);
       }
-      if (selectedUsdzFile) {
-        formData.append('usdzFile', selectedUsdzFile);
-      }
       if (selectedThumbnail) {
         formData.append('thumbnail', selectedThumbnail);
       }
@@ -334,9 +345,6 @@ export default function EditModelPage() {
       // Ajouter les flags de suppression
       if (removeGlb) {
         formData.append('removeGlb', 'true');
-      }
-      if (removeUsdz) {
-        formData.append('removeUsdz', 'true');
       }
       if (removeThumbnail) {
         formData.append('removeThumbnail', 'true');
@@ -463,14 +471,14 @@ export default function EditModelPage() {
                     <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
                     Fichier GLB
                   </h3>
-                  {(model.glbUrl || (model.url && model.format && (model.format.includes('GLB')))) ? (
+                  {model.url ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Présent</span>
                         <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">✓ Disponible</span>
                       </div>
                       <div className="text-xs text-gray-500">
-                        Taille: {formatFileSize(model.glbFileSize || model.fileSize)}
+                        Taille: {formatFileSize(model.fileSize)}
                       </div>
                       <button
                         onClick={() => setRemoveGlb(!removeGlb)}
@@ -488,36 +496,7 @@ export default function EditModelPage() {
                   )}
                 </div>
 
-                {/* USDZ actuel */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900 mb-2 flex items-center">
-                    <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
-                    Fichier USDZ
-                  </h3>
-                  {(model.usdzUrl || (model.url && model.format && (model.format.includes('USDZ')))) ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Présent</span>
-                        <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">✓ Disponible</span>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Taille: {formatFileSize(model.usdzFileSize || model.fileSize || 0)}
-                      </div>
-                      <button
-                        onClick={() => setRemoveUsdz(!removeUsdz)}
-                        className={`text-xs px-2 py-1 rounded ${
-                          removeUsdz 
-                            ? 'bg-red-100 text-red-700' 
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {removeUsdz ? 'Annuler suppression' : 'Supprimer USDZ'}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-500">Aucun fichier USDZ</div>
-                  )}
-                </div>
+
               </div>
             </div>
 
@@ -781,7 +760,13 @@ export default function EditModelPage() {
                   JSON.stringify(selectedTags.sort()) !== JSON.stringify((model?.tags || []).sort()) ||
                   price !== (model?.price ? model.price.toString() : '') ||
                   shortDescription !== (model?.shortDescription || '') ||
-                  JSON.stringify(selectedAllergens.sort()) !== JSON.stringify((model?.allergens || []).sort())) && (
+                  JSON.stringify(selectedAllergens.sort()) !== JSON.stringify((model?.allergens || []).sort()) ||
+                  hotspotsEnabled !== (model?.hotspotsEnabled || false) ||
+                  nutriScore !== (model?.nutriScore || '') ||
+                  securityRisk !== (model?.securityRisk || false) ||
+                  originCountry !== (model?.originCountry || '') ||
+                  transportDistance !== (model?.transportDistance ? model.transportDistance.toString() : '') ||
+                  carbonFootprint !== (model?.carbonFootprint ? model.carbonFootprint.toString() : '')) && (
                   <div className="pt-4 border-t border-gray-200">
                     <button
                       onClick={updateCategoryAndTags}
@@ -794,6 +779,242 @@ export default function EditModelPage() {
                 )}
               </div>
             </div>
+
+            {/* Configuration des hotspots */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Configuration des hotspots</h2>
+              <div className="border border-gray-200 rounded-lg p-4 space-y-6">
+                
+                {/* Toggle principal */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">🎯 Activer les hotspots</h3>
+                    <p className="text-sm text-gray-500">Ajouter des points interactifs sur le modèle 3D</p>
+                  </div>
+                  <button
+                    onClick={() => setHotspotsEnabled(!hotspotsEnabled)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      hotspotsEnabled ? 'bg-green-600' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        hotspotsEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Configuration des hotspots (visible seulement si activé) */}
+                {hotspotsEnabled && (
+                  <div className="space-y-6 pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
+                      {/* Sécurité alimentaire */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-gray-900 flex items-center">
+                          <span className="mr-2">🛡️</span>
+                          Sécurité alimentaire
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-xs font-medium text-gray-700">
+                            Nutri-Score
+                          </label>
+                          <select
+                            value={nutriScore}
+                            onChange={(e) => setNutriScore(e.target.value as 'A' | 'B' | 'C' | 'D' | 'E' | '')}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          >
+                            <option value="">Sélectionner</option>
+                            <option value="A">A - Excellent</option>
+                            <option value="B">B - Bon</option>
+                            <option value="C">C - Moyen</option>
+                            <option value="D">D - Mauvais</option>
+                            <option value="E">E - Très mauvais</option>
+                          </select>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="securityRisk"
+                            checked={securityRisk}
+                            onChange={(e) => setSecurityRisk(e.target.checked)}
+                            className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                          />
+                          <label htmlFor="securityRisk" className="text-sm text-gray-700">
+                            ⚠️ Risque de sécurité alimentaire
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Traçabilité */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-gray-900 flex items-center">
+                          <span className="mr-2">📍</span>
+                          Traçabilité
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-xs font-medium text-gray-700">
+                            Pays d'origine
+                          </label>
+                          <input
+                            type="text"
+                            value={originCountry}
+                            onChange={(e) => setOriginCountry(e.target.value)}
+                            placeholder="ex: France"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-xs font-medium text-gray-700">
+                            Distance de transport (km)
+                          </label>
+                          <input
+                            type="number"
+                            value={transportDistance}
+                            onChange={(e) => setTransportDistance(e.target.value)}
+                            placeholder="ex: 150"
+                            min="0"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Empreinte carbone */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-gray-900 flex items-center">
+                          <span className="mr-2">🌱</span>
+                          Empreinte carbone
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-xs font-medium text-gray-700">
+                            Émissions CO2 (kg)
+                          </label>
+                          <input
+                            type="number"
+                            value={carbonFootprint}
+                            onChange={(e) => setCarbonFootprint(e.target.value)}
+                            placeholder="ex: 2.5"
+                            min="0"
+                            step="0.1"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          />
+                          <p className="text-xs text-gray-500">
+                            Émissions de CO2 liées à la production et transport
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Statistiques */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-gray-900 flex items-center">
+                          <span className="mr-2">📊</span>
+                          Statistiques
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <span>Note moyenne:</span>
+                            <span className="font-medium">
+                              {model.averageRating ? model.averageRating.toFixed(1) : 'N/A'} ⭐
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <span>Nombre d'avis:</span>
+                            <span className="font-medium">
+                              {model.ratingCount || 0}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Les statistiques sont mises à jour automatiquement
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Aperçu des hotspots activés */}
+                {hotspotsEnabled && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">
+                      Aperçu des hotspots qui seront affichés :
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {nutriScore && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          🛡️ Nutri-Score {nutriScore}
+                        </span>
+                      )}
+                      {securityRisk && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          ⚠️ Risque sécurité
+                        </span>
+                      )}
+                      {originCountry && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          📍 {originCountry}
+                        </span>
+                      )}
+                      {transportDistance && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          🚚 {transportDistance} km
+                        </span>
+                      )}
+                      {carbonFootprint && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          🌱 {carbonFootprint} kg CO2
+                        </span>
+                      )}
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        ⭐ Notation
+                      </span>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        📤 Partage
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+              </div>
+            </div>
+
+            {/* Éditeur de hotspots interactif */}
+            {hotspotsEnabled && model && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  🎯 Éditeur de hotspots interactif
+                </h2>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-900 mb-1">Comment utiliser l'éditeur :</h3>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>• Sélectionnez un type de hotspot dans la barre d'outils</li>
+                        <li>• Cliquez sur le modèle 3D pour placer le hotspot</li>
+                        <li>• Utilisez le mode édition pour déplacer ou supprimer les hotspots</li>
+                        <li>• Les hotspots seront sauvegardés avec le modèle</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                
+                <HotspotEditor
+                  modelSrc={model.url}
+                  modelName={model.name}
+                  initialHotspots={hotspotsConfig}
+                  onHotspotsChange={setHotspotsConfig}
+                />
+              </div>
+            )}
 
             {/* Upload de nouveaux fichiers */}
             <div>
@@ -818,7 +1039,7 @@ export default function EditModelPage() {
               <div className="border border-gray-200 rounded-lg p-6 mb-4">
                 <h3 className="font-medium text-gray-900 mb-3 flex items-center">
                   <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-                  {(model.glbUrl || (model.url && model.format && (model.format.includes('GLB')))) ? 'Remplacer le fichier GLB' : 'Ajouter un fichier GLB'}
+                  {model.url ? 'Remplacer le fichier GLB' : 'Ajouter un fichier GLB'}
                 </h3>
                 
                 {!selectedGlbFile ? (
@@ -864,55 +1085,7 @@ export default function EditModelPage() {
                 )}
               </div>
 
-              {/* USDZ Upload */}
-              <div className="border border-gray-200 rounded-lg p-6 mb-4">
-                <h3 className="font-medium text-gray-900 mb-3 flex items-center">
-                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
-                  {(model.usdzUrl || (model.url && model.format && (model.format.includes('USDZ')))) ? 'Remplacer le fichier USDZ' : 'Ajouter un fichier USDZ'}
-                </h3>
-                
-                {!selectedUsdzFile ? (
-                  <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer">
-                    <input
-                      type="file"
-                      accept=".usdz"
-                      onChange={handleUsdzInput}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    <div className="space-y-2">
-                      <svg className="mx-auto w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                      <p className="text-sm text-gray-600">Cliquez pour sélectionner un fichier USDZ</p>
-                      <p className="text-xs text-gray-400">Max 50MB</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border border-gray-200 rounded-lg p-4 bg-purple-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                          <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{selectedUsdzFile.name}</p>
-                          <p className="text-sm text-gray-500">USDZ • {formatFileSize(selectedUsdzFile.size)}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setSelectedUsdzFile(null)}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+
             </div>
 
             {/* Thumbnail */}
@@ -1019,9 +1192,9 @@ export default function EditModelPage() {
               
               <button
                 onClick={updateModel}
-                disabled={isUpdating || (!selectedGlbFile && !selectedUsdzFile && !selectedThumbnail && !removeGlb && !removeUsdz && !removeThumbnail)}
+                disabled={isUpdating || (!selectedGlbFile && !selectedThumbnail && !removeGlb && !removeThumbnail)}
                 className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                  isUpdating || (!selectedGlbFile && !selectedUsdzFile && !selectedThumbnail && !removeGlb && !removeUsdz && !removeThumbnail)
+                  isUpdating || (!selectedGlbFile && !selectedThumbnail && !removeGlb && !removeThumbnail)
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
