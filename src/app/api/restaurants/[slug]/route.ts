@@ -61,7 +61,7 @@ export async function GET(
             name: data.name,
             slug: data.slug,
             description: data.description || data.short_description,
-            address: data.adress, // Note: conversion du typo
+            address: data.address, // Correction: utiliser 'address' au lieu de 'adress'
             phone: data.phone,
             website: data.website,
             logo: data.logo_url,

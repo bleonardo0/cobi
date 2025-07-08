@@ -72,64 +72,71 @@ export default function AdminDashboard() {
     try {
       setIsLoading(true);
       
-      // Récupérer les vraies données du restaurant et analytics
-      let realTotalViews = 0;
-      let restaurantData = {
-        name: 'Bella Vita',
-        address: '123 Rue de la Paix, 75001 Paris',
-        shortDescription: 'Restaurant italien authentique'
-      };
-
-      try {
-        // Récupérer les analytics
-        const analyticsResponse = await fetch('/api/analytics/stats?restaurantId=restaurant-bella-vita-1');
-        const analyticsResult = await analyticsResponse.json();
-        realTotalViews = analyticsResult.success ? analyticsResult.data.general.totalViews : 0;
-        console.log('🔍 Vraies données analytics:', realTotalViews, 'vues');
-
-        // Récupérer les données du restaurant
-        const restaurantResponse = await fetch('/api/admin/restaurants/bella-vita-uuid');
-        const restaurantResult = await restaurantResponse.json();
-        if (restaurantResult.success && restaurantResult.restaurant) {
-          restaurantData = {
-            name: restaurantResult.restaurant.name || 'Bella Vita',
-            address: restaurantResult.restaurant.address || '123 Rue de la Paix, 75001 Paris',
-            shortDescription: restaurantResult.restaurant.shortDescription || 'Restaurant italien authentique'
-          };
-          console.log('🔍 Vraies données restaurant:', restaurantData);
-        }
-      } catch (error) {
-        console.error('Erreur lors de la récupération des données:', error);
+      // Récupérer TOUS les restaurants depuis l'API
+      const restaurantsResponse = await fetch('/api/admin/restaurants');
+      const restaurantsData = await restaurantsResponse.json();
+      
+      if (!restaurantsData.success) {
+        throw new Error('Erreur lors de la récupération des restaurants');
       }
 
-      const mockRestaurants: Restaurant[] = [
-        {
-          id: 'bella-vita-uuid',
-          name: restaurantData.name,
-          slug: 'bella-vita',
-          address: restaurantData.address,
-          rating: 4.8,
-          logoUrl: '/logos/bella-vita.png',
-          shortDescription: restaurantData.shortDescription,
-          subscriptionStatus: 'active',
-          subscriptionPlan: 'premium',
-          createdAt: '2024-01-15T10:00:00Z',
-          modelsCount: 5,
-          totalViews: realTotalViews
-        }
-      ];
+      const allRestaurants = restaurantsData.restaurants || [];
+      console.log('🔍 Restaurants récupérés depuis l\'API:', allRestaurants.length);
 
-      const mockStats: GlobalStats = {
-        totalRestaurants: mockRestaurants.length,
-        totalModels: mockRestaurants.reduce((acc, r) => acc + r.modelsCount, 0),
-        totalViews: realTotalViews,
-        totalStorage: 45.2, // Ajusté pour un seul restaurant
-        activeSubscriptions: mockRestaurants.filter(r => r.subscriptionStatus === 'active').length,
-        monthlyRevenue: 890 // Ajusté pour un seul restaurant
+      // Calculer les vraies statistiques
+      let totalViews = 0;
+      let totalModels = 0;
+
+             // Pour chaque restaurant, récupérer ses stats
+       const restaurantsWithStats = await Promise.all(
+         allRestaurants.map(async (restaurant: any) => {
+          let restaurantViews = 0;
+          let restaurantModels = 5; // Mock temporaire
+
+          try {
+            // Récupérer les analytics pour ce restaurant
+            const analyticsResponse = await fetch(`/api/analytics/stats?restaurantId=${restaurant.id}`);
+            const analyticsResult = await analyticsResponse.json();
+            if (analyticsResult.success) {
+              restaurantViews = analyticsResult.data.general.totalViews || 0;
+            }
+          } catch (error) {
+            console.error(`Erreur analytics pour ${restaurant.name}:`, error);
+          }
+
+          totalViews += restaurantViews;
+          totalModels += restaurantModels;
+
+          return {
+            id: restaurant.id,
+            name: restaurant.name,
+            slug: restaurant.slug,
+            address: restaurant.address,
+            rating: restaurant.rating || 4.5,
+            logoUrl: restaurant.logoUrl,
+            shortDescription: restaurant.shortDescription,
+            subscriptionStatus: restaurant.subscriptionStatus,
+            subscriptionPlan: restaurant.subscriptionPlan,
+            createdAt: restaurant.createdAt,
+            modelsCount: restaurantModels,
+            totalViews: restaurantViews
+          };
+        })
+      );
+
+      const calculatedStats: GlobalStats = {
+        totalRestaurants: allRestaurants.length,
+        totalModels: totalModels,
+        totalViews: totalViews,
+        totalStorage: allRestaurants.length * 22.6, // Approximation
+                 activeSubscriptions: allRestaurants.filter((r: any) => r.subscriptionStatus === 'active').length,
+        monthlyRevenue: allRestaurants.length * 445 // Approximation
       };
 
-      setRestaurants(mockRestaurants);
-      setStats(mockStats);
+      console.log('📊 Stats calculées:', calculatedStats);
+
+      setRestaurants(restaurantsWithStats);
+      setStats(calculatedStats);
     } catch (error) {
       console.error('Error fetching admin data:', error);
     } finally {
@@ -160,12 +167,8 @@ export default function AdminDashboard() {
     try {
       setResetLoading(prev => ({ ...prev, [restaurantId]: true }));
       
-      // Mapper l'ID du restaurant vers l'ID analytics
-      const restaurantIdMapping: Record<string, string> = {
-        'bella-vita-uuid': 'restaurant-bella-vita-1'
-      };
-      
-      const analyticsRestaurantId = restaurantIdMapping[restaurantId] || restaurantId;
+      // Utiliser directement l'ID du restaurant pour les analytics
+      const analyticsRestaurantId = restaurantId;
       
       const response = await fetch('/api/admin/analytics/reset', {
         method: 'POST',
@@ -191,12 +194,9 @@ export default function AdminDashboard() {
         );
         
         if (shouldViewAnalytics) {
-          // Mapper l'ID restaurant vers le slug
-          const restaurantSlugMapping: Record<string, string> = {
-            'bella-vita-uuid': 'bella-vita'
-          };
-          
-          const restaurantSlug = restaurantSlugMapping[restaurantId] || 'bella-vita';
+          // Trouver le slug du restaurant
+          const restaurant = restaurants.find(r => r.id === restaurantId);
+          const restaurantSlug = restaurant?.slug || 'bella-vita';
           window.open(`/insights?restaurant=${restaurantSlug}`, '_blank');
         }
       } else {
@@ -301,6 +301,23 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="space-y-12">
+          {/* Bouton d'actualisation */}
+          <div className="flex justify-end">
+            <button
+              onClick={fetchAdminData}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 font-medium hover:scale-105 disabled:opacity-50"
+              style={{ 
+                backgroundColor: '#4f46e5',
+                color: 'white',
+                boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)'
+              }}
+            >
+              <span>🔄</span>
+              <span>{isLoading ? 'Actualisation...' : 'Actualiser'}</span>
+            </button>
+          </div>
+
           {/* Hero Section Admin */}
           <div className="relative overflow-hidden rounded-3xl p-8 lg:p-12 shadow-2xl" style={{ 
             background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 50%, #312e81 100%)',
@@ -459,6 +476,16 @@ export default function AdminDashboard() {
               </div>
               
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                {/* Bouton Nouveau Restaurant */}
+                <Link href="/admin/restaurants/add">
+                  <button className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-sm font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span>Nouveau Restaurant</span>
+                  </button>
+                </Link>
+                
                 {/* Recherche */}
                 <div className="relative">
                   <input

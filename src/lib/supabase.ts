@@ -42,6 +42,9 @@ export interface Database {
           secondary_color: string | null;
           rating: number | null;
           allergens: string[] | null;
+          owner_name: string | null;
+          owner_contact: string | null;
+          owner_contact_method: 'email' | 'phone' | 'both' | null;
           subscription_status: 'active' | 'inactive' | 'pending';
           subscription_plan: 'basic' | 'premium';
           is_active: boolean;
@@ -63,6 +66,9 @@ export interface Database {
           secondary_color?: string | null;
           rating?: number | null;
           allergens?: string[] | null;
+          owner_name?: string | null;
+          owner_contact?: string | null;
+          owner_contact_method?: 'email' | 'phone' | 'both' | null;
           subscription_status?: 'active' | 'inactive' | 'pending';
           subscription_plan?: 'basic' | 'premium';
           is_active?: boolean;
@@ -84,6 +90,9 @@ export interface Database {
           secondary_color?: string | null;
           rating?: number | null;
           allergens?: string[] | null;
+          owner_name?: string | null;
+          owner_contact?: string | null;
+          owner_contact_method?: 'email' | 'phone' | 'both' | null;
           subscription_status?: 'active' | 'inactive' | 'pending';
           subscription_plan?: 'basic' | 'premium';
           is_active?: boolean;

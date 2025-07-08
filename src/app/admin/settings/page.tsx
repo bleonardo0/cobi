@@ -64,7 +64,7 @@ export default function AdminSettingsPage() {
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
             <Link 
-              href="/admin" 
+              href="/admin/dashboard" 
               className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,7 +278,7 @@ export default function AdminSettingsPage() {
           {/* Boutons d'action */}
           <div className="flex items-center justify-between pt-6">
             <Link
-              href="/admin"
+              href="/admin/dashboard"
               className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
             >
               ← Retour à l'administration

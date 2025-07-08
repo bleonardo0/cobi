@@ -13,22 +13,13 @@ export async function GET(
     // Récupérer tous les modèles
     const allModels = await getAllModels();
     
-    // Pour les restaurants de test, on retourne tous les modèles existants
-    if (slug === 'le-gourmet-3d' || slug === 'bella-vita' || slug === 'test') {
-      return NextResponse.json({
-        success: true,
-        models: allModels,
-        restaurantSlug: slug,
-      });
-    }
-    
-    // Dans le futur, on pourrait filtrer par restaurant
-    // const restaurantModels = allModels.filter(model => model.restaurantId === restaurantId);
-    
-    return NextResponse.json(
-      { success: false, error: 'Restaurant non trouvé' },
-      { status: 404 }
-    );
+    // Pour l'instant, tous les restaurants partagent la même collection de modèles
+    // Dans le futur, on pourrait filtrer par restaurant avec une colonne restaurant_id
+    return NextResponse.json({
+      success: true,
+      models: allModels,
+      restaurantSlug: slug,
+    });
   } catch (error) {
     console.error('💥 Error fetching restaurant models:', error);
     return NextResponse.json(

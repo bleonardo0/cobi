@@ -19,6 +19,9 @@ interface Restaurant {
   modelsCount: number;
   totalViews: number;
   allergens?: string[];
+  ownerName?: string;
+  ownerContact?: string;
+  ownerContactMethod?: 'email' | 'phone' | 'both';
 }
 
 interface Model3D {
@@ -53,7 +56,10 @@ export default function RestaurantManagePage() {
     name: '',
     slug: '',
     address: '',
-    shortDescription: ''
+    shortDescription: '',
+    ownerName: '',
+    ownerContact: '',
+    ownerContactMethod: 'email' as 'email' | 'phone' | 'both'
   });
   const [isSaving, setIsSaving] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
@@ -165,7 +171,10 @@ export default function RestaurantManagePage() {
         createdAt: '2024-01-15T10:00:00Z',
         modelsCount: realModels.length, // Utiliser le nombre réel de modèles
         totalViews: realTotalViews,
-        allergens: ['gluten', 'lactose']
+        allergens: ['gluten', 'lactose'],
+        ownerName: 'Jean Dupont',
+        ownerContact: 'jean.dupont@bellavita.com',
+        ownerContactMethod: 'email'
       };
 
       setRestaurant(mockRestaurant);
@@ -176,7 +185,10 @@ export default function RestaurantManagePage() {
         name: mockRestaurant.name,
         slug: mockRestaurant.slug,
         address: mockRestaurant.address,
-        shortDescription: mockRestaurant.shortDescription || ''
+        shortDescription: mockRestaurant.shortDescription || '',
+        ownerName: mockRestaurant.ownerName || '',
+        ownerContact: mockRestaurant.ownerContact || '',
+        ownerContactMethod: mockRestaurant.ownerContactMethod || 'email'
       });
     } catch (error) {
       console.error('Error fetching restaurant data:', error);
@@ -266,14 +278,19 @@ export default function RestaurantManagePage() {
         name: formData.name,
         slug: formData.slug,
         address: formData.address,
-        shortDescription: formData.shortDescription
+        shortDescription: formData.shortDescription,
+        ownerName: formData.ownerName,
+        ownerContact: formData.ownerContact,
+        ownerContactMethod: formData.ownerContactMethod
       });
 
       // Notification de succès avec plus de détails
       alert(`✅ ${data.message || 'Modifications sauvegardées avec succès !'}\n\n` +
             `Nom: ${formData.name}\n` +
             `Slug: ${formData.slug}\n` +
-            `Adresse: ${formData.address}`);
+            `Adresse: ${formData.address}\n` +
+            `Propriétaire: ${formData.ownerName}\n` +
+            `Contact: ${formData.ownerContact} (${formData.ownerContactMethod})`);
             
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
@@ -435,6 +452,16 @@ export default function RestaurantManagePage() {
             
             <div className="flex items-center space-x-4">
               <Link
+                href="/admin/restaurants/add"
+                className="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-md flex items-center space-x-2"
+                style={{ backgroundColor: '#16a34a', color: '#fbfaf5' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>Nouveau Restaurant</span>
+              </Link>
+              <Link
                 href={`/menu/${restaurant.slug}`}
                 target="_blank"
                 className="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-md"
@@ -575,6 +602,51 @@ export default function RestaurantManagePage() {
                 </div>
               </div>
               
+              {/* Section Propriétaire/Contact Principal */}
+              <div className="pt-6 border-t" style={{ borderColor: '#c9d0db' }}>
+                <h4 className="text-lg font-semibold mb-4" style={{ color: '#1f2d3d' }}>Propriétaire/Contact Principal</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: '#1f2d3d' }}>Nom du propriétaire/contact</label>
+                    <input
+                      type="text"
+                      value={formData.ownerName}
+                      onChange={(e) => handleInputChange('ownerName', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ backgroundColor: '#f8f7f2', borderColor: '#c9d0db', color: '#1f2d3d' }}
+                      placeholder="Ex: Jean Dupont"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: '#1f2d3d' }}>Contact du propriétaire</label>
+                    <input
+                      type="text"
+                      value={formData.ownerContact}
+                      onChange={(e) => handleInputChange('ownerContact', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ backgroundColor: '#f8f7f2', borderColor: '#c9d0db', color: '#1f2d3d' }}
+                      placeholder="Ex: jean.dupont@restaurant.com ou +33 1 23 45 67 89"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: '#1f2d3d' }}>Méthode de contact préférée</label>
+                    <select
+                      value={formData.ownerContactMethod}
+                      onChange={(e) => handleInputChange('ownerContactMethod', e.target.value as 'email' | 'phone' | 'both')}
+                      className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ backgroundColor: '#f8f7f2', borderColor: '#c9d0db', color: '#1f2d3d' }}
+                    >
+                      <option value="email">Email</option>
+                      <option value="phone">Téléphone</option>
+                      <option value="both">Email et téléphone</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
               <div className="flex items-center space-x-4">
                 <button 
                   type="submit"
@@ -607,7 +679,10 @@ export default function RestaurantManagePage() {
                         name: restaurant.name,
                         slug: restaurant.slug,
                         address: restaurant.address,
-                        shortDescription: restaurant.shortDescription || ''
+                        shortDescription: restaurant.shortDescription || '',
+                        ownerName: restaurant.ownerName || '',
+                        ownerContact: restaurant.ownerContact || '',
+                        ownerContactMethod: restaurant.ownerContactMethod || 'email'
                       });
                     }
                   }}
