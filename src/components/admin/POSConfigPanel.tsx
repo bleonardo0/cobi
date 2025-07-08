@@ -170,7 +170,7 @@ export default function POSConfigPanel({ restaurantId, restaurantName }: POSConf
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Taux de TVA (%)
+                Taux de TVA (%) - Prix TTC
               </label>
               <input
                 type="number"
@@ -182,6 +182,9 @@ export default function POSConfigPanel({ restaurantId, restaurantName }: POSConf
                 disabled={isSaving || !config.enabled}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Les prix affichés incluent déjà la TVA (prix TTC)
+              </p>
             </div>
 
             <div>

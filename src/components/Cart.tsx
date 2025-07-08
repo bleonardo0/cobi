@@ -136,13 +136,6 @@ export default function Cart({
                     <span>{formatPrice(cart.subtotal)}</span>
                   </div>
                   
-                  {(cart.tax || 0) > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span>TVA ({Math.round((config?.settings.taxRate || 0) * 100)}%)</span>
-                      <span>{formatPrice(cart.tax || 0)}</span>
-                    </div>
-                  )}
-                  
                   {(cart.deliveryFee || 0) > 0 && (
                     <div className="flex justify-between text-sm">
                       <span>Frais de livraison</span>

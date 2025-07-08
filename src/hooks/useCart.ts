@@ -88,14 +88,13 @@ export function useCart({ restaurantId, config }: UseCartProps) {
       return sum + itemTotal + (optionsTotal * item.quantity);
     }, 0);
 
-    const taxRate = config?.settings.taxRate || 0;
-    const tax = subtotal * taxRate;
+    // Les prix incluent déjà la TVA (prix TTC)
     const deliveryFee = config?.settings.deliveryFee || 0;
-    const total = subtotal + tax + deliveryFee;
+    const total = subtotal + deliveryFee;
 
     return {
       subtotal: Math.round(subtotal * 100) / 100,
-      tax: Math.round(tax * 100) / 100,
+      tax: 0, // TVA incluse dans les prix
       deliveryFee,
       total: Math.round(total * 100) / 100
     };
