@@ -119,6 +119,9 @@ export default function EditModelPage() {
       setTransportDistance(foundModel.transportDistance ? foundModel.transportDistance.toString() : '');
       setCarbonFootprint(foundModel.carbonFootprint ? foundModel.carbonFootprint.toString() : '');
       
+      // Initialiser la configuration des hotspots
+      setHotspotsConfig(foundModel.hotspotsConfig || []);
+      
       console.log('🔍 Model loaded for editing:', foundModel);
     } catch (error) {
       console.error('Error fetching model:', error);
@@ -355,6 +358,25 @@ export default function EditModelPage() {
         formData.append('modelName', newModelName);
       }
 
+      // Ajouter les données des hotspots
+      formData.append('hotspotsEnabled', hotspotsEnabled.toString());
+      if (nutriScore) {
+        formData.append('nutriScore', nutriScore);
+      }
+      formData.append('securityRisk', securityRisk.toString());
+      if (originCountry) {
+        formData.append('originCountry', originCountry);
+      }
+      if (transportDistance) {
+        formData.append('transportDistance', transportDistance);
+      }
+      if (carbonFootprint) {
+        formData.append('carbonFootprint', carbonFootprint);
+      }
+      
+      // Ajouter la configuration des hotspots
+      formData.append('hotspotsConfig', JSON.stringify(hotspotsConfig));
+
       // Simuler le progrès
       const progressInterval = setInterval(() => {
         setUpdateProgress(prev => {
@@ -378,6 +400,19 @@ export default function EditModelPage() {
       
       if (data.success) {
         console.log('🎉 Mise à jour réussie:', data);
+        
+        // Mettre à jour l'état local du modèle avec les hotspots
+        setModel(prev => prev ? { 
+          ...prev, 
+          hotspotsEnabled: hotspotsEnabled,
+          nutriScore: nutriScore || undefined,
+          securityRisk: securityRisk,
+          originCountry: originCountry || undefined,
+          transportDistance: transportDistance ? parseFloat(transportDistance) : undefined,
+          carbonFootprint: carbonFootprint ? parseFloat(carbonFootprint) : undefined,
+          hotspotsConfig: hotspotsConfig as any
+        } : null);
+        
         setTimeout(() => {
           // Forcer le rafraîchissement de la page de destination
           window.location.href = `/models/${model.slug}`;

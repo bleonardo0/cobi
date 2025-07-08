@@ -10,6 +10,7 @@ import { usePOSConfig } from "@/hooks/usePOSConfig";
 import { useCart } from "@/hooks/useCart";
 import { getCategoryInfo, getAllergenInfo } from "@/lib/constants";
 import ModelViewer from "@/components/ModelViewer";
+import HotspotViewer from "@/components/HotspotViewer";
 import Cart from "@/components/Cart";
 
 export default function MenuPage() {
@@ -471,12 +472,40 @@ export default function MenuPage() {
               </div>
             </div>
             
-            <div className="h-96">
+            <div className="h-96 relative">
               <ModelViewer 
                 src={selectedModel.url}
                 alt={selectedModel.name}
                 className="w-full h-full"
               />
+              
+              {/* Hotspots */}
+              {selectedModel.hotspotsEnabled && (
+                <HotspotViewer
+                  hotspotsConfig={selectedModel.hotspotsConfig}
+                  enabled={hotspotsEnabled}
+                  onHotspotClick={(type, data) => {
+                    console.log('Hotspot clicked:', type, data);
+                  }}
+                />
+              )}
+              
+              {/* Toggle Hotspots */}
+              {selectedModel.hotspotsEnabled && (
+                <div className="absolute top-4 right-4">
+                  <button
+                    onClick={() => setHotspotsEnabled(!hotspotsEnabled)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      hotspotsEnabled
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                    title={hotspotsEnabled ? 'Masquer les hotspots' : 'Afficher les hotspots'}
+                  >
+                    {hotspotsEnabled ? '👁️' : '🚫'}
+                  </button>
+                </div>
+              )}
             </div>
 
             {selectedModel.shortDescription && (

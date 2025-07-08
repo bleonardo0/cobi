@@ -187,6 +187,14 @@ export interface SupabaseModel {
   fallback_360_video?: string;
   default_scale?: string;
   auto_alt_text?: boolean;
+  // Nouveaux champs pour les hotspots
+  hotspots_enabled?: boolean;
+  hotspots_config?: any;
+  nutri_score?: 'A' | 'B' | 'C' | 'D' | 'E';
+  security_risk?: boolean;
+  origin_country?: string;
+  transport_distance?: number;
+  carbon_footprint?: number;
 }
 
 // Fonction utilitaire pour convertir de Supabase vers notre interface
@@ -217,5 +225,13 @@ export function convertSupabaseToModel(supabaseModel: SupabaseModel): Model3D {
     fallback360Video: supabaseModel.fallback_360_video,
     defaultScale: supabaseModel.default_scale,
     autoAltText: supabaseModel.auto_alt_text,
+    // Nouveaux champs pour les hotspots
+    hotspotsEnabled: supabaseModel.hotspots_enabled,
+    hotspotsConfig: supabaseModel.hotspots_config,
+    nutriScore: supabaseModel.nutri_score,
+    securityRisk: supabaseModel.security_risk,
+    originCountry: supabaseModel.origin_country,
+    transportDistance: supabaseModel.transport_distance,
+    carbonFootprint: supabaseModel.carbon_footprint,
   };
 } 

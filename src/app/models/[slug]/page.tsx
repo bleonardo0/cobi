@@ -9,6 +9,7 @@ import { useScrollPosition } from "@/hooks/useScrollPosition";
 import Link from "next/link";
 import ModelViewer from "@/components/ModelViewer";
 import BackButton from "@/components/BackButton";
+import HotspotViewer from "@/components/HotspotViewer";
 import QRCode from 'qrcode';
 
 export default function ModelDetailPage() {
@@ -27,6 +28,7 @@ export default function ModelDetailPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [environmentMode, setEnvironmentMode] = useState<'default' | 'neutral' | 'grid'>('default');
+  const [hotspotsEnabled, setHotspotsEnabled] = useState(true);
   const [performanceStats, setPerformanceStats] = useState<{
     loadTime?: number;
     triangles?: number;
@@ -399,8 +401,36 @@ export default function ModelDetailPage() {
                   }}
                 />
                 
+                {/* Hotspots */}
+                {model.hotspotsEnabled && (
+                  <HotspotViewer
+                    hotspotsConfig={model.hotspotsConfig}
+                    enabled={hotspotsEnabled}
+                    onHotspotClick={(type, data) => {
+                      console.log('Hotspot clicked:', type, data);
+                    }}
+                  />
+                )}
+                
                 {/* Contrôles d'environnement */}
                 <div className="absolute top-4 right-4 flex space-x-2">
+                  {/* Toggle Hotspots */}
+                  {model.hotspotsEnabled && (
+                    <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+                      <button
+                        onClick={() => setHotspotsEnabled(!hotspotsEnabled)}
+                        className={`p-2 rounded transition-colors ${
+                          hotspotsEnabled
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-gray-100 text-gray-500'
+                        }`}
+                        title={hotspotsEnabled ? 'Masquer les hotspots' : 'Afficher les hotspots'}
+                      >
+                        {hotspotsEnabled ? '👁️' : '🚫'}
+                      </button>
+                    </div>
+                  )}
+                  
                   <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
                     <div className="flex space-x-1">
                       <button
