@@ -153,16 +153,16 @@ export default function MenuPage() {
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50 font-montserrat">
       {/* Header du restaurant */}
       <div 
-        className="text-white py-8"
+        className="text-white py-4 sm:py-8"
         style={{ 
           background: 'rgb(10, 91, 72)' 
         }}
       >
         <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold font-montserrat">La Bella Vita</h1>
-              <p className="text-white mt-1 font-montserrat opacity-90">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold font-montserrat">La Bella Vita</h1>
+              <p className="text-white mt-1 font-montserrat opacity-90 text-sm sm:text-base">
                 Découvrez notre menu en 3D - Une expérience culinaire immersive
                 {posEnabled && canOrder && (
                   <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-500 text-white">
@@ -172,10 +172,11 @@ export default function MenuPage() {
               </p>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-4">
               {/* Toggle Hotspots */}
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-white">Hotspots</span>
+                <span className="text-sm font-medium text-white hidden sm:inline">Hotspots</span>
+                <span className="text-xs font-medium text-white sm:hidden">Hotspots</span>
                 <button
                   onClick={() => setHotspotsEnabled(!hotspotsEnabled)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -194,12 +195,12 @@ export default function MenuPage() {
               {posEnabled && canOrder && (
                 <button
                   onClick={() => setIsCartOpen(true)}
-                  className="relative bg-white text-teal-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                  className="relative bg-white text-teal-600 px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center space-x-2 text-sm sm:text-base min-h-[44px]"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6 0H9.5" />
                   </svg>
-                  <span>Panier</span>
+                  <span className="hidden sm:inline">Panier</span>
                   {!isCartEmpty && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
                       {getItemCount()}
@@ -212,10 +213,10 @@ export default function MenuPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Filtres par catégorie */}
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             {categories.map((category) => {
               const categoryInfo = category === 'all' 
                 ? { name: 'Tout', icon: '🍽️' }
@@ -225,14 +226,17 @@ export default function MenuPage() {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors font-montserrat ${
+                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-full text-sm font-medium transition-colors font-montserrat min-h-[44px] ${
                     selectedCategory === category
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-white text-bella-vita hover:bg-gray-100'
+                      ? 'bg-teal-600 text-white shadow-md'
+                      : 'bg-white text-bella-vita hover:bg-gray-100 border border-gray-200'
                   }`}
                   style={selectedCategory !== category ? { color: 'rgb(10, 91, 72)' } : {}}
                 >
-                  {categoryInfo?.icon} {categoryInfo?.name || category}
+                  <span className="flex items-center space-x-1">
+                    <span>{categoryInfo?.icon}</span>
+                    <span>{categoryInfo?.name || category}</span>
+                  </span>
                 </button>
               );
             })}
@@ -240,7 +244,7 @@ export default function MenuPage() {
         </div>
 
         {/* Grille des plats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredModels.map((model) => (
             <motion.div
               key={model.id}
@@ -250,7 +254,7 @@ export default function MenuPage() {
               className={`bg-white rounded-xl shadow-sm border-2 transition-all cursor-pointer ${
                 selectedModel?.id === model.id 
                   ? 'border-teal-500 shadow-lg' 
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
               }`}
               onClick={() => handleModelSelect(model)}
             >
@@ -279,11 +283,11 @@ export default function MenuPage() {
               </div>
 
               {/* Informations du plat */}
-              <div className="p-4">
+              <div className="p-3 sm:p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-lg font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>{model.name}</h3>
+                  <h3 className="font-semibold text-base sm:text-lg font-montserrat flex-1 min-w-0 pr-2" style={{ color: 'rgb(10, 91, 72)' }}>{model.name}</h3>
                   {model.price && (
-                    <span className="font-bold text-lg font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>
+                    <span className="font-bold text-base sm:text-lg font-montserrat flex-shrink-0" style={{ color: 'rgb(10, 91, 72)' }}>
                       {model.price.toFixed(2)}€
                     </span>
                   )}
@@ -333,7 +337,7 @@ export default function MenuPage() {
                 {/* Boutons d'action */}
                 <div className="mt-3 space-y-2">
                   <button 
-                    className="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium font-montserrat"
+                    className="w-full bg-teal-600 text-white py-2.5 sm:py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium font-montserrat min-h-[44px]"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleModelSelect(model);
@@ -366,9 +370,9 @@ export default function MenuPage() {
                                 }
                               }
                             }}
-                            className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors"
+                            className="w-10 h-10 sm:w-8 sm:h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                             </svg>
                           </button>
@@ -387,9 +391,9 @@ export default function MenuPage() {
                               }
                             }}
                             disabled={isCartLoading}
-                            className="w-8 h-8 bg-teal-600 hover:bg-teal-700 text-white rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+                            className="w-10 h-10 sm:w-8 sm:h-8 bg-teal-600 hover:bg-teal-700 text-white rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
                           </button>
@@ -401,7 +405,7 @@ export default function MenuPage() {
                             addToCart(model, 1);
                           }}
                           disabled={isCartLoading}
-                          className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium font-montserrat disabled:opacity-50 flex items-center justify-center space-x-2"
+                          className="w-full bg-green-600 text-white py-2.5 sm:py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium font-montserrat disabled:opacity-50 flex items-center justify-center space-x-2 min-h-[44px]"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -441,38 +445,38 @@ export default function MenuPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-2 sm:p-4"
           onClick={() => handleModelSelect(selectedModel)}
         >
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0.8 }}
-            className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-lg sm:rounded-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-3 sm:p-4 border-b border-gray-200">
               <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-bold font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>{selectedModel.name}</h2>
+                <div className="flex-1 min-w-0 pr-3">
+                  <h2 className="text-lg sm:text-xl font-bold font-montserrat truncate" style={{ color: 'rgb(10, 91, 72)' }}>{selectedModel.name}</h2>
                   {selectedModel.price && (
-                    <p className="font-semibold text-lg font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>
+                    <p className="font-semibold text-base sm:text-lg font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>
                       {selectedModel.price.toFixed(2)}€
                     </p>
                   )}
                 </div>
                 <button
                   onClick={() => handleModelSelect(selectedModel)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 p-2 -m-2 rounded-full hover:bg-gray-100"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
             </div>
             
-            <div className="h-96 relative">
+            <div className="h-64 sm:h-96 relative">
               <ModelViewer 
                 src={selectedModel.url}
                 alt={selectedModel.name}
@@ -492,10 +496,10 @@ export default function MenuPage() {
               
               {/* Toggle Hotspots */}
               {selectedModel.hotspotsEnabled && (
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-2 right-2 sm:top-4 sm:right-4">
                   <button
                     onClick={() => setHotspotsEnabled(!hotspotsEnabled)}
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`p-2 rounded-lg transition-colors min-h-[44px] ${
                       hotspotsEnabled
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-gray-100 text-gray-500'
@@ -509,8 +513,8 @@ export default function MenuPage() {
             </div>
 
             {selectedModel.shortDescription && (
-              <div className="p-4 border-t border-gray-200">
-                <p className="font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>{selectedModel.shortDescription}</p>
+              <div className="p-3 sm:p-4 border-t border-gray-200">
+                <p className="font-montserrat text-sm sm:text-base" style={{ color: 'rgb(10, 91, 72)' }}>{selectedModel.shortDescription}</p>
               </div>
             )}
           </motion.div>

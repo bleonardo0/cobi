@@ -80,17 +80,17 @@ export default function Cart({
             className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col"
           >
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 bg-teal-600 text-white">
+            <div className="p-3 sm:p-4 border-b border-gray-200 bg-teal-600 text-white">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold">Votre panier</h2>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold">Votre panier</h2>
                   <p className="text-teal-100 text-sm">
                     {cart.items.length} article{cart.items.length > 1 ? 's' : ''}
                   </p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-teal-700 rounded-lg transition-colors"
+                  className="p-2 hover:bg-teal-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -150,10 +150,10 @@ export default function Cart({
                 </div>
 
                 {/* Actions */}
-                <div className="p-4 space-y-3">
+                <div className="p-3 sm:p-4 space-y-3">
                   <button
                     onClick={onCheckout}
-                    className="w-full bg-teal-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-teal-700 transition-colors"
+                    className="w-full bg-teal-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-teal-700 transition-colors min-h-[48px]"
                   >
                     Commander • {formatPrice(cart.total)}
                   </button>
@@ -161,7 +161,7 @@ export default function Cart({
                   <button
                     onClick={handleClearCart}
                     disabled={isClearing}
-                    className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50"
+                    className="w-full bg-gray-200 text-gray-700 py-2.5 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50 min-h-[44px]"
                   >
                     {isClearing ? 'Suppression...' : 'Vider le panier'}
                   </button>
@@ -229,10 +229,10 @@ function CartItemComponent({ item, onUpdateQuantity, onRemove, formatPrice }: Ca
           
           {/* Price and quantity */}
           <div className="flex items-center justify-between mt-3">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               <button
                 onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
                 disabled={item.quantity <= 1}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -240,11 +240,11 @@ function CartItemComponent({ item, onUpdateQuantity, onRemove, formatPrice }: Ca
                 </svg>
               </button>
               
-              <span className="font-medium">{item.quantity}</span>
+              <span className="font-medium min-w-[24px] text-center">{item.quantity}</span>
               
               <button
                 onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -267,7 +267,7 @@ function CartItemComponent({ item, onUpdateQuantity, onRemove, formatPrice }: Ca
         <div className="flex-shrink-0">
           <button
             onClick={() => onRemove(item.id)}
-            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+            className="p-2 text-gray-400 hover:text-red-500 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

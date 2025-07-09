@@ -166,6 +166,7 @@ h4, h5, h6 {
   gap: 0.5rem;
   text-decoration: none;
   font-size: 0.95rem;
+  min-height: 44px; /* Minimum touch target size */
 }
 
 .btn-primary:hover {
@@ -190,6 +191,7 @@ h4, h5, h6 {
   gap: 0.5rem;
   text-decoration: none;
   font-size: 0.95rem;
+  min-height: 44px; /* Minimum touch target size */
 }
 
 .btn-secondary:hover {
@@ -197,6 +199,27 @@ h4, h5, h6 {
   border-color: var(--color-primary);
   transform: translateY(-2px);
   box-shadow: var(--shadow-soft);
+}
+
+/* Mobile-specific button improvements */
+@media (max-width: 640px) {
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    min-height: 48px; /* Slightly larger on mobile */
+  }
+  
+  /* Ensure all buttons meet minimum touch targets */
+  button:not(.btn-primary):not(.btn-secondary) {
+    min-height: 44px;
+  }
+  
+  /* Improve touch targets for icon-only buttons */
+  button[aria-label]:not([aria-label=""]) {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /* Glass Effect */
@@ -388,7 +411,7 @@ model-viewer > .ar-button:hover {
 
 /* Layout Utilities */
 .section-padding {
-  padding: 2rem 1rem;
+  padding: 1.5rem 0.75rem;
 }
 
 @media (min-width: 640px) {
@@ -406,7 +429,7 @@ model-viewer > .ar-button:hover {
 .container-modern {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 0.75rem;
 }
 
 @media (min-width: 640px) {
@@ -418,6 +441,47 @@ model-viewer > .ar-button:hover {
 @media (min-width: 1024px) {
   .container-modern {
     padding: 0 2rem;
+  }
+}
+
+/* Mobile-specific spacing improvements */
+@media (max-width: 640px) {
+  /* Reduce excessive spacing on mobile */
+  .space-y-6 > * + * {
+    margin-top: 1rem;
+  }
+  
+  .space-y-4 > * + * {
+    margin-top: 0.75rem;
+  }
+  
+  .space-y-3 > * + * {
+    margin-top: 0.5rem;
+  }
+  
+  /* Improve margin bottom for mobile */
+  .mb-6 {
+    margin-bottom: 1rem;
+  }
+  
+  .mb-4 {
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Tighter padding for mobile cards */
+  .p-4 {
+    padding: 0.75rem;
+  }
+  
+  /* Better text sizing for mobile */
+  .text-lg {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+  
+  .text-xl {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
   }
 }
 
