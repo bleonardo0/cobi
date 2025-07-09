@@ -456,7 +456,7 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
     return (
       <div
         ref={containerRef}
-        className={`model-viewer-container ${className}`}
+        className={`model-viewer-container ${className} rounded-2xl overflow-hidden shadow-soft border border-neutral-200`}
         style={{
           ...style,
           position: 'relative',
@@ -469,29 +469,42 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         {/* Loading state - IMPORTANT: Never use display: none, it causes AR crashes */}
         {(isLoading && !isError && !isInAR) && (
           <div 
-            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 z-10"
+            className="absolute inset-0 flex items-center justify-center bg-white/95 backdrop-blur-sm z-10"
             style={{ visibility: 'visible', opacity: 1 }}
           >
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 text-sm font-medium">
+            <div className="text-center bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-glass border border-white/20 max-w-sm mx-4">
+              <div className="relative mx-auto mb-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div className="absolute inset-0 rounded-full border-2 border-blue-600 animate-spin opacity-30"></div>
+              </div>
+              <h3 className="text-lg font-bold text-neutral-800 mb-2 font-display">
                 {arJustExited ? 'Récupération après AR...' : 
                  loadAttempts > 0 ? `Tentative ${loadAttempts + 1}...` : 
                  'Chargement du modèle 3D...'}
-              </p>
-              <p className="text-gray-400 text-xs mt-1">
+              </h3>
+              <p className="text-neutral-600 text-sm mb-4">
                 {isGLB ? 'Fichier GLB/GLTF' : 'Fichier 3D'}
               </p>
-              {arSupported && (
-                <p className="text-green-600 text-xs mt-1">
-                  ✓ AR disponible
-                </p>
-              )}
-              {loadAttempts > 0 && (
-                <p className="text-orange-600 text-xs mt-1">
-                  Stratégie de récupération en cours...
-                </p>
-              )}
+              <div className="flex flex-wrap gap-2 justify-center">
+                {arSupported && (
+                  <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
+                    ✓ AR disponible
+                  </span>
+                )}
+                {loadAttempts > 0 && (
+                  <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-full font-medium">
+                    Récupération en cours...
+                  </span>
+                )}
+              </div>
+              {/* Progress bar */}
+              <div className="mt-4 w-full bg-neutral-200 rounded-full h-2">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full animate-shimmer" style={{ width: '30%' }}></div>
+              </div>
             </div>
           </div>
         )}
@@ -499,19 +512,24 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         {/* AR Active Indicator */}
         {isInAR && (
           <div 
-            className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-20"
+            className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-20"
             style={{ visibility: 'visible', opacity: 1 }}
           >
-            <div className="text-center text-white">
-              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center text-white bg-black/60 backdrop-blur-sm rounded-3xl p-8 mx-4 max-w-sm">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2">Mode AR Actif</h3>
-              <p className="text-sm opacity-75">
+              <h3 className="text-xl font-bold mb-3 font-display">Mode AR Actif</h3>
+              <p className="text-sm opacity-90 leading-relaxed">
                 Utilisez votre appareil pour voir le modèle en réalité augmentée
               </p>
+              <div className="mt-4 flex justify-center">
+                <span className="bg-green-600 text-white text-xs px-3 py-1 rounded-full font-medium">
+                  🥽 Réalité augmentée
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -519,38 +537,46 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         {/* Error state - only show if not in AR and not just exited */}
         {(isError && !isInAR && !arJustExited) && (
           <div 
-            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 z-10"
+            className="absolute inset-0 flex items-center justify-center bg-white/95 backdrop-blur-sm z-10"
             style={{ visibility: 'visible', opacity: 1 }}
           >
-            <div className="text-center max-w-md px-4">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center max-w-md bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-glass border border-white/20 mx-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Erreur de chargement</h3>
-              <p className="text-gray-600 text-sm mb-4">
+              <h3 className="text-xl font-bold text-neutral-800 mb-3 font-display">Erreur de chargement</h3>
+              <p className="text-neutral-600 text-sm mb-6 leading-relaxed">
                 {`Impossible de charger le modèle 3D${loadAttempts > 0 ? ` (${loadAttempts + 1} tentatives)` : ''}`}
               </p>
-              <div className="flex space-x-2 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button 
                   onClick={handleRetry}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-soft hover:shadow-lg transform hover:scale-105"
                 >
-                  🔄 Réessayer
+                  <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Réessayer
                 </button>
                 <a 
                   href={src}
                   target="_blank"
-                  className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+                  className="px-6 py-3 bg-white hover:bg-neutral-50 text-neutral-700 text-sm font-semibold rounded-xl transition-all duration-200 shadow-soft border border-neutral-200 hover:border-neutral-300 transform hover:scale-105"
                 >
-                  📥 Télécharger
+                  <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Télécharger
                 </a>
               </div>
               {loadAttempts > 2 && (
-                <p className="text-xs text-gray-500 mt-3">
-                  Plusieurs tentatives ont échoué. Vérifiez votre connexion internet.
-                </p>
+                <div className="mt-6 p-4 bg-neutral-50 rounded-xl border border-neutral-200">
+                  <p className="text-xs text-neutral-600 font-medium">
+                    ⚠️ Plusieurs tentatives ont échoué. Vérifiez votre connexion internet.
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -558,18 +584,24 @@ const ModelViewer = forwardRef<HTMLElement, ModelViewerProps>(
         
         {/* Success indicator */}
         {(isLoaded && !isError && !isInAR) && (
-          <div className="absolute top-4 right-4 z-10">
-            <span className="bg-green-600 text-white text-sm px-3 py-1 rounded-full shadow-lg">
-              ✓ Modèle chargé
+          <div className="absolute top-6 right-6 z-10">
+            <span className="bg-green-600 text-white text-sm px-4 py-2 rounded-full shadow-soft backdrop-blur-sm font-medium border border-green-500">
+              <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Modèle chargé
             </span>
           </div>
         )}
 
         {/* AR Support indicator */}
         {(isLoaded && arSupported && !isError && !isInAR) && (
-          <div className="absolute top-4 left-4 z-10">
-            <span className="bg-blue-600 text-white text-sm px-3 py-1 rounded-full shadow-lg">
-              🥽 AR
+          <div className="absolute top-6 left-6 z-10">
+            <span className="bg-blue-600 text-white text-sm px-4 py-2 rounded-full shadow-soft backdrop-blur-sm font-medium border border-blue-500">
+              <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              AR
             </span>
           </div>
         )}

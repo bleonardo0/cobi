@@ -76,40 +76,51 @@ export default function Cart({
             initial="closed"
             animate="open"
             exit="closed"
-            transition={{ type: 'tween', duration: 0.3 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col"
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed right-0 top-0 h-full w-full max-w-md bg-white/95 backdrop-blur-lg shadow-soft-lg z-50 flex flex-col border-l border-neutral-200"
           >
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 bg-teal-600 text-white">
+            <div className="p-6 border-b border-neutral-200 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold">Votre panier</h2>
-                  <p className="text-teal-100 text-sm">
+                  <h2 className="text-2xl font-bold font-display">Votre panier</h2>
+                  <p className="text-blue-100 text-sm font-medium">
                     {cart.items.length} article{cart.items.length > 1 ? 's' : ''}
                   </p>
                 </div>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={onClose}
-                  className="p-2 hover:bg-teal-700 rounded-lg transition-colors"
+                  className="p-3 hover:bg-white/20 rounded-xl transition-all duration-200 backdrop-blur-sm"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                </button>
+                </motion.button>
               </div>
             </div>
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
               {cart.items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                  <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6 0H9.5" />
-                  </svg>
-                  <p className="text-lg font-medium">Panier vide</p>
-                  <p className="text-sm text-center mt-2">
-                    Ajoutez des plats depuis le menu pour commencer votre commande
-                  </p>
+                <div className="flex flex-col items-center justify-center h-full p-8">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="text-center"
+                  >
+                    <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce-subtle">
+                      <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6 0H9.5" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-neutral-800 mb-3 font-display">Panier vide</h3>
+                    <p className="text-neutral-600 text-sm leading-relaxed max-w-sm">
+                      Ajoutez des plats depuis le menu pour commencer votre commande
+                    </p>
+                  </motion.div>
                 </div>
               ) : (
                 <div className="p-4 space-y-4">
@@ -128,43 +139,59 @@ export default function Cart({
 
             {/* Footer */}
             {cart.items.length > 0 && (
-              <div className="border-t border-gray-200 bg-gray-50">
+              <div className="border-t border-neutral-200 bg-neutral-50/50 backdrop-blur-sm">
                 {/* Totals */}
-                <div className="p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
+                <div className="p-6 space-y-3">
+                  <div className="flex justify-between text-sm font-medium text-neutral-600">
                     <span>Sous-total</span>
                     <span>{formatPrice(cart.subtotal)}</span>
                   </div>
                   
                   {(cart.deliveryFee || 0) > 0 && (
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm font-medium text-neutral-600">
                       <span>Frais de livraison</span>
                       <span>{formatPrice(cart.deliveryFee || 0)}</span>
                     </div>
                   )}
                   
-                  <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                  <div className="flex justify-between text-xl font-bold text-neutral-800 pt-3 border-t border-neutral-200">
                     <span>Total</span>
-                    <span>{formatPrice(cart.total)}</span>
+                    <span className="text-blue-600">{formatPrice(cart.total)}</span>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="p-4 space-y-3">
-                  <button
+                <div className="p-6 space-y-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={onCheckout}
-                    className="w-full bg-teal-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-teal-700 transition-colors"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-2xl font-bold font-display text-lg transition-all duration-200 shadow-soft hover:shadow-lg flex items-center justify-center space-x-3"
                   >
-                    Commander • {formatPrice(cart.total)}
-                  </button>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6 0H9.5" />
+                    </svg>
+                    <span>Commander • {formatPrice(cart.total)}</span>
+                  </motion.button>
                   
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={handleClearCart}
                     disabled={isClearing}
-                    className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50"
+                    className="w-full bg-white hover:bg-neutral-50 text-neutral-700 py-3 px-6 rounded-2xl font-semibold font-display text-sm transition-all duration-200 shadow-soft border border-neutral-200 hover:border-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isClearing ? 'Suppression...' : 'Vider le panier'}
-                  </button>
+                    {isClearing ? (
+                      <span className="flex items-center justify-center space-x-2">
+                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Suppression...</span>
+                      </span>
+                    ) : (
+                      'Vider le panier'
+                    )}
+                  </motion.button>
                 </div>
               </div>
             )}
