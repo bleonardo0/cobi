@@ -167,8 +167,17 @@ export default function AdminDashboard() {
     try {
       setResetLoading(prev => ({ ...prev, [restaurantId]: true }));
       
-      // Utiliser directement l'ID du restaurant pour les analytics
-      const analyticsRestaurantId = restaurantId;
+      // Mapper l'ID du restaurant vers l'ID analytics
+      const restaurantIdMapping: Record<string, string> = {
+        'bella-vita-uuid': 'restaurant-bella-vita-1',
+        '123e4567-e89b-12d3-a456-426614174000': '123e4567-e89b-12d3-a456-426614174000',
+        'le-gourmet-uuid': 'restaurant-test-123',
+        'sushi-zen-uuid': 'restaurant-sushi-zen-1',
+        // Leo et les pieds - pas de données analytics pour l'instant
+        '1518ab7e-7e39-4508-a4e8-f259a98ac464': '1518ab7e-7e39-4508-a4e8-f259a98ac464'
+      };
+      
+      const analyticsRestaurantId = restaurantIdMapping[restaurantId] || restaurantId;
       
       const response = await fetch('/api/admin/analytics/reset', {
         method: 'POST',
@@ -184,21 +193,39 @@ export default function AdminDashboard() {
       const data = await response.json();
       
       if (data.success) {
-        const shouldViewAnalytics = window.confirm(
-          `✅ Analytics remis à zéro pour "${restaurantName}" !\n\n` +
-          `• ${data.data.viewsRemoved} vues supprimées\n` +
-          `• ${data.data.sessionsRemoved} sessions supprimées\n` +
-          `• Les analytics sont maintenant à 0 vues\n` +
-          `• Les nouvelles visites du menu seront comptabilisées\n\n` +
-          `Voulez-vous voir la page Analytics pour vérifier ?`
-        );
-        
-        if (shouldViewAnalytics) {
-          // Trouver le slug du restaurant
-          const restaurant = restaurants.find(r => r.id === restaurantId);
-          const restaurantSlug = restaurant?.slug || 'bella-vita';
-          window.open(`/insights?restaurant=${restaurantSlug}`, '_blank');
+        if (data.data.action === 'no_data') {
+          // Cas où il n'y a pas de données
+          alert(
+            `ℹ️ Aucune donnée analytics à supprimer pour "${restaurantName}"\n\n` +
+            `Ce restaurant n'a pas encore de données analytics.\n` +
+            `Les nouvelles visites du menu commenceront à être comptabilisées automatiquement.`
+          );
+        } else {
+          // Cas où des données ont été supprimées
+          const shouldViewAnalytics = window.confirm(
+            `✅ Analytics remis à zéro pour "${restaurantName}" !\n\n` +
+            `📁 Système fichiers:\n` +
+            `• ${data.data.viewsRemoved || 0} vues supprimées\n` +
+            `• ${data.data.sessionsRemoved || 0} sessions supprimées\n` +
+            `• ${data.data.menuViewsRemoved || 0} vues menu supprimées\n\n` +
+            `🗄️ Base de données:\n` +
+            `• ${data.data.supabaseViewsRemoved || 0} vues supprimées\n\n` +
+            `🎯 Total: ${data.data.totalRemoved || 0} éléments supprimés\n` +
+            `• Les analytics sont maintenant à 0 vues\n` +
+            `• Les nouvelles visites du menu seront comptabilisées\n\n` +
+            `Voulez-vous voir la page Analytics pour vérifier ?`
+          );
+          
+          if (shouldViewAnalytics) {
+            // Trouver le slug du restaurant
+            const restaurant = restaurants.find(r => r.id === restaurantId);
+            const restaurantSlug = restaurant?.slug || 'bella-vita';
+            window.open(`/insights?restaurant=${restaurantSlug}`, '_blank');
+          }
         }
+        
+        // Actualiser les données pour refléter les changements
+        fetchAdminData();
       } else {
         throw new Error(data.error || 'Erreur lors du reset');
       }
