@@ -11,6 +11,7 @@ import { MENU_CATEGORIES } from "@/lib/constants";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
 import { useAuth } from "@/providers/AuthProvider";
 import { useRouter } from "next/navigation";
+import { useRestaurantId } from "@/hooks/useRestaurantId";
 
 export default function RestaurantDashboard() {
   const [models, setModels] = useState<Model3D[]>([]);
@@ -21,6 +22,12 @@ export default function RestaurantDashboard() {
   
   const { user, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  
+  // Utiliser directement le restaurant de l'utilisateur connecté
+  const restaurantId = user?.restaurantId;
+  const [currentRestaurantSlug, setCurrentRestaurantSlug] = useState<string | null>(null);
+  const [restaurantName, setRestaurantName] = useState<string | null>(null);
+  const [restaurantLoading, setRestaurantLoading] = useState(true);
   
   // Restaurer la position de scroll si l'utilisateur revient de la page d'un modèle
   useScrollPosition('gallery', true);
@@ -40,16 +47,84 @@ export default function RestaurantDashboard() {
     }
   }, [user, router, authLoading]);
 
+  // Récupérer les informations du restaurant de l'utilisateur
   useEffect(() => {
+    const fetchRestaurantInfo = async () => {
+      if (restaurantId) {
+        try {
+          const response = await fetch(`/api/admin/restaurants/${restaurantId}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            
+            if (data.success && data.restaurant) {
+              setCurrentRestaurantSlug(data.restaurant.slug);
+              setRestaurantName(data.restaurant.name);
+            } else {
+              setRestaurantName('Restaurant');
+            }
+          } else {
+            setRestaurantName('Restaurant');
+          }
+        } catch (error) {
+          console.error('Erreur lors de la récupération du restaurant:', error);
+          setRestaurantName('Restaurant');
+        }
+      } else if (user?.email) {
+        // Fallback: récupérer par email si pas de restaurantId
+        try {
+          const response = await fetch('/api/admin/restaurants');
+          
+          if (response.ok) {
+            const data = await response.json();
+            
+            if (data.success && data.restaurants) {
+              const userRestaurant = data.restaurants.find((r: any) => r.email === user.email);
+              if (userRestaurant) {
+                setCurrentRestaurantSlug(userRestaurant.slug);
+                setRestaurantName(userRestaurant.name);
+              } else {
+                setRestaurantName('Restaurant');
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Erreur fallback email:', error);
+          setRestaurantName('Restaurant');
+        }
+      } else {
+        setRestaurantName('Restaurant');
+      }
+      
+      setRestaurantLoading(false);
+    };
+
     if (user) {
+      fetchRestaurantInfo();
+    }
+  }, [restaurantId, user?.email]);
+
+  useEffect(() => {
+    if (user && restaurantId) {
       fetchModels();
     }
-  }, [user]);
+  }, [user, restaurantId]);
 
   const fetchModels = async () => {
+    if (!restaurantId) {
+      console.warn('❌ Aucun restaurant ID disponible pour charger les modèles');
+      setModels([]);
+      setFilteredModels([]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const response = await fetch('/api/models');
+      console.log('🔄 Chargement des modèles pour le restaurant:', restaurantId);
+      
+      // Utiliser l'API qui filtre par restaurant
+      const response = await fetch(`/api/models?restaurantId=${restaurantId}`);
       
       if (!response.ok) {
         throw new Error('Erreur lors du chargement des modèles');
@@ -57,6 +132,8 @@ export default function RestaurantDashboard() {
       
       const data: ModelsResponse = await response.json();
       const sortedModels = sortModels(data.models || [], sortBy);
+      
+      console.log(`✅ ${sortedModels.length} modèles chargés pour le restaurant`);
       setModels(sortedModels);
       setFilteredModels(sortedModels);
     } catch (error) {
@@ -92,24 +169,25 @@ export default function RestaurantDashboard() {
     weeklyScans: number;
   } | null>(null);
 
-  // Fonction pour obtenir l'ID du restaurant de l'utilisateur connecté
-  const getUserRestaurantId = (): string => {
-    // Pour l'instant, mapping basique. À terme, ceci sera récupéré depuis la DB
-    const userToRestaurantMap: Record<string, string> = {
-      'bella-vita': 'restaurant-bella-vita-1',
-      'le-gourmet': 'restaurant-test-123',
-      'admin': 'restaurant-bella-vita-1', // Par défaut pour les admins
-    };
-    
-    const userKey = user?.name?.toLowerCase().replace(/\s+/g, '-') || restaurantSlug;
-    return userToRestaurantMap[userKey] || 'restaurant-bella-vita-1';
-  };
+  // Slug du restaurant pour les liens
+  const restaurantSlug = currentRestaurantSlug || "restaurant";
 
   // Calculs des métriques restaurant
   const getRestaurantMetrics = async () => {
     try {
       const totalDishes = models.length;
-      const restaurantId = getUserRestaurantId();
+      
+      if (!restaurantId) {
+        console.warn('⚠️ Aucun restaurant ID disponible pour les métriques');
+        return {
+          totalDishes,
+          totalViews: 0,
+          mostViewedDish: null,
+          weeklyScans: 0
+        };
+      }
+      
+      console.log('🔄 Récupération des métriques restaurant:', currentRestaurantSlug, '(ID:', restaurantId, ')');
       
       // Récupérer les statistiques depuis l'API comme dans la page Analytics
       const response = await fetch(`/api/analytics/stats?restaurantId=${restaurantId}`);
@@ -155,14 +233,12 @@ export default function RestaurantDashboard() {
 
   // Charger les métriques analytics
   useEffect(() => {
-    if (models.length > 0) {
+    if (models.length > 0 && restaurantId && !restaurantLoading) {
       getRestaurantMetrics().then(setAnalytics);
     }
-  }, [models]);
+  }, [models, restaurantId, restaurantLoading]);
 
-  // Nom du restaurant (pour l'instant hardcodé, sera récupéré de la DB plus tard)
-  const restaurantName = user?.name || "Bella Vita";
-  const restaurantSlug = "bella-vita"; // À récupérer de la DB plus tard
+
 
   if (authLoading || !user) {
     return null; // Authentification en cours ou redirection
@@ -251,8 +327,8 @@ export default function RestaurantDashboard() {
                   <span className="text-sm font-medium">Menu 3D Actif</span>
                 </div>
                 
-                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif mb-6 leading-tight font-bold" style={{ fontFamily: 'DM Serif Display, Georgia, serif', color: '#fbfaf5' }}>
-                  🍽️ {restaurantName}
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif mb-6 font-bold whitespace-nowrap overflow-hidden text-ellipsis" style={{ fontFamily: 'DM Serif Display, Georgia, serif', color: '#fbfaf5' }}>
+                  🍽️ {restaurantName || 'Restaurant'}
                 </h2>
                 
                 <p className="text-xl lg:text-2xl mb-8 leading-relaxed font-medium" style={{ color: '#fbfaf5' }}>
@@ -519,7 +595,7 @@ export default function RestaurantDashboard() {
               <span className="text-2xl font-serif font-bold" style={{ fontFamily: 'DM Serif Display, Georgia, serif', color: '#1f2d3d' }}>Cobi</span>
             </div>
             <p className="text-base font-medium" style={{ color: '#1f2d3d' }}>
-              Dashboard Restaurant • {restaurantName} © 2024 Cobi
+              Dashboard Restaurant • {restaurantName || 'Restaurant'} © 2025 Cobi
             </p>
           </div>
         </div>

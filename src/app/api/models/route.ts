@@ -1,14 +1,24 @@
 import { NextResponse } from "next/server";
 import { getAllModels } from "@/lib/models";
-import { ModelsResponse } from "@/types/model";
+import { ModelsResponse, convertSupabaseToModel, SupabaseModel } from "@/types/model";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const restaurantId = searchParams.get('restaurantId');
+    
     const models = await getAllModels();
     
+    // Filtrer par restaurant si l'ID est fourni
+    const filteredModels = restaurantId 
+      ? models.filter(model => model.restaurantId === restaurantId)
+      : models;
+    
+    console.log(`📊 API Models: ${filteredModels.length}/${models.length} modèles retournés ${restaurantId ? `pour restaurant ${restaurantId}` : '(tous restaurants)'}`);
+    
     const response: ModelsResponse = {
-      models,
-      total: models.length,
+      models: filteredModels,
+      total: filteredModels.length,
     };
 
     return NextResponse.json(response);

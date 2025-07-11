@@ -1,15 +1,36 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import UploadForm from "@/components/UploadForm";
 import { Model3D } from "@/types/model";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/providers/AuthProvider";
 
 export default function UploadPage() {
   const [uploadedModels, setUploadedModels] = useState<Model3D[]>([]);
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+  const [currentRestaurantId, setCurrentRestaurantId] = useState<string | null>(null);
+
+  // Vérifier l'authentification et récupérer le restaurant de l'utilisateur
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+
+    // Récupérer l'ID du restaurant de l'utilisateur connecté
+    if (user.restaurantId) {
+      setCurrentRestaurantId(user.restaurantId);
+    } else {
+      // Fallback : utiliser bella-vita par défaut
+      setCurrentRestaurantId('restaurant-bella-vita-1');
+    }
+  }, [user, authLoading, router]);
 
   const handleUploadSuccess = (model: Model3D) => {
     setUploadedModels(prev => [...prev, model]);
@@ -80,7 +101,10 @@ export default function UploadPage() {
         >
           {/* Upload Form */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-            <UploadForm onUploadSuccess={handleUploadSuccess} />
+            <UploadForm 
+              onUploadSuccess={handleUploadSuccess} 
+              restaurantId={currentRestaurantId || undefined}
+            />
           </div>
 
           {/* Upload Success */}

@@ -4,7 +4,7 @@ import { trackModelView } from '@/lib/analytics-simple';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { modelId, restaurantId, sessionId, interactionType, deviceType } = body;
+    const { modelId, restaurantId } = body;
 
     if (!modelId || !restaurantId) {
       return NextResponse.json(
@@ -15,9 +15,9 @@ export async function POST(request: NextRequest) {
 
     const userAgent = request.headers.get('user-agent') || '';
     
-    console.log(`📊 Tracking vue modèle: ${modelId} pour restaurant: ${restaurantId}, session: ${sessionId}`);
+    console.log(`📊 Tracking vue modèle: ${modelId} pour restaurant: ${restaurantId}`);
 
-    const success = await trackModelView(modelId, restaurantId, userAgent, sessionId, deviceType, interactionType);
+    const success = await trackModelView(modelId, restaurantId, userAgent);
 
     if (success) {
       return NextResponse.json({
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ Erreur API track-view:', error);
+    console.error('❌ Erreur API track-model-view:', error);
     return NextResponse.json(
       { 
         success: false, 

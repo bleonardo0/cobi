@@ -689,7 +689,7 @@ export default function AdminDashboard() {
               <span className="text-2xl font-serif font-bold" style={{ fontFamily: 'DM Serif Display, Georgia, serif', color: '#1f2d3d' }}>Admin Cobi</span>
             </div>
             <p className="text-base font-medium" style={{ color: '#1f2d3d' }}>
-              Administration Globale • Plateforme Cobi © 2024
+              Administration Globale • Plateforme Cobi © 2025
             </p>
           </div>
         </div>

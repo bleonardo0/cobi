@@ -1,55 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsStorage } from '@/lib/analytics-storage';
-import { getAllModels } from '@/lib/models';
+import { getModelViewsStats } from '@/lib/analytics-simple';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const restaurantId = searchParams.get('restaurantId');
 
-    console.log('📊 Fetching analytics stats for:', { restaurantId });
+    console.log('📊 Récupération des analytics pour restaurant:', restaurantId);
 
-    // Récupérer tous les modèles pour avoir les noms
-    const allModels = await getAllModels();
-    const modelMap = new Map(allModels.map(m => [m.id, m]));
+    const stats = await getModelViewsStats(restaurantId || undefined);
 
-    // Obtenir les stats générales
-    const generalStats = await analyticsStorage.getGeneralStats(restaurantId || undefined);
-    console.log('📈 Stats générales récupérées:', generalStats);
-    
-    // Obtenir les stats par modèle
-    const modelStats = await analyticsStorage.getModelStats(restaurantId || undefined);
-    
-    // Enrichir les stats avec les informations des modèles
-    const enrichedModelStats = modelStats.map(stat => {
-      const model = modelMap.get(stat.modelId);
-      return {
-        ...stat,
-        name: model?.name || `Modèle ${stat.modelId}`,
-        category: model?.category,
-        thumbnailUrl: model?.thumbnailUrl,
-      };
-    }).sort((a, b) => b.views - a.views);
+    // Transformer les données pour la page insights
+    const mockModels = stats.modelStats.map((model, index) => ({
+      id: model.modelId,
+      name: model.name,
+      views: model.count,
+      avgDuration: model.avgDuration || 0, // Vraie durée moyenne
+      popularityScore: model.percentage,
+      category: 'Plat',
+      thumbnailUrl: '/models/thumbnail-placeholder.jpg'
+    }));
 
-    // Obtenir les vues par jour
-    const viewsByDay = await analyticsStorage.getViewsByDay(restaurantId || undefined);
+    // Convertir viewsByDay en format tableau
+    const viewsByDay = stats.viewsByDay || {};
+    const viewsByDayArray = Object.entries(viewsByDay).map(([date, views]) => ({
+      date: new Date(date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+      views: views
+    })).reverse();
 
-    // Calculer les plats "Waouh" (durée > 120s)
-    const waouhModels = enrichedModelStats.filter(stat => stat.avgDuration > 120);
+    // Calculer les stats des appareils en pourcentages
+    const deviceStats = stats.deviceStats || { mobile: 0, tablet: 0, desktop: 0 };
+    const totalDeviceViews = Object.values(deviceStats).reduce((sum, count) => sum + count, 0);
+    const deviceBreakdown = Object.entries(deviceStats).reduce((acc, [device, count]) => {
+      acc[device] = totalDeviceViews > 0 ? Math.round((count / totalDeviceViews) * 100) : 0;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const analytics = {
+      general: {
+        totalViews: stats.totalViews,
+        avgDuration: stats.globalAvgDuration || 0, // Vraie durée moyenne globale
+        uniqueSessions: stats.totalViews, // Simplifié : 1 session = 1 vue
+        deviceBreakdown: deviceBreakdown,
+      },
+      models: mockModels,
+      viewsByDay: viewsByDayArray,
+      waouhModels: mockModels.filter(m => m.views > 2), // Modèles avec plus de 2 vues
+      topModel: mockModels[0] || null,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    console.log('📊 Analytics simplifiées:', analytics);
 
     return NextResponse.json({
       success: true,
-      data: {
-        general: generalStats,
-        models: enrichedModelStats,
-        viewsByDay,
-        waouhModels,
-        topModel: enrichedModelStats[0] || null,
-        lastUpdated: new Date().toISOString(),
-      },
+      data: analytics,
     });
   } catch (error) {
-    console.error('💥 Error fetching analytics stats:', error);
+    console.error('💥 Erreur lors de la récupération des stats:', error);
     return NextResponse.json(
       { 
         success: false, 

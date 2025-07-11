@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { Model3D } from '@/types/model';
 import { formatFileSize } from '@/lib/utils';
+import { useRestaurantId } from '@/hooks/useRestaurantId';
 
 interface ModelCardProps {
   model: Model3D;
@@ -27,6 +28,9 @@ const ModelCard = ({
   const [imageError, setImageError] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Récupération dynamique de l'ID du restaurant pour le tracking
+  const { restaurantId } = useRestaurantId();
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -99,6 +103,73 @@ const ModelCard = ({
         return 'Boissons';
       default:
         return 'Autres';
+    }
+  };
+
+  // État pour le tracking des durées
+  const [viewStartTime, setViewStartTime] = useState<number | null>(null);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
+  // Fonction pour tracker les vues de modèles avec durée
+  const trackModelView = async () => {
+    try {
+      console.log(`📊 Tracking vue modèle: ${model.name}`);
+      
+      if (!restaurantId) {
+        console.warn('⚠️ Aucun restaurant ID disponible pour le tracking');
+        return;
+      }
+      
+      // Enregistrer le début de vue
+      setViewStartTime(Date.now());
+      
+      await fetch('/api/analytics/track-model-view', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          modelId: model.id,
+          restaurantId: restaurantId, // ID dynamique du restaurant
+        }),
+      });
+
+      // Simuler une durée de vue réaliste (3-8 secondes)
+      const simulatedDuration = Math.floor(Math.random() * 5) + 3;
+      
+      // Tracker la fin de vue après la durée simulée
+      setTimeout(() => {
+        trackModelViewEnd(simulatedDuration);
+      }, simulatedDuration * 1000);
+      
+    } catch (error) {
+      console.error('❌ Erreur lors du tracking:', error);
+    }
+  };
+
+  // Fonction pour tracker la fin de vue avec durée
+  const trackModelViewEnd = async (duration?: number) => {
+    try {
+      const actualDuration = duration || (viewStartTime ? Math.round((Date.now() - viewStartTime) / 1000) : 0);
+      
+      if (actualDuration > 0 && restaurantId) {
+        await fetch('/api/analytics/track-view-end', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            modelId: model.id,
+            restaurantId: restaurantId,
+            sessionId: sessionId,
+            viewDuration: actualDuration,
+          }),
+        });
+        
+        console.log(`✅ Fin de vue trackée: ${actualDuration}s pour ${model.name}`);
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors du tracking de fin:', error);
     }
   };
 
@@ -327,7 +398,11 @@ const ModelCard = ({
 
   if (clickable && !showActions) {
     return (
-      <Link href={`/models/${model.slug}`} className="block">
+      <Link 
+        href={`/models/${model.slug}`} 
+        className="block"
+        onClick={trackModelView}
+      >
         {cardContent}
       </Link>
     );

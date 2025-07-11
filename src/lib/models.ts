@@ -138,6 +138,72 @@ export async function getAllModels(): Promise<Model3D[]> {
   return data.map((model: SupabaseModel) => convertSupabaseToModel(model));
 }
 
+// Get models for a specific restaurant
+export async function getModelsByRestaurant(restaurantSlug: string): Promise<Model3D[]> {
+  if (!isSupabaseConfigured) {
+    return [];
+  }
+  
+  try {
+    // D'abord, récupérer l'ID du restaurant à partir du slug
+    const { data: restaurant, error: restaurantError } = await supabaseAdmin
+      .from('restaurants')
+      .select('id')
+      .eq('slug', restaurantSlug)
+      .single();
+
+    if (restaurantError || !restaurant) {
+      console.log(`❌ Restaurant not found in DB for slug: ${restaurantSlug}`);
+      
+      // Fallback pour les restaurants définis en code (comme les TEST_RESTAURANTS)
+      const restaurantIdMap: Record<string, string> = {
+        'bella-vita': 'restaurant-bella-vita-1',
+        'leo-et-les-pieds': 'restaurant-leo-et-les-pieds-1',
+        'le-gourmet-3d': 'restaurant-test-123'
+      };
+      
+      const fallbackId = restaurantIdMap[restaurantSlug];
+      if (fallbackId) {
+        console.log(`🔄 Using fallback ID: ${fallbackId} for slug: ${restaurantSlug}`);
+        // Récupérer les modèles avec cet ID
+        const { data, error } = await supabaseAdmin
+          .from('models_3d')
+          .select('*')
+          .eq('restaurant_id', fallbackId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching models with fallback ID:', error);
+          return [];
+        }
+
+        return data.map((model: SupabaseModel) => convertSupabaseToModel(model));
+      }
+      
+      return [];
+    }
+
+    // Récupérer les modèles associés à ce restaurant
+    const { data, error } = await supabaseAdmin
+      .from('models_3d')
+      .select('*')
+      .eq('restaurant_id', restaurant.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error(`Error fetching models for restaurant ${restaurantSlug}:`, error);
+      return [];
+    }
+
+    console.log(`✅ Found ${data.length} models for restaurant ${restaurantSlug} (ID: ${restaurant.id})`);
+    return data.map((model: SupabaseModel) => convertSupabaseToModel(model));
+    
+  } catch (error) {
+    console.error(`Error in getModelsByRestaurant for ${restaurantSlug}:`, error);
+    return [];
+  }
+}
+
 // Delete a model
 export async function deleteModel(id: string): Promise<boolean> {
   if (!isSupabaseConfigured) {

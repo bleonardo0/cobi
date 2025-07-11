@@ -88,17 +88,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           isActive: true,
           avatar: undefined,
           lastLogin: new Date().toISOString()
-        },
-        'bellavita@cobi.com': {
-          id: 'bellavita-uuid',
-          email: 'bellavita@cobi.com',
-          name: 'Manager Bella Vita',
-          role: 'restaurateur',
-          restaurantId: 'bella-vita-uuid',
-          createdAt: new Date().toISOString(),
-          isActive: true,
-          avatar: undefined,
-          lastLogin: new Date().toISOString()
         }
       };
 

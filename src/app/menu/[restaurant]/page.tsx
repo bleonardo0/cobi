@@ -26,7 +26,7 @@ export default function MenuPage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [hotspotsEnabled, setHotspotsEnabled] = useState(true);
 
-  const { trackModelView, trackModelViewEnd, trackSessionStart } = useAnalytics(restaurant?.id);
+  const { trackModelView, trackModelViewEnd, trackSessionStart, trackMenuView } = useAnalytics(restaurant?.id);
   
   // Configuration POS
   const { config: posConfig, isEnabled: posEnabled, canOrder } = usePOSConfig(restaurant?.id || '');
@@ -55,7 +55,10 @@ export default function MenuPage() {
 
   useEffect(() => {
     if (restaurant) {
+      console.log('🔍 Restaurant chargé:', restaurant);
+      console.log('🔍 Restaurant ID:', restaurant.id);
       trackSessionStart();
+      trackMenuView(); // Track la vue de menu
     }
   }, [restaurant]);
 
@@ -155,15 +158,16 @@ export default function MenuPage() {
       <div 
         className="text-white py-4 sm:py-8"
         style={{ 
-          background: 'rgb(10, 91, 72)' 
+          background: restaurant.primaryColor || '#0a5b48' 
         }}
       >
         <div className="max-w-4xl mx-auto px-4">
+          
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold font-montserrat">La Bella Vita</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold font-montserrat">{restaurant.name}</h1>
               <p className="text-white mt-1 font-montserrat opacity-90 text-sm sm:text-base">
-                Découvrez notre menu en 3D - Une expérience culinaire immersive
+                {restaurant.description || 'Découvrez notre menu en 3D - Une expérience culinaire immersive'}
                 {posEnabled && canOrder && (
                   <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-500 text-white">
                     📱 Commande en ligne
@@ -195,7 +199,8 @@ export default function MenuPage() {
               {posEnabled && canOrder && (
                 <button
                   onClick={() => setIsCartOpen(true)}
-                  className="relative bg-white text-teal-600 px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center space-x-2 text-sm sm:text-base min-h-[44px]"
+                  className="relative bg-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center space-x-2 text-sm sm:text-base min-h-[44px]"
+                  style={{ color: restaurant.primaryColor || '#0a5b48' }}
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6 0H9.5" />
@@ -228,10 +233,13 @@ export default function MenuPage() {
                   onClick={() => setSelectedCategory(category)}
                   className={`px-3 py-2 sm:px-4 sm:py-2 rounded-full text-sm font-medium transition-colors font-montserrat min-h-[44px] ${
                     selectedCategory === category
-                      ? 'bg-teal-600 text-white shadow-md'
-                      : 'bg-white text-bella-vita hover:bg-gray-100 border border-gray-200'
+                      ? 'text-white shadow-md'
+                      : 'bg-white hover:bg-gray-100 border border-gray-200'
                   }`}
-                  style={selectedCategory !== category ? { color: 'rgb(10, 91, 72)' } : {}}
+                  style={selectedCategory === category 
+                    ? { backgroundColor: restaurant.primaryColor || '#0a5b48' }
+                    : { color: restaurant.primaryColor || '#0a5b48' }
+                  }
                 >
                   <span className="flex items-center space-x-1">
                     <span>{categoryInfo?.icon}</span>
@@ -253,9 +261,13 @@ export default function MenuPage() {
               transition={{ duration: 0.3 }}
               className={`bg-white rounded-xl shadow-sm border-2 transition-all cursor-pointer ${
                 selectedModel?.id === model.id 
-                  ? 'border-teal-500 shadow-lg' 
+                  ? 'shadow-lg' 
                   : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
               }`}
+              style={selectedModel?.id === model.id 
+                ? { borderColor: restaurant.primaryColor || '#0a5b48' } 
+                : {}
+              }
               onClick={() => handleModelSelect(model)}
             >
               {/* Image/Thumbnail */}
@@ -276,7 +288,10 @@ export default function MenuPage() {
                 
                 {/* Badge 3D */}
                 <div className="absolute top-2 right-2">
-                  <span className="bg-teal-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                  <span 
+                    className="text-white text-xs px-2 py-1 rounded-full font-medium"
+                    style={{ backgroundColor: restaurant.primaryColor || '#0a5b48' }}
+                  >
                     3D
                   </span>
                 </div>
@@ -285,16 +300,16 @@ export default function MenuPage() {
               {/* Informations du plat */}
               <div className="p-3 sm:p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-base sm:text-lg font-montserrat flex-1 min-w-0 pr-2" style={{ color: 'rgb(10, 91, 72)' }}>{model.name}</h3>
+                  <h3 className="font-semibold text-base sm:text-lg font-montserrat flex-1 min-w-0 pr-2" style={{ color: restaurant.primaryColor || '#0a5b48' }}>{model.name}</h3>
                   {model.price && (
-                    <span className="font-bold text-base sm:text-lg font-montserrat flex-shrink-0" style={{ color: 'rgb(10, 91, 72)' }}>
+                    <span className="font-bold text-base sm:text-lg font-montserrat flex-shrink-0" style={{ color: restaurant.primaryColor || '#0a5b48' }}>
                       {model.price.toFixed(2)}€
                     </span>
                   )}
                 </div>
 
                 {model.shortDescription && (
-                  <p className="text-sm mb-3 line-clamp-2 font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>
+                  <p className="text-sm mb-3 line-clamp-2 font-montserrat" style={{ color: restaurant.primaryColor || '#0a5b48' }}>
                     {model.shortDescription}
                   </p>
                 )}

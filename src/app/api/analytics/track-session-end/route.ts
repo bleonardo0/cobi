@@ -1,54 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsStorage } from '@/lib/analytics-storage';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    // Validation du contenu
-    const contentType = request.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
+    const body = await request.json();
+    const { sessionId, restaurantId, duration } = body;
+
+    if (!sessionId || !restaurantId) {
       return NextResponse.json(
-        { success: false, error: 'Content-Type must be application/json' },
+        { success: false, error: 'sessionId et restaurantId sont requis' },
         { status: 400 }
       );
     }
 
-    let body;
-    try {
-      body = await request.json();
-    } catch (jsonError) {
-      console.error('Invalid JSON:', jsonError);
+    console.log(`📊 Tracking fin de session: ${sessionId} pour restaurant: ${restaurantId}`);
+
+    // Mettre à jour la session dans la table analytics_sessions
+    const { data, error } = await supabaseAdmin
+      .from('analytics_sessions')
+      .update({
+        end_time: new Date().toISOString(),
+        total_duration: duration
+      })
+      .eq('session_id', sessionId)
+      .eq('restaurant_id', restaurantId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Erreur lors du tracking de fin de session:', error);
       return NextResponse.json(
-        { success: false, error: 'Invalid JSON format' },
-        { status: 400 }
+        { success: false, error: 'Erreur lors du tracking de fin de session' },
+        { status: 500 }
       );
     }
 
-    const { restaurantId, sessionId, endTime } = body;
-
-    // Validation des paramètres requis
-    if (!restaurantId || !sessionId) {
-      return NextResponse.json(
-        { success: false, error: 'restaurantId and sessionId are required' },
-        { status: 400 }
-      );
-    }
-
-    console.log('🏁 Tracking session end:', { restaurantId, sessionId });
-
-    // Terminer la session
-    const endedSession = analyticsStorage.endSession(sessionId);
-
+    console.log('✅ Fin de session trackée:', data);
     return NextResponse.json({
       success: true,
-      message: 'Session ended successfully',
-      sessionEnded: !!endedSession,
+      message: 'Fin de session trackée avec succès',
+      data
     });
+
   } catch (error) {
-    console.error('💥 Error tracking session end:', error);
+    console.error('❌ Erreur API track-session-end:', error);
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Erreur de tracking' 
+        error: error instanceof Error ? error.message : 'Erreur inconnue' 
       },
       { status: 500 }
     );

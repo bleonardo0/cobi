@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Model3D } from "@/types/model";
 import { getAllModels } from "@/lib/models";
+import { useRestaurantId } from "@/hooks/useRestaurantId";
 
 interface ModelStats {
   id: string;
@@ -35,34 +36,15 @@ export default function InsightsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [lastRefresh, setLastRefresh] = useState<string>('');
+  
+  // Récupération dynamique de l'ID du restaurant
+  const { restaurantId, restaurantSlug, isLoading: restaurantLoading } = useRestaurantId();
 
   useEffect(() => {
-    fetchAnalyticsData();
-  }, []);
-
-  // Fonction pour obtenir l'ID du restaurant (peut être étendue plus tard)
-  const getRestaurantId = (): string => {
-    // Pour l'instant, utiliser bella-vita par défaut
-    // Plus tard, ceci pourrait être un paramètre URL ou récupéré depuis l'utilisateur
-    const defaultRestaurantId = 'restaurant-bella-vita-1';
-    
-    // Vérifier s'il y a un paramètre URL (pour le futur)
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const restaurantParam = urlParams.get('restaurant');
-      
-      if (restaurantParam) {
-        const restaurantMapping: Record<string, string> = {
-          'bella-vita': 'restaurant-bella-vita-1',
-          'le-gourmet': 'restaurant-test-123',
-          'test': 'restaurant-test-123'
-        };
-        return restaurantMapping[restaurantParam] || defaultRestaurantId;
-      }
+    if (restaurantId && !restaurantLoading) {
+      fetchAnalyticsData();
     }
-    
-    return defaultRestaurantId;
-  };
+  }, [restaurantId, restaurantLoading]);
 
   const fetchAnalyticsData = async () => {
     try {
@@ -70,8 +52,12 @@ export default function InsightsPage() {
         setIsLoading(true);
       }
       
-      const restaurantId = getRestaurantId();
-      console.log('🔄 Rechargement des analytics pour:', restaurantId);
+      if (!restaurantId) {
+        console.warn('⚠️ Aucun restaurant ID disponible');
+        return;
+      }
+      
+      console.log('🔄 Rechargement des analytics pour:', restaurantSlug, '(ID:', restaurantId, ')');
       
       const response = await fetch(`/api/analytics/stats?restaurantId=${restaurantId}`, {
         cache: 'no-store', // Forcer le rechargement des données

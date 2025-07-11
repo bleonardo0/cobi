@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllModels } from '@/lib/models';
+import { getModelsByRestaurant } from '@/lib/models';
 
 export async function GET(
   request: NextRequest,
@@ -10,14 +10,14 @@ export async function GET(
     
     console.log(`🍽️ Fetching models for restaurant: ${slug}`);
     
-    // Récupérer tous les modèles
-    const allModels = await getAllModels();
+    // Récupérer les modèles spécifiques au restaurant
+    const restaurantModels = await getModelsByRestaurant(slug);
     
-    // Pour l'instant, tous les restaurants partagent la même collection de modèles
-    // Dans le futur, on pourrait filtrer par restaurant avec une colonne restaurant_id
+    console.log(`✅ Found ${restaurantModels.length} models for restaurant: ${slug}`);
+    
     return NextResponse.json({
       success: true,
-      models: allModels,
+      models: restaurantModels,
       restaurantSlug: slug,
     });
   } catch (error) {

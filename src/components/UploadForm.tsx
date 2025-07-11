@@ -11,6 +11,7 @@ import HotspotEditor from '@/components/HotspotEditor';
 
 interface UploadFormProps {
   onUploadSuccess: (model: Model3D) => void;
+  restaurantId?: string;
 }
 
 // Composant pour l'aperçu du modèle
@@ -113,7 +114,7 @@ function ModelPreview({ src }: { src: string }) {
   );
 }
 
-export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
+export default function UploadForm({ onUploadSuccess, restaurantId }: UploadFormProps) {
   const [selectedModelFile, setSelectedModelFile] = useState<File | null>(null);
   const [selectedThumbnailFile, setSelectedThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
@@ -327,6 +328,11 @@ export default function UploadForm({ onUploadSuccess }: UploadFormProps) {
       
       // Ajouter la configuration des hotspots
       formData.append('hotspotsConfig', JSON.stringify(hotspotsConfig));
+
+      // Ajouter l'ID du restaurant si disponible
+      if (restaurantId) {
+        formData.append('restaurantId', restaurantId);
+      }
 
       const response = await fetch('/api/upload', {
         method: 'POST',

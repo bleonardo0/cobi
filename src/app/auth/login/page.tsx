@@ -46,33 +46,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async (role: 'admin' | 'restaurateur') => {
-    setIsLoading(true);
-    setError(null);
 
-    try {
-      // Comptes de démonstration
-      const demoAccounts = {
-        admin: { email: 'admin@cobi.com', password: 'demo123' },
-        restaurateur: { email: 'bellavita@cobi.com', password: 'demo123' }
-      };
-
-      const account = demoAccounts[role];
-      await login(account.email, account.password);
-      
-      // Redirection basée sur le rôle
-      if (role === 'admin') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/restaurant/dashboard');
-      }
-    } catch (error) {
-      console.error('Demo login error:', error);
-      setError('Erreur lors de la connexion de démonstration');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen gradient-bg-soft flex items-center justify-center section-padding px-4 sm:px-6 lg:px-8">
@@ -95,51 +69,7 @@ export default function LoginPage() {
           </p>
         </motion.div>
 
-        {/* Demo Accounts */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="card-modern card-hover p-6 sm:p-8 animate-scale-in"
-        >
-          <h3 className="text-xl sm:text-2xl font-semibold mb-6 text-center">
-            🎯 Comptes de démonstration
-          </h3>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            {[
-              { role: 'admin', label: 'Administrateur', icon: '👑', color: 'red', description: 'Gestion globale' },
-              { role: 'restaurateur', label: 'Bella Vita', icon: '🍽️', color: 'blue', description: 'Dashboard restaurant' }
-            ].map(({ role, label, icon, color, description }) => (
-              <button
-                key={role}
-                onClick={() => handleDemoLogin(role as any)}
-                disabled={isLoading}
-                className="p-4 sm:p-5 rounded-xl border-2 border-dashed card-hover transition-all disabled:opacity-50"
-                style={{ 
-                  borderColor: 'var(--color-text-secondary)',
-                  backgroundColor: 'var(--color-bg-primary)'
-                }}
-                onMouseEnter={(e) => {
-                  (e.target as HTMLElement).style.borderColor = 'var(--color-primary)';
-                  (e.target as HTMLElement).style.backgroundColor = 'rgba(30, 64, 175, 0.05)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.target as HTMLElement).style.borderColor = 'var(--color-text-secondary)';
-                  (e.target as HTMLElement).style.backgroundColor = 'var(--color-bg-primary)';
-                }}
-              >
-                <div className="text-2xl sm:text-3xl mb-2">{icon}</div>
-                <div className="text-sm sm:text-base font-semibold">{label}</div>
-                <div className="text-xs text-gray-500 mt-1">{description}</div>
-              </button>
-            ))}
-          </div>
-          
-          <p className="text-xs sm:text-sm text-center mt-4" style={{ color: 'var(--color-text-secondary)' }}>
-            Cliquez sur un rôle pour vous connecter instantanément
-          </p>
-        </motion.div>
+
 
         {/* Login Form */}
         <motion.div
@@ -149,7 +79,7 @@ export default function LoginPage() {
           className="card-modern p-6 sm:p-8 animate-scale-in"
         >
           <h3 className="text-xl sm:text-2xl font-semibold mb-6 text-center">
-            🔐 Connexion avec vos identifiants
+            🔐 Connexion
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-6">

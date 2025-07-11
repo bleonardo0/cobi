@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     const price = formData.get('price') as string;
     const shortDescription = formData.get('shortDescription') as string || '';
     const allergensJson = formData.get('allergens') as string || '[]';
+    const restaurantId = formData.get('restaurantId') as string;
     
     // Parse JSON arrays
     let tags: string[] = [];
@@ -111,6 +112,7 @@ export async function POST(request: NextRequest) {
       price: priceValue,
       short_description: shortDescription,
       allergens: allergens,
+      restaurant_id: restaurantId || null, // Assigner le restaurant ID
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

@@ -32,6 +32,21 @@ const TEST_RESTAURANTS = {
     isActive: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+  },
+  'leo-et-les-pieds': {
+    id: 'restaurant-leo-et-les-pieds-1',
+    name: 'Leo et les Pieds',
+    slug: 'leo-et-les-pieds',
+    description: 'Découvrez notre menu gastronomique en 3D - Une expérience culinaire unique',
+    address: '456 Boulevard Saint-Germain, 75006 Paris',
+    phone: '+33 1 45 48 55 26',
+    website: 'https://leo-et-les-pieds.fr',
+    logo: '/api/placeholder/logo-leo.png',
+    primaryColor: '#8b5a2b',
+    secondaryColor: '#d4a574',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 };
 

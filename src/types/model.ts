@@ -11,6 +11,8 @@ export interface Model3D {
   storagePath: string;
   thumbnailUrl?: string;
   thumbnailPath?: string;
+  // Association restaurant
+  restaurantId?: string;
   // Nouveaux champs pour la catégorisation
   category?: string;
   tags?: string[];
@@ -174,6 +176,8 @@ export interface SupabaseModel {
   updated_at: string;
   thumbnail_url?: string;
   thumbnail_path?: string;
+  // Association restaurant
+  restaurant_id?: string;
   // Nouveaux champs pour la catégorisation
   category?: string;
   tags?: string[];
@@ -212,6 +216,8 @@ export function convertSupabaseToModel(supabaseModel: SupabaseModel): Model3D {
     storagePath: supabaseModel.storage_path,
     thumbnailUrl: supabaseModel.thumbnail_url,
     thumbnailPath: supabaseModel.thumbnail_path,
+    // Association restaurant
+    restaurantId: supabaseModel.restaurant_id,
     // Nouveaux champs catégorisation
     category: supabaseModel.category,
     tags: supabaseModel.tags,

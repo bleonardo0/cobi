@@ -30,10 +30,9 @@ export const useAnalytics = (restaurantId?: string) => {
     viewStartTime.current = Date.now();
     currentModelId.current = modelId;
 
-    const viewData: Omit<ModelView, 'id' | 'viewDuration'> = {
+    const viewData = {
       modelId,
       restaurantId,
-      timestamp: new Date().toISOString(),
       sessionId,
       interactionType,
       deviceType: getDeviceType(),
@@ -80,8 +79,10 @@ export const useAnalytics = (restaurantId?: string) => {
   const trackSessionStart = async () => {
     if (!restaurantId) return;
 
+    console.log('🚀 Attempting to track session start for restaurant:', restaurantId);
+
     try {
-      await fetch('/api/analytics/track-session', {
+      const response = await fetch('/api/analytics/track-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -92,6 +93,13 @@ export const useAnalytics = (restaurantId?: string) => {
           userAgent: navigator.userAgent,
         }),
       });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Session start tracked successfully:', result);
+      } else {
+        console.error('❌ Failed to track session start:', response.status, response.statusText);
+      }
     } catch (error) {
       console.error('Erreur lors du tracking de session:', error);
     }
@@ -113,6 +121,38 @@ export const useAnalytics = (restaurantId?: string) => {
       });
     } catch (error) {
       console.error('Erreur lors du tracking de fin de session:', error);
+    }
+  };
+
+  // Track une vue de menu (page view)
+  const trackMenuView = async () => {
+    if (!restaurantId) return;
+
+    console.log('🍽️ Attempting to track menu view for restaurant:', restaurantId);
+
+    try {
+      const response = await fetch('/api/analytics/track-menu-view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          restaurantId,
+          timestamp: new Date().toISOString(),
+          sessionId,
+          deviceType: getDeviceType(),
+          userAgent: navigator.userAgent,
+          pageUrl: window.location.href,
+          referrer: document.referrer || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Menu view tracked successfully:', result);
+      } else {
+        console.error('❌ Failed to track menu view:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Erreur lors du tracking de vue de menu:', error);
     }
   };
 
@@ -146,5 +186,6 @@ export const useAnalytics = (restaurantId?: string) => {
     trackModelViewEnd,
     trackSessionStart,
     trackSessionEnd,
+    trackMenuView,
   };
 }; 

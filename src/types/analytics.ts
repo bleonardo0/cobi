@@ -11,6 +11,17 @@ export interface ModelView {
   userAgent?: string;
 }
 
+export interface MenuView {
+  id: string;
+  restaurantId: string;
+  timestamp: string;
+  sessionId: string;
+  deviceType: 'mobile' | 'tablet' | 'desktop';
+  userAgent?: string;
+  pageUrl?: string;
+  referrer?: string;
+}
+
 export interface ModelAnalytics {
   modelId: string;
   totalViews: number;

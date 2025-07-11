@@ -96,27 +96,58 @@ export async function POST(request: NextRequest) {
     let authUserId: string | null = null;
     if (restaurantData.password) {
       try {
-        // Créer le compte avec Supabase Auth
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: restaurantData.email,
-          password: restaurantData.password,
-          email_confirm: true, // Confirmer l'email automatiquement
-          user_metadata: {
-            name: restaurantData.ownerName || 'Propriétaire',
-            role: 'restaurateur'
-          }
-        });
-
-        if (authError) {
-          console.error('Erreur lors de la création du compte Auth:', authError);
+        // Vérifier d'abord si l'email existe déjà dans Auth
+        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+        const existingUser = existingUsers.users.find(user => user.email === restaurantData.email);
+        
+        if (existingUser) {
+          console.warn('⚠️ Email déjà utilisé dans Auth:', restaurantData.email);
+          console.log('🔍 Utilisateur existant:', { id: existingUser.id, email: existingUser.email, confirmed_at: existingUser.email_confirmed_at });
+          
+          // Email vraiment en conflit - demander un email différent
           return NextResponse.json(
-            { error: `Erreur lors de la création du compte: ${authError.message}` },
-            { status: 500 }
+            { 
+              error: `L'email ${restaurantData.email} est déjà utilisé par un autre compte. Veuillez utiliser un email différent.`,
+              code: 'EMAIL_ALREADY_EXISTS',
+              suggestion: 'Essayez avec un email différent ou ajoutez un suffixe (ex: +restaurant)'
+            },
+            { status: 400 }
           );
-        }
+        } else {
+          // Créer le compte avec Supabase Auth
+          const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email: restaurantData.email,
+            password: restaurantData.password,
+            email_confirm: true, // Confirmer l'email automatiquement
+            user_metadata: {
+              name: restaurantData.ownerName || 'Propriétaire',
+              role: 'restaurateur'
+            }
+          });
 
-        authUserId = authData.user?.id || null;
-        console.log('✅ Compte Auth créé avec succès:', authData.user?.email);
+          if (authError) {
+            console.error('Erreur lors de la création du compte Auth:', authError);
+            
+            // Gestion spécifique de l'erreur email_exists
+            if (authError.message.includes('already been registered')) {
+              return NextResponse.json(
+                { 
+                  error: `L'email ${restaurantData.email} est déjà utilisé. Veuillez utiliser un email différent ou contacter l'administrateur.`,
+                  code: 'EMAIL_CONFLICT'
+                },
+                { status: 400 }
+              );
+            }
+            
+            return NextResponse.json(
+              { error: `Erreur lors de la création du compte: ${authError.message}` },
+              { status: 500 }
+            );
+          }
+          
+          authUserId = authData.user?.id || null;
+          console.log('✅ Compte Auth créé avec succès:', authData.user?.email);
+        }
       } catch (error) {
         console.error('Erreur lors de la création du compte Auth:', error);
         return NextResponse.json(
