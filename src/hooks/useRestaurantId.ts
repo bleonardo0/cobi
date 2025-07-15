@@ -51,7 +51,7 @@ export const useRestaurantId = (fallbackSlug?: string): {
 
         setRestaurantSlug(slug);
 
-        // Récupérer l'ID du restaurant depuis l'API
+        // Récupérer l'ID du restaurant depuis l'API (la route gère automatiquement slug ou ID)
         const response = await fetch(`/api/restaurants/${slug}`);
         
         if (!response.ok) {

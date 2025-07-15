@@ -8,18 +8,26 @@ export async function GET(
   try {
     const { id } = await params;
     
-    // Récupérer les informations du restaurant
-    const { data: restaurant, error } = await supabase
+    // Déterminer si c'est un ID ou un slug
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    
+    let query = supabase
       .from('restaurants')
-      .select('id, name, slug, address, phone, email, website, description, logo_url, primary_color, secondary_color, is_active')
-      .eq('id', id)
-      .single();
+      .select('id, name, slug, address, phone, email, website, description, logo_url, primary_color, secondary_color, is_active');
+    
+    if (isUuid) {
+      query = query.eq('id', id);
+    } else {
+      query = query.eq('slug', id);
+    }
+    
+    const { data: restaurant, error } = await query.single();
 
     if (error) {
       console.error('Erreur lors de la récupération du restaurant:', error);
       
       // Fallback pour "Leo et les pieds" si la base de données n'est pas disponible
-      if (id === '123e4567-e89b-12d3-a456-426614174000') {
+      if (id === '123e4567-e89b-12d3-a456-426614174000' || id === 'leo-et-les-pieds') {
         const fallbackRestaurant = {
           id: '123e4567-e89b-12d3-a456-426614174000',
           name: 'Leo et les pieds',
@@ -35,6 +43,13 @@ export async function GET(
           logo_url: null
         };
         
+        // Retourner le format attendu selon l'usage
+        if (!isUuid) {
+          return NextResponse.json({
+            success: true,
+            restaurant: fallbackRestaurant
+          });
+        }
         return NextResponse.json(fallbackRestaurant);
       }
       
@@ -44,6 +59,13 @@ export async function GET(
       );
     }
 
+    // Retourner le format attendu selon l'usage
+    if (!isUuid) {
+      return NextResponse.json({
+        success: true,
+        restaurant
+      });
+    }
     return NextResponse.json(restaurant);
 
   } catch (error) {
