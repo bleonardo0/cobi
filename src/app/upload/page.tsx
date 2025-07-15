@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import UploadForm from "@/components/UploadForm";
+import DirectUploadForm from "@/components/DirectUploadForm";
 import { Model3D } from "@/types/model";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,6 +11,7 @@ import { useAuth } from "@/providers/AuthProvider";
 
 export default function UploadPage() {
   const [uploadedModels, setUploadedModels] = useState<Model3D[]>([]);
+  const [uploadMode, setUploadMode] = useState<'api' | 'direct'>('api');
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [currentRestaurantId, setCurrentRestaurantId] = useState<string | null>(null);
@@ -99,12 +101,74 @@ export default function UploadPage() {
           initial="hidden"
           animate="visible"
         >
+          {/* Mode Selector */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Méthode d'upload
+              </h2>
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setUploadMode('api')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    uploadMode === 'api'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Via API (4MB max)
+                </button>
+                <button
+                  onClick={() => setUploadMode('direct')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    uploadMode === 'direct'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Direct (50MB max)
+                </button>
+              </div>
+            </div>
+            
+            {uploadMode === 'api' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="text-yellow-600 mr-2">⚠️</div>
+                  <div className="text-sm text-yellow-800">
+                    <strong>Mode API :</strong> Limité à 4MB à cause des restrictions Vercel. 
+                    Recommandé pour les petits fichiers.
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {uploadMode === 'direct' && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="text-green-600 mr-2">✅</div>
+                  <div className="text-sm text-green-800">
+                    <strong>Mode Direct :</strong> Upload direct vers Supabase. 
+                    Supporte jusqu'à 50MB, idéal pour les gros modèles.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Upload Form */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-            <UploadForm 
-              onUploadSuccess={handleUploadSuccess} 
-              restaurantId={currentRestaurantId || undefined}
-            />
+            {uploadMode === 'api' ? (
+              <UploadForm 
+                onUploadSuccess={handleUploadSuccess} 
+                restaurantId={currentRestaurantId || undefined}
+              />
+            ) : (
+              <DirectUploadForm 
+                onUploadSuccess={handleUploadSuccess} 
+                restaurantId={currentRestaurantId || undefined}
+              />
+            )}
           </div>
 
           {/* Upload Success */}

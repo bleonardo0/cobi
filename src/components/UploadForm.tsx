@@ -207,13 +207,13 @@ export default function UploadForm({ onUploadSuccess, restaurantId }: UploadForm
   const handleModelSelection = (file: File) => {
     setUploadError(null);
     
-    // Validation pour GLB/GLTF
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    // Validation pour GLB/GLTF - limite Vercel
+    const maxSize = 4 * 1024 * 1024; // 4MB pour respecter la limite Vercel de 4.5MB
     const allowedTypes = ['model/gltf-binary', 'model/gltf+json'];
     const hasValidExtension = /\.(glb|gltf)$/i.test(file.name);
     
-    if (file.size > maxSize) {
-      setUploadError('Le fichier ne doit pas dépasser 50MB');
+        if (file.size > maxSize) {
+      setUploadError('Le fichier ne doit pas dépasser 4MB (limitation Vercel)');
       return;
     }
     
@@ -340,8 +340,27 @@ export default function UploadForm({ onUploadSuccess, restaurantId }: UploadForm
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur lors de l\'upload');
+        let errorMessage = 'Erreur lors de l\'upload';
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          // Si on ne peut pas parser la réponse JSON, c'est probablement une erreur 500 HTML
+          console.error('Failed to parse error response:', parseError);
+          
+          if (response.status === 500) {
+            errorMessage = 'Erreur serveur. Vérifiez la taille du fichier et réessayez.';
+          } else if (response.status === 413) {
+            errorMessage = 'Fichier trop volumineux (max 4MB sur Vercel). Réduisez la taille de votre modèle.';
+          } else if (response.status === 408) {
+            errorMessage = 'Timeout d\'upload. Réessayez avec un fichier plus petit.';
+          } else if (response.status === 502 || response.status === 504) {
+            errorMessage = 'Erreur de gateway. Le fichier est probablement trop volumineux pour Vercel.';
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

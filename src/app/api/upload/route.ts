@@ -4,8 +4,17 @@ import { generateSlug } from '@/lib/utils';
 import { Model3D } from '@/types/model';
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 Starting upload process...');
+  
   try {
+    // Check environment variables first
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ Missing Supabase configuration');
+      return NextResponse.json({ error: 'Configuration serveur incorrecte' }, { status: 500 });
+    }
+
     // Parse form data
+    console.log('📋 Parsing form data...');
     const formData = await request.formData();
     const modelFile = formData.get('model') as File;
     const thumbnailFile = formData.get('thumbnail') as File | null;
@@ -32,7 +41,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (!modelFile) {
+      console.error('❌ No model file provided');
       return NextResponse.json({ error: 'Fichier modèle requis' }, { status: 400 });
+    }
+
+    console.log(`📁 Processing file: ${modelFile.name} (${modelFile.size} bytes)`);
+
+    // Check file size limit for Vercel
+    const maxSize = 4 * 1024 * 1024; // 4MB pour Vercel
+    if (modelFile.size > maxSize) {
+      console.error(`❌ File too large: ${modelFile.size} bytes > ${maxSize} bytes`);
+      return NextResponse.json({ error: 'Fichier trop volumineux (max 4MB pour Vercel)' }, { status: 413 });
     }
 
     // Generate unique filename and slug
@@ -49,6 +68,8 @@ export async function POST(request: NextRequest) {
     // Determine MIME type
     const mimeType = fileExtension === 'glb' ? 'model/gltf-binary' : 'model/gltf+json';
     
+    console.log(`📤 Uploading model file: ${modelFileName} (${mimeType})`);
+    
     // Upload model file to storage
     const { data: modelData, error: modelError } = await supabaseAdmin.storage
       .from('models-3d')
@@ -59,13 +80,16 @@ export async function POST(request: NextRequest) {
       });
 
     if (modelError) {
-      console.error('Model upload error:', modelError);
-      return NextResponse.json({ error: 'Erreur lors de l\'upload du modèle' }, { status: 500 });
+      console.error('❌ Model upload error:', modelError);
+      return NextResponse.json({ error: `Erreur lors de l'upload du modèle: ${modelError.message}` }, { status: 500 });
     }
+
+    console.log(`✅ Model uploaded successfully: ${modelData.path}`);
 
     // Upload thumbnail if provided
     let thumbnailUrl = null;
     if (thumbnailFile) {
+      console.log(`🖼️ Uploading thumbnail: ${thumbnailFile.name} (${thumbnailFile.size} bytes)`);
       const thumbnailExtension = thumbnailFile.name.split('.').pop()?.toLowerCase();
       const thumbnailFileName = `${uniqueSlug}-thumb.${thumbnailExtension}`;
       
@@ -78,9 +102,10 @@ export async function POST(request: NextRequest) {
         });
 
       if (thumbnailError) {
-        console.error('Thumbnail upload error:', thumbnailError);
+        console.error('⚠️ Thumbnail upload error:', thumbnailError);
         // Don't fail the whole upload if thumbnail fails
       } else {
+        console.log(`✅ Thumbnail uploaded successfully: ${thumbnailData.path}`);
         const { data: thumbnailUrlData } = supabaseAdmin.storage
           .from('models-3d')
           .getPublicUrl(thumbnailData.path);
@@ -97,6 +122,7 @@ export async function POST(request: NextRequest) {
     const priceValue = price ? parseFloat(price) : null;
 
     // Create database record
+    console.log(`💾 Creating database record for: ${modelName || originalName}`);
     const modelRecord = {
       name: modelName || originalName,
       filename: modelFileName,
@@ -124,9 +150,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Database error:', error);
+      console.error('❌ Database error:', error);
       
       // Cleanup uploaded files if database insert fails
+      console.log('🧹 Cleaning up uploaded files...');
       await supabaseAdmin.storage.from('models-3d').remove([modelData.path]);
       if (thumbnailUrl) {
         const thumbnailExtension = thumbnailFile?.name.split('.').pop()?.toLowerCase();
@@ -134,8 +161,10 @@ export async function POST(request: NextRequest) {
         await supabaseAdmin.storage.from('models-3d').remove([thumbnailFileName]);
       }
       
-      return NextResponse.json({ error: 'Erreur lors de la sauvegarde' }, { status: 500 });
+      return NextResponse.json({ error: `Erreur lors de la sauvegarde: ${error.message}` }, { status: 500 });
     }
+
+    console.log(`✅ Database record created successfully with ID: ${data.id}`);
 
     // Transform database record to Model3D format
     const model: Model3D = {
@@ -157,6 +186,7 @@ export async function POST(request: NextRequest) {
       allergens: data.allergens || [],
     };
 
+    console.log(`🎉 Upload completed successfully for: ${model.name}`);
     return NextResponse.json({ 
       success: true, 
       model,
@@ -164,7 +194,13 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
+    console.error('❌ Upload error:', error);
+    
+    // Return detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Erreur interne du serveur';
+    return NextResponse.json({ 
+      error: errorMessage,
+      details: error instanceof Error ? error.stack : undefined
+    }, { status: 500 });
   }
 } 
