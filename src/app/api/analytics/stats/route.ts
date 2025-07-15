@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getModelViewsStats } from '@/lib/analytics-simple';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,16 +11,36 @@ export async function GET(request: NextRequest) {
 
     const stats = await getModelViewsStats(restaurantId || undefined);
 
+    // Récupérer les détails des modèles depuis la base de données
+    const modelIds = stats.modelStats.map(stat => stat.modelId);
+    const { data: modelsData } = modelIds.length > 0 ? await supabaseAdmin
+      .from('models_3d')
+      .select('id, name, thumbnail_url, category')
+      .in('id', modelIds) : { data: [] };
+
+    // Créer un map pour accéder rapidement aux données des modèles
+    const modelsMap = new Map();
+    modelsData?.forEach((model: any) => {
+      modelsMap.set(model.id, {
+        name: model.name,
+        thumbnailUrl: model.thumbnail_url,
+        category: model.category
+      });
+    });
+
     // Transformer les données pour la page insights
-    const mockModels = stats.modelStats.map((model, index) => ({
-      id: model.modelId,
-      name: model.name,
-      views: model.count,
-      avgDuration: model.avgDuration || 0, // Vraie durée moyenne
-      popularityScore: model.percentage,
-      category: 'Plat',
-      thumbnailUrl: '/models/thumbnail-placeholder.jpg'
-    }));
+    const mockModels = stats.modelStats.map((model, index) => {
+      const modelData = modelsMap.get(model.modelId);
+      return {
+        id: model.modelId,
+        name: modelData?.name || model.name,
+        views: model.count,
+        avgDuration: model.avgDuration || 0, // Vraie durée moyenne
+        popularityScore: model.percentage,
+        category: modelData?.category || 'Plat',
+        thumbnailUrl: modelData?.thumbnailUrl || null // URL de la vraie image du plat
+      };
+    });
 
     // Convertir viewsByDay en format tableau
     const viewsByDay = stats.viewsByDay || {};

@@ -11,6 +11,9 @@ import ModelViewer from "@/components/ModelViewer";
 import BackButton from "@/components/BackButton";
 import HotspotViewer from "@/components/HotspotViewer";
 import QRCode from 'qrcode';
+import DashboardLayout from "@/components/shared/DashboardLayout";
+import StatsCard from "@/components/shared/StatsCard";
+import { useAuth } from "@/providers/AuthProvider";
 
 export default function ModelDetailPage() {
   const params = useParams();
@@ -22,6 +25,11 @@ export default function ModelDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Auth et restaurant
+  const { user } = useAuth();
+  const [restaurantSlug, setRestaurantSlug] = useState<string>('restaurant');
+  const [restaurantName, setRestaurantName] = useState<string>('Restaurant');
   
   // États pour les nouvelles fonctionnalités
   const [showQRCode, setShowQRCode] = useState(false);
@@ -44,6 +52,30 @@ export default function ModelDetailPage() {
       fetchModel(params.slug as string);
     }
   }, [params.slug]);
+
+  // Récupérer les informations du restaurant
+  useEffect(() => {
+    const fetchRestaurantInfo = async () => {
+      if (user?.restaurantId) {
+        try {
+          const response = await fetch(`/api/admin/restaurants/${user.restaurantId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.restaurant) {
+              setRestaurantSlug(data.restaurant.slug);
+              setRestaurantName(data.restaurant.name);
+            }
+          }
+        } catch (error) {
+          console.error('Erreur lors de la récupération du restaurant:', error);
+        }
+      }
+    };
+
+    if (user) {
+      fetchRestaurantInfo();
+    }
+  }, [user]);
 
   useEffect(() => {
     // Charger model-viewer dynamiquement côté client
@@ -234,6 +266,10 @@ export default function ModelDetailPage() {
     }
   };
 
+  const handleLogout = () => {
+    router.push('/auth/login');
+  };
+
   const pageVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
@@ -241,143 +277,202 @@ export default function ModelDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement du modèle...</p>
+      <DashboardLayout
+        userRole={user?.role || 'restaurateur'}
+        restaurantName={restaurantName}
+        restaurantSlug={restaurantSlug}
+        onLogout={handleLogout}
+      >
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+            <p className="text-neutral-600">Chargement du modèle...</p>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (error || !model) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      <DashboardLayout
+        userRole={user?.role || 'restaurateur'}
+        restaurantName={restaurantName}
+        restaurantSlug={restaurantSlug}
+        onLogout={handleLogout}
+      >
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center max-w-md mx-auto px-4">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-neutral-900 mb-2">
+              Modèle non trouvé
+            </h1>
+            <p className="text-neutral-600 mb-6">
+              {error || 'Le modèle demandé n&apos;existe pas ou a été supprimé.'}
+            </p>
+            <BackButton 
+              fallbackHref="/restaurant/dashboard" 
+              className="inline-flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              Retour au dashboard
+            </BackButton>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Modèle non trouvé
-          </h1>
-          <p className="text-gray-600 mb-6">
-            {error || 'Le modèle demandé n&apos;existe pas ou a été supprimé.'}
-          </p>
-          <BackButton 
-            fallbackHref="/" 
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Retour à la galerie
-          </BackButton>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
+  const topBarActions = (
+    <div className="flex items-center space-x-3">
+      <Link
+        href={`/models/${model.slug}/edit`}
+        className="inline-flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors font-medium shadow-sm"
+      >
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+          />
+        </svg>
+        Modifier
+      </Link>
+      
+      <button
+        onClick={() => setShowDeleteConfirm(true)}
+        className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm"
+      >
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+          />
+        </svg>
+        Supprimer
+      </button>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
-              <Link href="/restaurant/dashboard" className="text-gray-500 hover:text-gray-700 transition-colors" title="Retour au dashboard">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </Link>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  {model.name}
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  Modèle 3D • GLB/GLTF
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <Link
-                href={`/models/${model.slug}/edit`}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-                Modifier
-              </Link>
-              
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-                Supprimer
-              </button>
-            </div>
+    <DashboardLayout
+      userRole={user?.role || 'restaurateur'}
+      restaurantName={restaurantName}
+      restaurantSlug={restaurantSlug}
+      onLogout={handleLogout}
+      topBarActions={topBarActions}
+    >
+      <div className="space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center space-x-2 text-sm text-neutral-600">
+          <Link href="/restaurant/dashboard" className="hover:text-neutral-900 transition-colors">
+            Dashboard
+          </Link>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <span className="text-neutral-900 font-medium">
+            {model.name}
+          </span>
+        </nav>
+
+        {/* En-tête avec titre et badge */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-neutral-900">
+              {model.name}
+            </h1>
+            <p className="text-neutral-600 mt-1 flex items-center space-x-2">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
+                <span className="w-2 h-2 bg-sky-600 rounded-full mr-1"></span>
+                GLB/GLTF
+              </span>
+              <span>•</span>
+              <span>{formatFileSize(model.fileSize)}</span>
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-neutral-500">
+              Actions disponibles dans la barre du haut
+            </span>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Métriques du modèle */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatsCard
+            title="Taille du fichier"
+            value={formatFileSize(model.fileSize)}
+            emoji="📁"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            }
+            color="blue"
+          />
+          <StatsCard
+            title="Format"
+            value="GLB/GLTF"
+            emoji="🎨"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            }
+            color="green"
+          />
+          <StatsCard
+            title="Catégorie"
+            value={model.category || 'Non définie'}
+            emoji="🏷️"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            }
+            color="purple"
+          />
+        </div>
         <motion.div
           variants={pageVariants}
           initial="hidden"
@@ -387,7 +482,7 @@ export default function ModelDetailPage() {
         >
           {/* Model Viewer & Actions */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
               <div ref={viewerContainerRef} className="relative h-80 lg:h-[500px] xl:h-[600px] bg-gradient-to-br from-gray-50 to-gray-100">
                 <ModelViewer
                   ref={modelViewerRef}
@@ -472,12 +567,12 @@ export default function ModelDetailPage() {
               </div>
               
               {/* Controls */}
-              <div className="p-4 border-t border-gray-200">
+              <div className="p-4 border-t border-neutral-200">
                 <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-neutral-600">
                     Utilisez votre souris ou vos doigts pour explorer le modèle
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-neutral-500">
                     Environnement: {
                       environmentMode === 'default' ? '🌟 Défaut' :
                       environmentMode === 'neutral' ? '⚪ Neutre' : '📐 Grille'
@@ -488,8 +583,8 @@ export default function ModelDetailPage() {
             </div>
             
             {/* Features */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+              <h2 className="text-xl font-semibold text-neutral-900 mb-4">
                 Fonctionnalités
               </h2>
               
@@ -572,8 +667,8 @@ export default function ModelDetailPage() {
             </div>
 
             {/* Share & AR */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+              <h2 className="text-xl font-semibold text-neutral-900 mb-4">
                 Partager & AR
               </h2>
               
@@ -647,21 +742,21 @@ export default function ModelDetailPage() {
           <div className="space-y-6">
             {/* Thumbnail Preview */}
             {model.thumbnailUrl && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+                <h2 className="text-xl font-semibold text-neutral-900 mb-4">
                   Aperçu
                 </h2>
                 <img 
                   src={model.thumbnailUrl} 
                   alt={`Aperçu de ${model.name}`}
-                  className="w-full rounded-lg border border-gray-200"
+                  className="w-full rounded-lg border border-neutral-200"
                 />
               </div>
             )}
 
             {/* Details */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+              <h2 className="text-xl font-semibold text-neutral-900 mb-4">
                 Détails du modèle
               </h2>
               
@@ -763,7 +858,7 @@ export default function ModelDetailPage() {
 
           </div>
         </motion.div>
-      </main>
+      </div>
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
@@ -785,12 +880,12 @@ export default function ModelDetailPage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-neutral-900">
                 Confirmer la suppression
               </h3>
             </div>
             
-            <p className="text-gray-600 mb-6">
+            <p className="text-neutral-600 mb-6">
               Êtes-vous sûr de vouloir supprimer le modèle &quot;{model.name}&quot; ? 
               Cette action est irréversible et supprimera définitivement le fichier et ses données.
             </p>
@@ -799,7 +894,7 @@ export default function ModelDetailPage() {
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50"
               >
                 Annuler
               </button>
@@ -821,6 +916,6 @@ export default function ModelDetailPage() {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 } 

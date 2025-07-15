@@ -35,8 +35,8 @@ export const useRestaurantId = (fallbackSlug?: string): {
       return fallbackSlug;
     }
     
-    // 3. Par défaut, bella-vita
-    return 'bella-vita';
+    // 3. Par défaut, leo-et-les-pieds
+    return 'leo-et-les-pieds';
   };
 
   useEffect(() => {
@@ -71,11 +71,11 @@ export const useRestaurantId = (fallbackSlug?: string): {
         console.error('❌ Erreur lors de la récupération du restaurant ID:', err);
         setError(err instanceof Error ? err.message : 'Erreur inconnue');
         
-        // Fallback vers l'ancien système pour bella-vita
-        if (getRestaurantSlug() === 'bella-vita') {
+        // Fallback vers l'ancien système pour leo-et-les-pieds
+        if (getRestaurantSlug() === 'leo-et-les-pieds') {
           setRestaurantId('123e4567-e89b-12d3-a456-426614174000');
-          setRestaurantSlug('bella-vita');
-          console.log('🔄 Fallback vers ancien ID pour bella-vita');
+          setRestaurantSlug('leo-et-les-pieds');
+          console.log('🔄 Fallback vers ancien ID pour leo-et-les-pieds');
         }
       } finally {
         setIsLoading(false);

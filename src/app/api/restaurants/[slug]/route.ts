@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // Restaurants fictifs pour le test
 const TEST_RESTAURANTS = {
@@ -57,84 +57,54 @@ export async function GET(
   try {
     const { slug } = await params;
     
-    console.log(`🏪 Fetching restaurant with slug: ${slug}`);
-    
-    // Si Supabase est configuré, essayer de récupérer depuis la base
-    if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabaseAdmin
-          .from('restaurants')
-          .select('*')
-          .eq('slug', slug)
-          .eq('is_active', true)
-          .single();
+    // Récupérer les informations du restaurant par slug
+    const { data: restaurant, error } = await supabase
+      .from('restaurants')
+      .select('id, name, slug, address, phone, email, website, description, logo_url, primary_color, secondary_color, is_active')
+      .eq('slug', slug)
+      .single();
 
-        if (!error && data) {
-          // Restaurant trouvé dans Supabase
-          const restaurant = {
-            id: data.id,
-            name: data.name,
-            slug: data.slug,
-            description: data.description || data.short_description,
-            address: data.address, // Correction: utiliser 'address' au lieu de 'adress'
-            phone: data.phone,
-            website: data.website,
-            logo: data.logo_url,
-            primaryColor: data.primary_color,
-            secondaryColor: data.secondary_color,
-            isActive: data.is_active,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at
-          };
-
-          return NextResponse.json({
-            success: true,
-            restaurant: restaurant,
-          });
-        }
-      } catch (supabaseError) {
-        console.warn('Erreur Supabase, fallback vers données fictives:', supabaseError);
+    if (error) {
+      console.error('Erreur lors de la récupération du restaurant:', error);
+      
+      // Fallback pour "Leo et les pieds" si la base de données n'est pas disponible
+      if (slug === 'leo-et-les-pieds') {
+        const fallbackRestaurant = {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          name: 'Leo et les pieds',
+          slug: 'leo-et-les-pieds',
+          description: 'Restaurant spécialisé dans les plats créatifs',
+          address: '123 Rue Example, Paris, France',
+          phone: '+33 1 23 45 67 89',
+          email: 'contact@leoetlespieds.fr',
+          website: 'https://leoetlespieds.fr',
+          is_active: true,
+          primary_color: '#6366f1',
+          secondary_color: '#8b5cf6',
+          logo_url: null
+        };
+        
+        return NextResponse.json({
+          success: true,
+          restaurant: fallbackRestaurant
+        });
       }
+      
+      return NextResponse.json(
+        { error: 'Restaurant non trouvé' },
+        { status: 404 }
+      );
     }
 
+    return NextResponse.json({
+      success: true,
+      restaurant
+    });
 
-    
-    // Fallback: utiliser les restaurants fictifs par défaut
-    const restaurant = TEST_RESTAURANTS[slug as keyof typeof TEST_RESTAURANTS];
-    if (restaurant) {
-      return NextResponse.json({
-        success: true,
-        restaurant: restaurant,
-      });
-    }
-    
-    // Support pour le slug 'test' (redirige vers le-gourmet-3d)
-    if (slug === 'test') {
-      return NextResponse.json({
-        success: true,
-        restaurant: TEST_RESTAURANTS['le-gourmet-3d'],
-      });
-    }
-    
-    // Dans le futur, on pourrait chercher dans une vraie base de données
-    // const { data, error } = await supabase
-    //   .from('restaurants')
-    //   .select('*')
-    //   .eq('slug', slug)
-    //   .eq('isActive', true)
-    //   .single();
-    
-    return NextResponse.json(
-      { success: false, error: 'Restaurant non trouvé' },
-      { status: 404 }
-    );
   } catch (error) {
-    console.error('💥 Error fetching restaurant:', error);
+    console.error('Erreur dans API restaurants/[slug]:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Erreur inconnue' 
-      },
+      { error: 'Erreur serveur' },
       { status: 500 }
     );
   }
