@@ -75,7 +75,7 @@ export default function MenuPage() {
       setRestaurant(restaurantData.restaurant);
 
       // Récupérer les modèles du restaurant
-      const modelsResponse = await fetch(`/api/restaurants/${restaurantSlug}/models`);
+      const modelsResponse = await fetch(`/api/restaurants/by-slug/${restaurantSlug}/models`);
       if (!modelsResponse.ok) {
         throw new Error('Erreur lors du chargement du menu');
       }
