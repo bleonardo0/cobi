@@ -42,15 +42,15 @@ export default function TopBar({
       animate={{ y: 0, opacity: 1 }}
       className="bg-white border-b border-neutral-200 shadow-soft sticky top-0 z-30"
     >
-      <div className="px-6 py-4">
+      <div className="px-4 lg:px-6 py-3 lg:py-4">
         <div className="flex items-center justify-between">
           {/* Mobile menu button and Welcome Message */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 lg:space-x-4 flex-1 min-w-0">
             {/* Mobile menu button */}
             {onToggleSidebar && (
               <button
                 onClick={onToggleSidebar}
-                className="lg:hidden p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+                className="lg:hidden p-2 rounded-lg hover:bg-neutral-100 transition-colors flex-shrink-0"
               >
                 <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -63,11 +63,12 @@ export default function TopBar({
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
+              className="min-w-0 flex-1"
             >
-              <h1 className="text-2xl font-semibold text-neutral-900">
+              <h1 className="text-lg lg:text-2xl font-semibold text-neutral-900 truncate">
                 {getWelcomeMessage()}
               </h1>
-              <p className="text-sm text-neutral-500 mt-1">
+              <p className="text-xs lg:text-sm text-neutral-500 mt-1 hidden sm:block">
                 {userRole === 'admin' 
                   ? 'Gérez vos restaurants et modèles 3D' 
                   : 'Gérez votre menu et vos modèles 3D'
@@ -77,14 +78,14 @@ export default function TopBar({
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 lg:space-x-4 flex-shrink-0">
             {/* Custom Actions */}
             {actions && (
               <motion.div
                 initial={{ x: 20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="flex items-center space-x-3"
+                className="flex items-center space-x-2 lg:space-x-3"
               >
                 {actions}
               </motion.div>
@@ -110,9 +111,9 @@ export default function TopBar({
               transition={{ delay: 0.4 }}
               className="relative"
             >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center shadow-soft">
-                  <span className="text-white font-bold text-sm">
+              <div className="flex items-center space-x-2 lg:space-x-3">
+                <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center shadow-soft">
+                  <span className="text-white font-bold text-xs lg:text-sm">
                     {userRole === 'admin' ? 'A' : (restaurantName?.[0] || 'R')}
                   </span>
                 </div>

@@ -33,18 +33,22 @@ export default function DashboardLayout({
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar - toujours visible sur desktop */}
+      {/* Sidebar */}
       <Sidebar 
         userRole={userRole} 
         restaurantName={restaurantName}
         isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
+        onClose={closeSidebar}
       />
 
       {/* Main Content */}
-      <div className="lg:ml-80 transition-all duration-300">
+      <div className="lg:ml-80">
         {/* Top Bar */}
         <TopBar
           userRole={userRole}
@@ -60,7 +64,7 @@ export default function DashboardLayout({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className={`p-6 ${className}`}
+          className={`p-4 lg:p-6 ${className}`}
         >
           {children}
         </motion.main>

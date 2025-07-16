@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/providers/AuthProvider';
+import CobiLogoWithText from '@/components/shared/CobiLogoWithText';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -57,10 +58,7 @@ export default function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center animate-fade-in"
         >
-          <div className="inline-flex items-center space-x-3 text-2xl sm:text-3xl font-bold mb-6 text-gradient">
-            <span className="text-4xl sm:text-5xl">🍽️</span>
-            <span>COBI</span>
-          </div>
+          <CobiLogoWithText size="md" className="mb-6" />
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
             Connexion
           </h1>

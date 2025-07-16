@@ -111,7 +111,7 @@ export default function InsightsPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-            <p className="text-slate-600">Chargement des insights...</p>
+            <p className="text-slate-600">Chargement des statistiques...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -130,7 +130,7 @@ export default function InsightsPage() {
         <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-8 text-white">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-4xl font-bold mb-2">📊 Insights Analytics</h1>
+              <h1 className="text-4xl font-bold mb-2">📊 Statistiques Analytics</h1>
               <p className="text-indigo-100 text-lg">
                 Analysez les performances de votre menu 3D 👋
               </p>

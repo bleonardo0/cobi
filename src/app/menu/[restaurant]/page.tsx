@@ -218,9 +218,9 @@ export default function MenuPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4 lg:py-6">
         {/* Filtres par catégorie */}
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-3 sm:mb-4 lg:mb-6">
           <div className="flex flex-wrap gap-2 sm:gap-3">
             {categories.map((category) => {
               const categoryInfo = category === 'all' 
@@ -231,7 +231,7 @@ export default function MenuPage() {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-full text-sm font-medium transition-colors font-montserrat min-h-[44px] ${
+                  className={`px-2 py-1.5 sm:px-3 sm:py-2 lg:px-4 lg:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors font-montserrat min-h-[36px] sm:min-h-[40px] lg:min-h-[44px] ${
                     selectedCategory === category
                       ? 'text-white shadow-md'
                       : 'bg-white hover:bg-gray-100 border border-gray-200'
@@ -252,7 +252,7 @@ export default function MenuPage() {
         </div>
 
         {/* Grille des plats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {filteredModels.map((model) => (
             <motion.div
               key={model.id}
@@ -300,16 +300,16 @@ export default function MenuPage() {
               {/* Informations du plat */}
               <div className="p-3 sm:p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-base sm:text-lg font-montserrat flex-1 min-w-0 pr-2" style={{ color: restaurant.primaryColor || '#0a5b48' }}>{model.name}</h3>
+                  <h3 className="font-semibold text-sm sm:text-base lg:text-lg font-montserrat flex-1 min-w-0 pr-2" style={{ color: restaurant.primaryColor || '#0a5b48' }}>{model.name}</h3>
                   {model.price && (
-                    <span className="font-bold text-base sm:text-lg font-montserrat flex-shrink-0" style={{ color: restaurant.primaryColor || '#0a5b48' }}>
+                    <span className="font-bold text-sm sm:text-base lg:text-lg font-montserrat flex-shrink-0" style={{ color: restaurant.primaryColor || '#0a5b48' }}>
                       {model.price.toFixed(2)}€
                     </span>
                   )}
                 </div>
 
                 {model.shortDescription && (
-                  <p className="text-sm mb-3 line-clamp-2 font-montserrat" style={{ color: restaurant.primaryColor || '#0a5b48' }}>
+                  <p className="text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2 font-montserrat" style={{ color: restaurant.primaryColor || '#0a5b48' }}>
                     {model.shortDescription}
                   </p>
                 )}
@@ -317,12 +317,12 @@ export default function MenuPage() {
                 {/* Tags */}
                 {model.tags && model.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-2">
-                    {model.tags.slice(0, 3).map((tagId) => {
+                    {model.tags.slice(0, 2).map((tagId) => {
                       const tagInfo = getCategoryInfo(tagId as any);
                       return tagInfo ? (
                         <span
                           key={tagId}
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${tagInfo.color}`}
+                          className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${tagInfo.color}`}
                         >
                           {tagInfo.name}
                         </span>
@@ -334,7 +334,7 @@ export default function MenuPage() {
                 {/* Allergènes */}
                 {model.allergens && model.allergens.length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {model.allergens.slice(0, 4).map((allergenId) => {
+                    {model.allergens.slice(0, 3).map((allergenId) => {
                       const allergenInfo = getAllergenInfo(allergenId);
                       return allergenInfo ? (
                         <span
@@ -350,9 +350,9 @@ export default function MenuPage() {
                 )}
 
                 {/* Boutons d'action */}
-                <div className="mt-3 space-y-2">
+                <div className="mt-2 sm:mt-3 space-y-2">
                   <button 
-                    className="w-full bg-teal-600 text-white py-2.5 sm:py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium font-montserrat min-h-[44px]"
+                    className="w-full bg-teal-600 text-white py-2 sm:py-2.5 rounded-lg hover:bg-teal-700 transition-colors text-xs sm:text-sm font-medium font-montserrat min-h-[40px] sm:min-h-[44px]"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleModelSelect(model);

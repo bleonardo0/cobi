@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import ModelViewer from '@/components/ModelViewer';
+import CobiLogo from '@/components/shared/CobiLogo';
 
 export default function TestUSDZPage() {
   const [selectedTest, setSelectedTest] = useState<string>('');
@@ -73,9 +74,7 @@ export default function TestUSDZPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Link href="/test" className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-teal-600 to-teal-700">
-                  <span className="text-white font-bold text-lg">C</span>
-                </div>
+                <CobiLogo size="md" />
                 <span className="text-xl font-bold text-teal-800">COBI</span>
               </Link>
               <div className="hidden sm:block w-px h-6 bg-teal-300"></div>
