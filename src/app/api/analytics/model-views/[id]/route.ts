@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url);
@@ -17,7 +17,8 @@ export async function GET(
       }, { status: 400 });
     }
 
-    const modelId = params.id;
+    const { id } = await params;
+    const modelId = id;
     
     // Calculer la date de début selon la période
     const now = new Date();

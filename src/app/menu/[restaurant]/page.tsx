@@ -361,75 +361,7 @@ export default function MenuPage() {
                     {selectedModel?.id === model.id ? 'Fermer la vue 3D' : 'Voir en 3D'}
                   </button>
                   
-                  {/* Bouton Ajouter au panier (si POS activé) */}
-                  {posEnabled && canOrder && model.price && model.price > 0 && (
-                    <div className="flex items-center space-x-2">
-                      {/* Boutons quantité si déjà dans le panier */}
-                      {isInCart(model.id) ? (
-                        <div className="flex items-center space-x-2 w-full">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const currentQty = getItemQuantity(model.id);
-                              if (currentQty > 1) {
-                                // Trouver l'item dans le panier et décrémenter
-                                const cartItem = cart?.items.find(item => item.modelId === model.id);
-                                if (cartItem) {
-                                  updateQuantity(cartItem.id, currentQty - 1);
-                                }
-                              } else {
-                                // Supprimer du panier
-                                const cartItem = cart?.items.find(item => item.modelId === model.id);
-                                if (cartItem) {
-                                  removeFromCart(cartItem.id);
-                                }
-                              }
-                            }}
-                            className="w-10 h-10 sm:w-8 sm:h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors"
-                          >
-                            <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                            </svg>
-                          </button>
-                          
-                          <span className="flex-1 text-center font-medium text-sm">
-                            {getItemQuantity(model.id)} dans le panier
-                          </span>
-                          
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const currentQty = getItemQuantity(model.id);
-                              const cartItem = cart?.items.find(item => item.modelId === model.id);
-                              if (cartItem) {
-                                updateQuantity(cartItem.id, currentQty + 1);
-                              }
-                            }}
-                            disabled={isCartLoading}
-                            className="w-10 h-10 sm:w-8 sm:h-8 bg-teal-600 hover:bg-teal-700 text-white rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
-                          >
-                            <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(model, 1);
-                          }}
-                          disabled={isCartLoading}
-                          className="w-full bg-green-600 text-white py-2.5 sm:py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium font-montserrat disabled:opacity-50 flex items-center justify-center space-x-2 min-h-[44px]"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                          <span>{isCartLoading ? 'Ajout...' : `Ajouter • ${model.price.toFixed(2)}€`}</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
+
                   
                   {/* Message d'erreur panier */}
                   {cartError && (

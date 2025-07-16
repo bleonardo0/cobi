@@ -349,12 +349,7 @@ const ModelCard = ({
               >
                 Voir en 3D
               </Link>
-              <button 
-                onClick={(e) => e.stopPropagation()} // Éviter la propagation vers handleCardClick
-                className="px-3 py-2 bg-neutral-100 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors"
-              >
-                Ajouter
-              </button>
+
             </div>
           )}
 

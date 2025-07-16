@@ -30,6 +30,7 @@ export default function Sidebar({ userRole, restaurantName, isOpen = true, onClo
     { href: restaurantName ? `/menu/${restaurantName.toLowerCase().replace(/\s+/g, '-')}` : '/menu', label: 'Menu Client', icon: '👁️' },
     { href: '/insights', label: 'Insights', icon: '📈' },
     { href: '/restaurant/settings', label: 'Paramètres', icon: '⚙️' },
+    { href: '/restaurant/feedback', label: 'Nous contacter', icon: '💬' },
   ];
 
   const navItems = userRole === 'admin' ? adminNavItems : restaurantNavItems;
@@ -110,7 +111,7 @@ export default function Sidebar({ userRole, restaurantName, isOpen = true, onClo
           className="text-center"
         >
           <p className="text-xs text-neutral-500">
-            © 2024 COBI Platform
+            © 2025 COBI Platform
           </p>
         </motion.div>
       </div>
