@@ -1,29 +1,11 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-// Routes publiques - accès libre
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/menu/(.*)',
-  '/models/(.*)',
-  '/api/contact(.*)',
-  '/api/restaurants/(.*)',
-  '/api/models(.*)',
-  '/api/analytics/(.*)',
-  '/api/proxy/(.*)',
-  '/sign-in(.*)',
-  '/sign-up(.*)'
-]);
-
-export default clerkMiddleware((auth, req) => {
-  // Si c'est une route publique, on laisse passer
-  if (isPublicRoute(req)) {
-    return;
-  }
-  
-  // Sinon, on protège avec Clerk
-  auth.protect();
-});
+export function middleware(request: NextRequest) {
+  // Middleware minimal - ne fait rien, laisse tout passer
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }; 
