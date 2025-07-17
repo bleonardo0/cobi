@@ -2,10 +2,54 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useState } from "react";
 import CobiLogo from "@/components/shared/CobiLogo";
 
+interface TestItem {
+  name: string;
+  description: string;
+  href?: string;
+  action?: () => Promise<void>;
+  status: string;
+}
+
+interface TestCategory {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  tests: TestItem[];
+}
+
 export default function TestMenuPage() {
-  const testCategories = [
+  const [contactResult, setContactResult] = useState<any>(null);
+  const [isTestingContact, setIsTestingContact] = useState(false);
+
+  const testContact = async () => {
+    setIsTestingContact(true);
+    setContactResult(null);
+
+    try {
+      const response = await fetch('/api/contact/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const data = await response.json();
+      setContactResult(data);
+    } catch (error) {
+      setContactResult({
+        success: false,
+        message: 'Erreur de connexion',
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      });
+    } finally {
+      setIsTestingContact(false);
+    }
+  };
+
+  const testCategories: TestCategory[] = [
     {
       title: "Tests de Base",
       description: "Tests fondamentaux des fonctionnalités 3D",
@@ -20,99 +64,38 @@ export default function TestMenuPage() {
           description: "Test basique du model-viewer avec différents modèles",
           href: "/test-simple",
           status: "stable"
-        },
-        {
-          name: "Test Thumbnails",
-          description: "Génération et affichage des miniatures",
-          href: "/test-thumbnail",
-          status: "beta"
         }
       ]
     },
     {
-      title: "Formats & Compatibilité",
-      description: "Tests de compatibilité des formats 3D",
+      title: "Système de Contact",
+      description: "Test du système d'envoi d'emails de contact",
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       ),
       tests: [
         {
-          name: "Test USDZ",
-          description: "Test de compatibilité USDZ et AR sur iOS",
-          href: "/test-usdz",
-          status: "stable"
-        }
-      ]
-    },
-    {
-      title: "Fonctionnalités Avancées",
-      description: "Tests des fonctionnalités interactives",
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      ),
-      tests: [
-        {
-          name: "Test Hotspots",
-          description: "Points d'intérêt interactifs sur les modèles 3D",
-          href: "/test-hotspots",
-          status: "experimental"
-        },
-        {
-          name: "Test Analytics",
-          description: "Suivi des interactions et statistiques",
-          href: "/test-analytics",
-          status: "beta"
-        },
-        {
-          name: "Test AR Android",
-          description: "Diagnostic et dépannage AR spécifique Android",
-          href: "/test-ar-android",
-          status: "stable"
-        },
-        {
-          name: "Test AR iOS",
-          description: "Diagnostic et dépannage AR spécifique iPhone/iPad",
-          href: "/test-ios-ar",
+          name: "Test Système Contact",
+          description: "Test d'envoi d'email via le système de contact",
+          action: testContact,
           status: "stable"
         }
       ]
     }
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
-    },
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'stable':
-        return 'bg-teal-100 text-teal-800';
+        return 'bg-green-100 text-green-800';
       case 'beta':
-        return 'bg-orange-100 text-orange-800';
-      case 'experimental':
-        return 'bg-rose-100 text-rose-800';
+        return 'bg-yellow-100 text-yellow-800';
+      case 'new':
+        return 'bg-blue-100 text-blue-800';
+      case 'debug':
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -124,141 +107,170 @@ export default function TestMenuPage() {
         return '✅';
       case 'beta':
         return '🧪';
-      case 'experimental':
-        return '⚡';
+      case 'new':
+        return '🆕';
+      case 'debug':
+        return '🔍';
       default:
         return '📋';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50">
-      {/* Header */}
-      <div className="sticky top-0 z-50" style={{ 
-        background: 'rgba(255, 245, 235, 0.95)', 
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(0, 0, 0, 0.06)'
-      }}>
-        <div className="container-modern py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="flex items-center space-x-3">
-                <CobiLogo size="md" />
-                <span className="text-xl font-bold text-teal-800">COBI</span>
-              </Link>
-              <div className="hidden sm:block w-px h-6 bg-teal-300"></div>
-              <span className="hidden sm:block text-teal-700 font-medium">Centre de Tests</span>
-            </div>
-            <Link
-              href="/restaurant/dashboard"
-              className="px-4 py-2 bg-white text-teal-700 border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors text-sm font-medium"
-            >
-              ← Retour au Dashboard Restaurant
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="container-modern section-padding">
-        {/* Hero Section */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 bg-gradient-to-br from-teal-100 to-teal-200">
-            <svg
-              className="w-10 h-10 text-teal-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
+          <div className="flex items-center justify-center mb-6">
+            <CobiLogo className="w-16 h-16 mr-4" />
+            <h1 className="text-4xl font-bold text-gray-900">Tests & Diagnostics</h1>
           </div>
-          <h1 className="text-4xl font-bold mb-4 text-teal-800">Centre de Tests COBI</h1>
-          <p className="text-xl text-teal-600 max-w-2xl mx-auto">
-            Testez et validez toutes les fonctionnalités 3D, AR et d'interaction de la plateforme
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Centre de test pour valider les fonctionnalités de la plateforme COBI
           </p>
         </motion.div>
 
         {/* Test Categories */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-12"
-        >
+        <div className="grid gap-8 max-w-6xl mx-auto">
           {testCategories.map((category, categoryIndex) => (
-            <motion.div key={categoryIndex} variants={itemVariants}>
-              <div className="mb-6">
-                <div className="flex items-center space-x-4 mb-3">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-teal-100 to-teal-200 text-teal-700">
+            <motion.div
+              key={category.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: categoryIndex * 0.1 }}
+              className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="flex items-center mb-4">
+                  <div className="p-3 bg-blue-100 rounded-lg text-blue-600 mr-4">
                     {category.icon}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-teal-800">{category.title}</h2>
-                    <p className="text-teal-600">{category.description}</p>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      {category.title}
+                    </h2>
+                    <p className="text-gray-600">
+                      {category.description}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-4 p-6">
                 {category.tests.map((test, testIndex) => (
-                  <Link key={testIndex} href={test.href}>
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      className="bg-white rounded-xl shadow-lg border border-orange-100 p-6 cursor-pointer hover:shadow-xl transition-all duration-300 hover:border-teal-200"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold mb-2 text-teal-800">{test.name}</h3>
-                          <p className="text-teal-600 text-sm leading-relaxed">
-                            {test.description}
-                          </p>
-                        </div>
-                        <div className={`ml-4 px-2.5 py-1 rounded-lg text-xs font-medium ${getStatusColor(test.status)}`}>
-                          {getStatusIcon(test.status)} {test.status}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between pt-4 border-t border-orange-100">
-                        <span className="text-sm font-medium text-teal-700">
-                          Lancer le test →
-                        </span>
-                        <svg
-                          className="w-5 h-5 text-teal-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <motion.div
+                    key={test.name}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: (categoryIndex * 0.1) + (testIndex * 0.05) }}
+                    className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">{test.name}</h4>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(test.status)}`}>
+                        {getStatusIcon(test.status)} {test.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">{test.description}</p>
+                    
+                    {test.href ? (
+                      <Link 
+                        href={test.href}
+                        className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        Ouvrir le test
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
-                      </div>
-                    </motion.div>
-                  </Link>
+                      </Link>
+                    ) : test.action ? (
+                      <button
+                        onClick={test.action}
+                        disabled={isTestingContact}
+                        className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium disabled:opacity-50"
+                      >
+                        {isTestingContact ? 'Test en cours...' : 'Lancer le test'}
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </button>
+                    ) : null}
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
 
-        {/* Footer Info */}
+        {/* Contact Test Results */}
+        {contactResult && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 max-w-4xl mx-auto"
+          >
+            <div className={`rounded-xl border-2 p-6 ${
+              contactResult.success 
+                ? 'border-green-200 bg-green-50' 
+                : 'border-red-200 bg-red-50'
+            }`}>
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                {contactResult.success ? (
+                  <>
+                    <span className="text-green-600 mr-2">✅</span>
+                    Test Contact Réussi
+                  </>
+                ) : (
+                  <>
+                    <span className="text-red-600 mr-2">❌</span>
+                    Test Contact Échoué
+                  </>
+                )}
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="bg-white rounded-lg p-4 border">
+                  <h4 className="font-medium text-gray-900 mb-2">Résultat :</h4>
+                  <p className="text-sm text-gray-700 mb-2">{contactResult.message}</p>
+                  <pre className="text-xs text-gray-600 overflow-x-auto bg-gray-50 p-2 rounded">
+                    {JSON.stringify(contactResult, null, 2)}
+                  </pre>
+                </div>
+                
+                {contactResult.success ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 className="font-medium text-green-800 mb-2">✅ Succès !</h4>
+                    <p className="text-sm text-green-700">
+                      L'email a été envoyé avec succès ! Vérifiez votre boîte email (et les spams) à <strong>cobi.need@gmail.com</strong>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 className="font-medium text-red-800 mb-2">❌ Échec</h4>
+                    <p className="text-sm text-red-700">
+                      L'envoi de l'email a échoué. Vérifiez votre configuration Resend.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Footer */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="mt-16 p-6 rounded-xl bg-gradient-to-br from-teal-50 to-orange-50 border border-teal-100"
+          className="text-center mt-12 pt-8 border-t border-gray-200"
         >
-          <div className="text-center">
-            <h3 className="text-lg font-semibold mb-2 text-teal-800">À propos des tests</h3>
-            <p className="text-teal-600 text-sm max-w-2xl mx-auto">
-              Ces tests permettent de valider le bon fonctionnement des différentes fonctionnalités 
-              de COBI dans différents environnements et navigateurs. Ils sont essentiels pour 
-              garantir une expérience utilisateur optimale.
-            </p>
-          </div>
+          <p className="text-gray-500 text-sm">
+            Tests développés pour la plateforme COBI • Version {new Date().getFullYear()}
+          </p>
         </motion.div>
       </div>
     </div>

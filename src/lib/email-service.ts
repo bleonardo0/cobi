@@ -2,9 +2,16 @@ import { Resend } from 'resend';
 
 // Configuration des emails
 const EMAIL_CONFIG = {
-  from: 'COBI Platform <noreply@cobi-platform.com>',
+  from: 'COBI Platform <onboarding@resend.dev>',
   to: 'cobi.need@gmail.com',
-  fallbackFrom: 'noreply@cobi-platform.com',
+  fallbackFrom: 'onboarding@resend.dev',
+  
+  // 🚨 SOLUTION TEMPORAIRE SANS DOMAINE :
+  // Changez cette valeur pour envoyer directement à cobi.need@gmail.com
+  sendToDestination: false, // true = envoie à cobi.need@gmail.com, false = envoie à votre adresse
+  
+  isDevelopment: process.env.NODE_ENV === 'development',
+  devEmail: 'fvallmajo2000@gmail.com',
 };
 
 // Initialiser Resend uniquement si la clé API est disponible
@@ -139,9 +146,22 @@ Via la plateforme COBI
   // Tentative d'envoi avec Resend
   if (resend) {
     try {
+      // Détermine l'adresse de destination
+      let destinationEmail;
+      if (EMAIL_CONFIG.sendToDestination) {
+        // Tente d'envoyer à cobi.need@gmail.com (peut échouer sans domaine vérifié)
+        destinationEmail = EMAIL_CONFIG.to;
+      } else {
+        // Envoie à votre adresse (fonctionne toujours)
+        destinationEmail = EMAIL_CONFIG.devEmail;
+      }
+      
+      // Utilise toujours l'adresse Resend autorisée
+      const fromEmail = EMAIL_CONFIG.fallbackFrom;
+      
       const result = await resend.emails.send({
-        from: EMAIL_CONFIG.from,
-        to: EMAIL_CONFIG.to,
+        from: fromEmail,
+        to: destinationEmail,
         replyTo: userEmail,
         subject: emailSubject,
         html: htmlContent,
@@ -159,6 +179,19 @@ Via la plateforme COBI
       
     } catch (error) {
       console.error('❌ Erreur lors de l\'envoi avec Resend:', error);
+      
+      // Vérifier si c'est une erreur 403 (limitation de domaine)
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 403) {
+        return {
+          success: false,
+          message: 'Erreur de configuration Resend : Domaine non vérifié',
+          method: 'email',
+          data: {
+            error: error,
+            solution: 'Vérifiez un domaine sur resend.com/domains ou utilisez l\'adresse email du propriétaire du compte'
+          }
+        };
+      }
       
       // Fallback vers logging détaillé
       return await fallbackEmailLogging(data, emailSubject, textContent, htmlContent);

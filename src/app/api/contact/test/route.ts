@@ -2,44 +2,89 @@ import { NextResponse } from 'next/server';
 import { sendContactEmail, validateEmailConfig } from '@/lib/email-service';
 
 export async function GET() {
-  // Vérifier la configuration
+  // Diagnostic détaillé de la configuration
+  const resendKey = process.env.RESEND_API_KEY;
   const configCheck = validateEmailConfig();
   
+  // Diagnostic détaillé
+  const diagnostic = {
+    resendApiKey: {
+      exists: !!resendKey,
+      length: resendKey ? resendKey.length : 0,
+      startsWithRe: resendKey ? resendKey.startsWith('re_') : false,
+      preview: resendKey ? `${resendKey.substring(0, 10)}...` : 'undefined',
+      type: typeof resendKey
+    },
+    environment: {
+      nodeEnv: process.env.NODE_ENV,
+      cwd: process.cwd(),
+    },
+    allEnvVars: Object.keys(process.env).filter(key => 
+      key.includes('RESEND') || key.includes('EMAIL') || key.includes('API')
+    )
+  };
+  
   return NextResponse.json({
-    message: 'API de test de contact',
+    message: 'Diagnostic complet de la configuration email',
     emailConfig: configCheck,
-    testEndpoint: 'POST /api/contact/test',
-    usage: 'Utilisez POST avec des données de test pour envoyer un email de test'
+    diagnostic,
+    instructions: {
+      setup: 'Ajoutez RESEND_API_KEY=re_your-api-key-here dans votre fichier .env.local',
+      location: 'Le fichier .env.local doit être à la racine du projet (même niveau que package.json)',
+      restart: 'Redémarrez le serveur après avoir ajouté la clé : npm run dev',
+      test: 'Utilisez POST /api/contact/test pour envoyer un email de test'
+    }
   });
 }
 
 export async function POST() {
   try {
-    // Données de test
+    // Vérifier la clé API
+    const apiKey = process.env.RESEND_API_KEY;
+    
+    if (!apiKey) {
+      return NextResponse.json({
+        success: false,
+        message: 'Clé API Resend non trouvée',
+        details: {
+          environment: process.env.NODE_ENV,
+          totalEnvVars: Object.keys(process.env).length
+        }
+      }, { status: 500 });
+    }
+
+    // Test avec des données réelles
     const testData = {
       subject: 'technical-error',
-      message: 'Ceci est un message de test automatique du système de contact COBI.\n\nSi vous recevez ce message, cela signifie que le système d\'envoi d\'emails fonctionne correctement !',
-      needCallback: true,
-      userEmail: 'test@restaurant-demo.com',
-      restaurantName: 'Restaurant de Test'
+      message: 'Test automatique du système de contact - ' + new Date().toISOString(),
+      needCallback: false,
+      userEmail: 'fvallmajo2000@gmail.com',
+      restaurantName: 'Restaurant Test'
     };
 
-    // Envoyer l'email de test
+    console.log('Test contact - Envoi avec clé API:', apiKey.substring(0, 10) + '...');
+    
     const result = await sendContactEmail(testData);
     
+    console.log('Test contact - Résultat:', result);
+
     return NextResponse.json({
-      success: true,
-      message: 'Email de test envoyé',
-      result: result,
-      testData: testData
+      success: result.success,
+      message: result.message,
+      method: result.method,
+      details: {
+        apiKey: apiKey.substring(0, 10) + '...',
+        timestamp: new Date().toISOString(),
+        data: result.data
+      }
     });
-    
+
   } catch (error) {
-    console.error('Erreur lors du test d\'envoi:', error);
+    console.error('Erreur test contact:', error);
     return NextResponse.json({
       success: false,
-      error: 'Erreur lors du test d\'envoi',
-      details: error instanceof Error ? error.message : 'Erreur inconnue'
+      message: 'Erreur lors du test de contact',
+      error: error instanceof Error ? error.message : 'Erreur inconnue'
     }, { status: 500 });
   }
 } 
