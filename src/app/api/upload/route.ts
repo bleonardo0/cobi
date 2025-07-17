@@ -47,11 +47,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`📁 Processing file: ${modelFile.name} (${modelFile.size} bytes)`);
 
-    // Check file size limit for Vercel
-    const maxSize = 4 * 1024 * 1024; // 4MB pour Vercel
+    // Check file size limit (50MB pour le mode direct)
+    const maxSize = 50 * 1024 * 1024; // 50MB pour les gros modèles
     if (modelFile.size > maxSize) {
       console.error(`❌ File too large: ${modelFile.size} bytes > ${maxSize} bytes`);
-      return NextResponse.json({ error: 'Fichier trop volumineux (max 4MB pour Vercel)' }, { status: 413 });
+      return NextResponse.json({ error: 'Fichier trop volumineux (max 50MB)' }, { status: 413 });
     }
 
     // Generate unique filename and slug

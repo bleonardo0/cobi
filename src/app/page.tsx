@@ -1,36 +1,59 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useAuth } from '@/providers/ClerkAuthProvider';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/providers/AuthProvider';
-import CobiLogoWithText from '@/components/shared/CobiLogoWithText';
+import { useEffect, useMemo } from 'react';
 
-export default function HomePage() {
-  const router = useRouter();
+export default function Home() {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  // Calculer la destination avant le rendu
+  const destination = useMemo(() => {
+    if (isLoading || !user) return null;
+    
+    if (user.role === 'admin') {
+      return '/admin/dashboard';
+    }
+    
+    if (user.role === 'restaurateur') {
+      return user.restaurantId ? '/restaurant/dashboard' : '/no-restaurant';
+    }
+    
+    return '/sign-in';
+  }, [user, isLoading]);
 
   useEffect(() => {
-    if (!isLoading) {
-      if (user) {
-        // Utilisateur connecté, rediriger vers le dashboard approprié
-        if (user.role === 'admin') {
-          router.replace('/admin/dashboard');
-        } else if (user.role === 'restaurateur') {
-          router.replace('/restaurant/dashboard');
-        }
-      } else {
-        // Utilisateur non connecté, rediriger vers la page de connexion
-        router.replace('/auth/login');
-      }
+    if (!isLoading && !user) {
+      router.replace('/sign-in');
+      return;
     }
-  }, [user, isLoading, router]);
 
-  // Affichage de chargement pendant la redirection
+    if (destination) {
+      router.replace(destination);
+    }
+  }, [destination, isLoading, user, router]);
+
+  // Optimisation : afficher un spinner plus simple
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Si pas d'utilisateur, ne rien afficher (redirection en cours)
+  if (!user) {
+    return null;
+  }
+
+  // Afficher un message de redirection seulement si nécessaire
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fbfaf5 0%, #f8f7f2 50%, #e9ecf1 100%)' }}>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
-        <CobiLogoWithText size="lg" className="mb-4" />
-        <p className="text-gray-600">Chargement...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+        <p className="text-gray-600 text-sm">Redirection...</p>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import ModelViewer from "@/components/ModelViewer";
 import HotspotButton from "@/components/HotspotButton";
 import HotspotEditor from "@/components/HotspotEditor";
 import DashboardLayout from "@/components/shared/DashboardLayout";
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuth } from "@/providers/ClerkAuthProvider";
 
 export default function EditModelPage() {
   const params = useParams();
@@ -93,7 +93,7 @@ export default function EditModelPage() {
   }, [user]);
 
   const handleLogout = () => {
-    router.push('/auth/login');
+          router.push('/sign-in');
   };
 
   // Fermer les dropdowns quand on clique ailleurs

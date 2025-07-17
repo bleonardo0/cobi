@@ -207,13 +207,13 @@ export default function UploadForm({ onUploadSuccess, restaurantId }: UploadForm
   const handleModelSelection = (file: File) => {
     setUploadError(null);
     
-    // Validation pour GLB/GLTF - limite Vercel
-    const maxSize = 4 * 1024 * 1024; // 4MB pour respecter la limite Vercel de 4.5MB
+    // Validation pour GLB/GLTF
+    const maxSize = 50 * 1024 * 1024; // 50MB pour les gros modèles
     const allowedTypes = ['model/gltf-binary', 'model/gltf+json'];
     const hasValidExtension = /\.(glb|gltf)$/i.test(file.name);
     
         if (file.size > maxSize) {
-      setUploadError('Le fichier ne doit pas dépasser 4MB (limitation Vercel)');
+      setUploadError('Le fichier ne doit pas dépasser 50MB');
       return;
     }
     
@@ -352,7 +352,7 @@ export default function UploadForm({ onUploadSuccess, restaurantId }: UploadForm
           if (response.status === 500) {
             errorMessage = 'Erreur serveur. Vérifiez la taille du fichier et réessayez.';
           } else if (response.status === 413) {
-            errorMessage = 'Fichier trop volumineux (max 4MB sur Vercel). Réduisez la taille de votre modèle.';
+            errorMessage = 'Fichier trop volumineux (max 50MB). Réduisez la taille de votre modèle.';
           } else if (response.status === 408) {
             errorMessage = 'Timeout d\'upload. Réessayez avec un fichier plus petit.';
           } else if (response.status === 502 || response.status === 504) {

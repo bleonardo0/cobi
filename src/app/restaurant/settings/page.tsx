@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/providers/AuthProvider';
+import { useAuth } from '@/providers/ClerkAuthProvider';
 import { supabase } from '@/lib/supabase';
 import DashboardLayout from '@/components/shared/DashboardLayout';
 import StatsCard from '@/components/shared/StatsCard';
@@ -70,7 +70,7 @@ export default function RestaurantSettingsPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/auth/login');
+      router.push('/sign-in');
       return;
     }
     loadRestaurantData();

@@ -425,11 +425,11 @@ export default function InsightsPage() {
             <div className="flex-1">
               <h3 className="text-2xl font-bold text-slate-800 mb-2">Plats "Waouh" détectés</h3>
               <p className="text-slate-700 mb-6 text-lg">
-                Ces plats captent particulièrement l'attention avec une durée d'exploration supérieure à 2 minutes :
+                Ces plats captent particulièrement l'attention avec une durée d'exploration supérieure à 30 secondes :
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {modelStats
-                  .filter(stat => stat.avgDuration > 120)
+                  .filter(stat => stat.avgDuration > 30)
                   .slice(0, 3)
                   .map((stat, index) => (
                     <motion.div 

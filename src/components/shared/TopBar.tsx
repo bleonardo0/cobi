@@ -3,13 +3,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { UserButton } from '@clerk/nextjs';
 // import DarkModeToggle from './DarkModeToggle';
 
 interface TopBarProps {
   userRole: 'admin' | 'restaurateur';
   userName?: string;
   restaurantName?: string;
-  onLogout?: () => void;
   actions?: React.ReactNode;
   onToggleSidebar?: () => void;
 }
@@ -18,7 +18,6 @@ export default function TopBar({
   userRole, 
   userName, 
   restaurantName, 
-  onLogout, 
   actions,
   onToggleSidebar 
 }: TopBarProps) {
@@ -112,11 +111,6 @@ export default function TopBar({
               className="relative"
             >
               <div className="flex items-center space-x-2 lg:space-x-3">
-                <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center shadow-soft">
-                  <span className="text-white font-bold text-xs lg:text-sm">
-                    {userRole === 'admin' ? 'A' : (restaurantName?.[0] || 'R')}
-                  </span>
-                </div>
                 <div className="hidden md:block">
                   <p className="text-sm font-medium text-neutral-700">
                     {userRole === 'admin' ? 'Admin' : restaurantName}
@@ -126,17 +120,18 @@ export default function TopBar({
                   </p>
                 </div>
                 
-                {/* Logout Button */}
-                {onLogout && (
-                  <button
-                    onClick={onLogout}
-                    className="p-2 rounded-lg hover:bg-neutral-100 transition-colors text-neutral-500 hover:text-neutral-700"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </button>
-                )}
+                {/* Clerk UserButton */}
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: {
+                        width: '40px',
+                        height: '40px'
+                      }
+                    }
+                  }}
+                  afterSignOutUrl="/sign-in"
+                />
               </div>
             </motion.div>
           </div>

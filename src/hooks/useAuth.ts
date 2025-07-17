@@ -1,8 +1,8 @@
 // Re-export du hook principal d'authentification
-export { useAuth } from '@/providers/AuthProvider';
+export { useAuth } from '@/providers/ClerkAuthProvider';
 
 // Hook pour vérifier les permissions spécifiques
-import { useAuth } from '@/providers/AuthProvider';
+import { useAuth } from '@/providers/ClerkAuthProvider';
 
 export function usePermissions() {
   const { user, canPerform, hasRole } = useAuth();
@@ -29,9 +29,8 @@ export function usePermissions() {
     canManageSettings: canPerform('settings', 'manage'),
 
     // Rôles spécifiques
-    isOwner: hasRole('owner'),
-    isManager: hasRole(['owner', 'manager']),
-    isPhotographer: hasRole(['owner', 'manager', 'photographer']),
+    isAdmin: hasRole('admin'),
+    isRestaurateur: hasRole('restaurateur'),
     
     // User info
     currentUser: user,

@@ -13,7 +13,7 @@ import HotspotViewer from "@/components/HotspotViewer";
 import QRCode from 'qrcode';
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import StatsCard from "@/components/shared/StatsCard";
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuth } from "@/providers/ClerkAuthProvider";
 
 export default function ModelDetailPage() {
   const params = useParams();
@@ -267,7 +267,7 @@ export default function ModelDetailPage() {
   };
 
   const handleLogout = () => {
-    router.push('/auth/login');
+          router.push('/sign-in');
   };
 
   const pageVariants = {

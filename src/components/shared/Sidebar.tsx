@@ -99,7 +99,12 @@ export default function Sidebar({ userRole, restaurantName, isOpen = false, onCl
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           
           return (
-            <Link key={item.href} href={item.href} onClick={onClose}>
+            <Link 
+              key={item.href} 
+              href={item.href} 
+              onClick={onClose}
+              target={item.label === 'Menu Client' ? '_blank' : undefined}
+            >
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

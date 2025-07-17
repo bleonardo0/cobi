@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuth } from "@/providers/ClerkAuthProvider";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import DashboardLayout from "@/components/shared/DashboardLayout";
@@ -47,7 +47,7 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'pending'>('all');
   const [resetLoading, setResetLoading] = useState<Record<string, boolean>>({});
 
-  const { user, logout, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   // Vérifier l'authentification
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
     if (authLoading) return;
     
     if (!user) {
-      router.push('/auth/login');
+      router.push('/sign-in');
       return;
     }
     if (user.role !== 'admin') {
@@ -163,10 +163,7 @@ export default function AdminDashboard() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleLogout = () => {
-    logout();
-    router.push('/auth/login');
-  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -236,7 +233,6 @@ export default function AdminDashboard() {
     <DashboardLayout
       userRole="admin"
       userName="Admin"
-      onLogout={handleLogout}
       topBarActions={topBarActions}
     >
       <div className="space-y-6">

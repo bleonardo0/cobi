@@ -48,3 +48,6 @@ Thumbs.db
 # Uploaded models (optional - remove if you want to track them)
 /public/models/*
 !/public/models/.gitkeep
+
+# clerk configuration (can include secrets)
+/.clerk/

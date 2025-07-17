@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { filterModels, getFilterStats, sortModels } from "@/lib/filtering";
 import { MENU_CATEGORIES } from "@/lib/constants";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuth } from "@/providers/ClerkAuthProvider";
 import { useRouter } from "next/navigation";
 import { useRestaurantId } from "@/hooks/useRestaurantId";
 import DashboardLayout from "@/components/shared/DashboardLayout";
@@ -23,7 +23,7 @@ export default function RestaurantDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'category'>('name');
   
-  const { user, logout, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
   // Utiliser directement le restaurant de l'utilisateur connecté
@@ -41,7 +41,7 @@ export default function RestaurantDashboard() {
     if (authLoading) return;
     
     if (!user) {
-      router.push('/auth/login');
+      router.push('/sign-in');
       return;
     }
     if (user.role !== 'restaurateur') {
@@ -159,10 +159,7 @@ export default function RestaurantDashboard() {
     setFilteredModels(sorted);
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/auth/login');
-  };
+
 
   // État pour les métriques
   const [analytics, setAnalytics] = useState<{
@@ -237,7 +234,7 @@ export default function RestaurantDashboard() {
       userRole="restaurateur"
       restaurantName={restaurantName || undefined}
       restaurantSlug={restaurantSlug}
-      onLogout={handleLogout}
+
       topBarActions={topBarActions}
     >
       <div className="space-y-6">

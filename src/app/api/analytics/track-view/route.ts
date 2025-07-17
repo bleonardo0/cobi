@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { trackModelView } from '@/lib/analytics-simple';
+import { trackModelView } from '@/lib/analytics-simplified';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { modelId, restaurantId, sessionId, interactionType, deviceType } = body;
+    const { modelId, restaurantId, sessionId, viewDuration } = body;
 
     if (!modelId || !restaurantId) {
       return NextResponse.json(
@@ -15,9 +15,15 @@ export async function POST(request: NextRequest) {
 
     const userAgent = request.headers.get('user-agent') || '';
     
-    console.log(`📊 Tracking vue modèle: ${modelId} pour restaurant: ${restaurantId}, session: ${sessionId}`);
+    console.log(`📊 Tracking vue modèle: ${modelId} pour restaurant: ${restaurantId}`);
 
-    const success = await trackModelView(modelId, restaurantId, userAgent, sessionId, deviceType, interactionType);
+    const success = await trackModelView(
+      modelId, 
+      restaurantId, 
+      userAgent, 
+      sessionId, 
+      viewDuration
+    );
 
     if (success) {
       return NextResponse.json({

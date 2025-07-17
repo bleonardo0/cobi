@@ -12,7 +12,6 @@ interface DashboardLayoutProps {
   userName?: string;
   restaurantName?: string;
   restaurantSlug?: string;
-  onLogout?: () => void;
   topBarActions?: React.ReactNode;
   className?: string;
 }
@@ -23,7 +22,6 @@ export default function DashboardLayout({
   userName,
   restaurantName,
   restaurantSlug,
-  onLogout,
   topBarActions,
   className = ''
 }: DashboardLayoutProps) {
@@ -54,7 +52,6 @@ export default function DashboardLayout({
           userRole={userRole}
           userName={userName}
           restaurantName={restaurantName}
-          onLogout={onLogout}
           actions={topBarActions}
           onToggleSidebar={toggleSidebar}
         />

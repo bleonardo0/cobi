@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getModelViewsStats } from '@/lib/analytics-simple';
+import { getAnalyticsStats } from '@/lib/analytics-simplified';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
 
     console.log('📊 Récupération des analytics pour restaurant:', restaurantId);
 
-    const stats = await getModelViewsStats(restaurantId || undefined);
+    const stats = await getAnalyticsStats(restaurantId || undefined);
 
     // Récupérer les détails des modèles depuis la base de données
     const modelIds = stats.modelStats.map(stat => stat.modelId);
@@ -28,17 +28,17 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    // Transformer les données pour la page insights
-    const mockModels = stats.modelStats.map((model, index) => {
+    // Enrichir les données avec les vraies informations des modèles
+    const enrichedModels = stats.modelStats.map(model => {
       const modelData = modelsMap.get(model.modelId);
       return {
         id: model.modelId,
         name: modelData?.name || model.name,
-        views: model.count,
-        avgDuration: model.avgDuration || 0, // Vraie durée moyenne
+        views: model.views,
+        avgDuration: model.avgDuration,
         popularityScore: model.percentage,
         category: modelData?.category || 'Plat',
-        thumbnailUrl: modelData?.thumbnailUrl || null // URL de la vraie image du plat
+        thumbnailUrl: modelData?.thumbnailUrl || null
       };
     });
 
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     })).reverse();
 
     // Calculer les stats des appareils en pourcentages
-    const deviceStats = stats.deviceStats || { mobile: 0, tablet: 0, desktop: 0 };
+    const deviceStats = stats.deviceStats;
     const totalDeviceViews = Object.values(deviceStats).reduce((sum, count) => sum + count, 0);
     const deviceBreakdown = Object.entries(deviceStats).reduce((acc, [device, count]) => {
       acc[device] = totalDeviceViews > 0 ? Math.round((count / totalDeviceViews) * 100) : 0;
@@ -60,18 +60,16 @@ export async function GET(request: NextRequest) {
     const analytics = {
       general: {
         totalViews: stats.totalViews,
-        avgDuration: stats.globalAvgDuration || 0, // Vraie durée moyenne globale
-        uniqueSessions: stats.totalViews, // Simplifié : 1 session = 1 vue
+        avgDuration: stats.globalAvgDuration,
+        uniqueSessions: Math.ceil(stats.totalViews * 0.8), // Approximation
         deviceBreakdown: deviceBreakdown,
       },
-      models: mockModels,
+      models: enrichedModels,
       viewsByDay: viewsByDayArray,
-      waouhModels: mockModels.filter(m => m.views > 2), // Modèles avec plus de 2 vues
-      topModel: mockModels[0] || null,
+      waouhModels: enrichedModels.filter(m => m.avgDuration > 30), // Modèles avec plus de 30 secondes d'exploration
+      topModel: enrichedModels[0] || null,
       lastUpdated: new Date().toISOString(),
     };
-
-    console.log('📊 Analytics simplifiées:', analytics);
 
     return NextResponse.json({
       success: true,

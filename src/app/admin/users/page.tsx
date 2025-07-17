@@ -12,7 +12,7 @@ export default function UsersAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isInviting, setIsInviting] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<UserRole>('viewer');
+  const [inviteRole, setInviteRole] = useState<UserRole>('restaurateur');
   const [error, setError] = useState<string | null>(null);
   
   const permissions = usePermissions();
@@ -72,7 +72,7 @@ export default function UsersAdminPage() {
       });
 
       setInviteEmail('');
-      setInviteRole('viewer');
+      setInviteRole('restaurateur');
       await fetchUsers();
       
     } catch (error) {
@@ -184,6 +184,12 @@ export default function UsersAdminPage() {
             </div>
             
             <div className="flex space-x-3">
+              <Link
+                href="/admin/assign-users"
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                🏪 Assigner des restaurants
+              </Link>
               <Link
                 href="/admin/audit"
                 className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"

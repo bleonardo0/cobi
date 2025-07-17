@@ -20,8 +20,6 @@ interface RestaurantFormData {
   ownerName: string;
   ownerContact: string;
   ownerContactMethod: 'email' | 'phone' | 'both';
-  password: string;
-  confirmPassword: string;
 }
 
 export default function AddRestaurantPage() {
@@ -43,8 +41,6 @@ export default function AddRestaurantPage() {
     ownerName: '',
     ownerContact: '',
     ownerContactMethod: 'email',
-    password: '',
-    confirmPassword: ''
   });
 
   const handleInputChange = (field: keyof RestaurantFormData, value: string) => {
@@ -79,8 +75,6 @@ export default function AddRestaurantPage() {
     if (!formData.shortDescription.trim()) return 'La description courte est obligatoire';
     if (!formData.ownerName.trim()) return 'Le nom du propriétaire est obligatoire';
     if (!formData.ownerContact.trim()) return 'Le contact du propriétaire est obligatoire';
-    if (!formData.password.trim()) return 'Le mot de passe est obligatoire';
-    if (!formData.confirmPassword.trim()) return 'La confirmation du mot de passe est obligatoire';
     
     // Validation email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -92,15 +86,6 @@ export default function AddRestaurantPage() {
     const slugRegex = /^[a-z0-9-]+$/;
     if (!slugRegex.test(formData.slug)) {
       return 'Le slug ne peut contenir que des lettres minuscules, chiffres et tirets';
-    }
-
-    // Validation mot de passe
-    if (formData.password.length < 8) {
-      return 'Le mot de passe doit contenir au moins 8 caractères';
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      return 'Les mots de passe ne correspondent pas';
     }
 
     return null;
@@ -119,15 +104,12 @@ export default function AddRestaurantPage() {
     setError(null);
 
     try {
-      // Exclure confirmPassword des données envoyées
-      const { confirmPassword, ...dataToSend } = formData;
-      
       const response = await fetch('/api/admin/restaurants', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(dataToSend)
+        body: JSON.stringify(formData)
       });
 
       const data = await response.json();
@@ -140,15 +122,10 @@ export default function AddRestaurantPage() {
       let successMessage = `✅ Restaurant "${formData.name}" créé avec succès!\n\n` +
             `🏪 Dashboard: /restaurant/dashboard\n` +
             `🍽️ Menu: /menu/${formData.slug}\n` +
-            `⚙️ Gestion: /admin/restaurants/${data.restaurant.id}`;
-      
-      // Ajouter info sur le compte utilisateur si un mot de passe a été fourni
-      if (formData.password) {
-        successMessage += `\n\n🔐 Compte utilisateur créé !\n` +
-                         `Email: ${formData.email}\n` +
-                         `Mot de passe: [le mot de passe saisi]\n` +
-                         `Le propriétaire peut maintenant se connecter sur la plateforme.`;
-      }
+            `⚙️ Gestion: /admin/restaurants/${data.restaurant.id}\n\n` +
+            `📋 Prochaines étapes:\n` +
+            `1. Le propriétaire doit s'inscrire sur /sign-up\n` +
+            `2. Assignez-lui le restaurant via /admin/assign-users`;
       
       alert(successMessage);
       router.push(`/admin/restaurants/${data.restaurant.id}`);
@@ -430,60 +407,23 @@ export default function AddRestaurantPage() {
               </div>
             </div>
 
-            {/* Compte utilisateur */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">🔐 Compte utilisateur</h3>
-              <p className="text-sm text-gray-600">
-                Un compte de connexion sera automatiquement créé pour le propriétaire du restaurant
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mot de passe *
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Minimum 8 caractères"
-                    minLength={8}
-                    required
-                  />
+            {/* Information sur l'assignation d'utilisateur */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <div className="text-blue-600 mt-1">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Confirmer le mot de passe *
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Répétez le mot de passe"
-                    minLength={8}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="text-blue-600 mt-1">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-blue-900 mb-1">
-                      Création automatique du compte
-                    </p>
-                    <p className="text-sm text-blue-700">
-                      Un compte utilisateur sera automatiquement créé avec l'email du restaurant ({formData.email || 'email@restaurant.com'}) et ce mot de passe. Le propriétaire pourra se connecter sur la plateforme avec ces identifiants.
-                    </p>
-                  </div>
+                  <p className="text-sm font-medium text-blue-900 mb-1">
+                    📋 Prochaines étapes pour l'assignation d'utilisateur
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    <strong>1.</strong> Créer le restaurant (ce formulaire)<br/>
+                    <strong>2.</strong> Le propriétaire doit s'inscrire sur <strong>/sign-up</strong><br/>
+                    <strong>3.</strong> Vous pourrez ensuite assigner le restaurant à l'utilisateur via <strong>/admin/assign-users</strong>
+                  </p>
                 </div>
               </div>
             </div>
