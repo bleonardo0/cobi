@@ -12,6 +12,9 @@
     "src/app/api/upload/route.ts": {
       "maxDuration": 60,
       "memory": 1024
+    },
+    "src/middleware.ts": {
+      "runtime": "nodejs18.x"
     }
   },
   "headers": [

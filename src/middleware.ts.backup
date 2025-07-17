@@ -17,26 +17,13 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware((auth, req) => {
-  try {
-    // Si c'est une route publique, on laisse passer
-    if (isPublicRoute(req)) {
-      return;
-    }
-    
-    // Vérification des variables d'environnement
-    const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-    if (!publishableKey) {
-      console.warn('Clerk publishable key missing, skipping auth protection');
-      return;
-    }
-    
-    // Sinon, on protège avec Clerk
-    auth.protect();
-  } catch (error) {
-    console.error('Middleware error:', error);
-    // En cas d'erreur, on laisse passer plutôt que de bloquer le site
+  // Si c'est une route publique, on laisse passer
+  if (isPublicRoute(req)) {
     return;
   }
+  
+  // Sinon, on protège avec Clerk
+  auth.protect();
 });
 
 export const config = {
@@ -46,6 +33,4 @@ export const config = {
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],
-  // Force Node.js runtime instead of Edge Runtime
-  runtime: 'nodejs',
 }; 
