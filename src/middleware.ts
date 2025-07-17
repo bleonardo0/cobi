@@ -16,12 +16,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/contact(.*)',
   '/api/proxy/(.*)',
   '/models/(.*)',
-  '/test-ar-android',
-  '/test-ios-ar',
-  '/test-usdz',
   '/test-simple',
-  '/test-colors',
-  '/test-hotspots'
+  '/test(.*)'
 ]);
 
 const isPublicApiRoute = createRouteMatcher([
@@ -45,7 +41,8 @@ export default clerkMiddleware((auth, req) => {
       pathname.startsWith('/api/analytics/track-view') ||
       pathname.startsWith('/api/contact') ||
       pathname.startsWith('/api/proxy/') ||
-      pathname.startsWith('/api/webhooks/clerk')) {
+      pathname.startsWith('/api/webhooks/clerk') ||
+      pathname.startsWith('/test')) {
     return;
   }
 
