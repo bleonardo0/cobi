@@ -18,6 +18,7 @@ interface Restaurant {
   description: string;
   short_description: string;
   logo_url: string;
+  ambiance_image_url?: string; // Image d'ambiance pour le nouveau menu
   primary_color: string;
   secondary_color: string;
   rating: number;
@@ -131,6 +132,7 @@ export default function RestaurantSettingsPage() {
           primary_color: restaurant.primary_color,
           secondary_color: restaurant.secondary_color,
           logo_url: restaurant.logo_url,
+          ambiance_image_url: restaurant.ambiance_image_url,
           updated_at: new Date().toISOString()
         })
         .eq('id', restaurant.id);
@@ -186,8 +188,8 @@ export default function RestaurantSettingsPage() {
         throw new Error(data.error || 'Erreur lors de l\'upload');
       }
 
-      // Update restaurant with new logo URL
-      setRestaurant(prev => prev ? { ...prev, logo_url: data.logoUrl } : null);
+      // Recharger les données du restaurant pour récupérer la nouvelle URL depuis la base
+      await loadRestaurantData();
       
       showToast('Logo uploadé avec succès', 'success');
       
@@ -195,6 +197,67 @@ export default function RestaurantSettingsPage() {
       console.error('Erreur lors de l\'upload:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
       showToast(`Erreur lors de l'upload du logo: ${errorMessage}`, 'error');
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  const handleAmbianceImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !restaurant) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast('Veuillez sélectionner une image', 'error');
+      return;
+    }
+
+    // Validate file size (max 10MB pour l'image d'ambiance)
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('L\'image ne doit pas dépasser 10MB', 'error');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      
+      // Create FormData for API call
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('restaurantId', restaurant.id);
+      formData.append('type', 'ambiance'); // Spécifier le type d'image
+
+      // Call upload API (nous utiliserons la même API que pour le logo)
+      const response = await fetch('/api/upload-logo', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de l\'upload');
+      }
+
+      // Recharger les données pour récupérer la nouvelle URL depuis la base
+      await loadRestaurantData();
+      
+      // Si l'image n'est pas encore en base, la mettre temporairement dans le state
+      if (data.imageUrl) {
+        setRestaurant(prev => prev ? { 
+          ...prev, 
+          ambiance_image_url: prev.ambiance_image_url || data.imageUrl 
+        } : null);
+      }
+      
+      showToast('Image d\'ambiance uploadée avec succès', 'success');
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'upload:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      showToast(`Erreur lors de l'upload de l'image d'ambiance: ${errorMessage}`, 'error');
     } finally {
       setIsUploading(false);
       // Reset file input
@@ -318,7 +381,11 @@ export default function RestaurantSettingsPage() {
   }
 
   return (
-    <DashboardLayout userRole="restaurateur">
+    <DashboardLayout 
+      userRole="restaurateur"
+      restaurantName={restaurant.name}
+      restaurantSlug={restaurant.slug}
+    >
       {/* Toast notifications */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {toasts.map(toast => (
@@ -581,6 +648,45 @@ export default function RestaurantSettingsPage() {
                             />
                           </div>
                         )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Image d'ambiance (nouveau menu)
+                      </label>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAmbianceImageUpload}
+                            disabled={isUploading}
+                            className="hidden"
+                            id="ambiance-upload"
+                          />
+                          <label
+                            htmlFor="ambiance-upload"
+                            className={`px-4 py-2 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 flex items-center gap-2 ${
+                              isUploading ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                          >
+                            <span>🖼️</span>
+                            {isUploading ? 'Upload en cours...' : 'Choisir image d\'ambiance'}
+                          </label>
+                        </div>
+                        {restaurant.ambiance_image_url && (
+                          <div className="mt-2">
+                            <img 
+                              src={restaurant.ambiance_image_url} 
+                              alt="Image d'ambiance du restaurant" 
+                              className="w-full max-w-md h-32 object-cover border rounded-lg"
+                            />
+                          </div>
+                        )}
+                        <p className="text-xs text-neutral-500">
+                          Cette image sera affichée en haut de votre nouveau menu moderne. Format recommandé : 1200x400px (ratio 3:1)
+                        </p>
                       </div>
                     </div>
 

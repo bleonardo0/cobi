@@ -35,8 +35,8 @@ export const useRestaurantId = (fallbackSlug?: string): {
       return fallbackSlug;
     }
     
-    // 3. Par défaut, leo-et-les-pieds
-    return 'leo-et-les-pieds';
+    // 3. Pas de fallback par défaut - éviter les requêtes vers des restaurants inexistants
+    return null;
   };
 
   useEffect(() => {
@@ -70,13 +70,6 @@ export const useRestaurantId = (fallbackSlug?: string): {
       } catch (err) {
         console.error('❌ Erreur lors de la récupération du restaurant ID:', err);
         setError(err instanceof Error ? err.message : 'Erreur inconnue');
-        
-        // Fallback vers l'ancien système pour leo-et-les-pieds
-        if (getRestaurantSlug() === 'leo-et-les-pieds') {
-          setRestaurantId('123e4567-e89b-12d3-a456-426614174000');
-          setRestaurantSlug('leo-et-les-pieds');
-          console.log('🔄 Fallback vers ancien ID pour leo-et-les-pieds');
-        }
       } finally {
         setIsLoading(false);
       }

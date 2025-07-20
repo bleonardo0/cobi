@@ -14,7 +14,7 @@ export async function GET(
     // Récupérer les informations du restaurant
     const { data: restaurant, error: restaurantError } = await supabase
       .from('restaurants')
-      .select('id, name, slug, address, phone, email, website, description, logo_url, primary_color, secondary_color, is_active')
+      .select('id, name, slug, address, phone, email, website, description, logo_url, ambiance_image_url, primary_color, secondary_color, is_active')
       .eq('slug', slug)
       .single();
 
@@ -34,7 +34,8 @@ export async function GET(
           is_active: true,
           primary_color: '#d97706',
           secondary_color: '#f59e0b',
-          logo_url: null
+          logo_url: null,
+          ambiance_image_url: null
         };
         
         // Récupérer les modèles avec fallback

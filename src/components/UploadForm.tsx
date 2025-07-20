@@ -133,6 +133,8 @@ export default function UploadForm({ onUploadSuccess, restaurantId }: UploadForm
   const [modelName, setModelName] = useState<string>('');
   const [price, setPrice] = useState<string>('');
   const [shortDescription, setShortDescription] = useState<string>('');
+  const [ingredients, setIngredients] = useState<string[]>([]);
+  const [newIngredient, setNewIngredient] = useState<string>('');
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
   const [showAllergenDropdown, setShowAllergenDropdown] = useState(false);
   const allergenDropdownRef = useRef<HTMLDivElement>(null);
@@ -188,6 +190,39 @@ export default function UploadForm({ onUploadSuccess, restaurantId }: UploadForm
         ? prev.filter(a => a !== allergenId)
         : [...prev, allergenId]
     );
+  };
+
+  // Gestion des ingrédients
+  const addIngredient = () => {
+    if (!newIngredient.trim()) return;
+
+    // Diviser par les virgules et traiter chaque ingrédient
+    const ingredientsList = newIngredient
+      .split(',')
+      .map(ingredient => ingredient.trim())
+      .filter(ingredient => ingredient.length > 0);
+
+    // Ajouter uniquement les nouveaux ingrédients (éviter les doublons)
+    const newIngredients = ingredientsList.filter(ingredient => 
+      !ingredients.includes(ingredient)
+    );
+
+    if (newIngredients.length > 0) {
+      setIngredients(prev => [...prev, ...newIngredients]);
+    }
+    
+    setNewIngredient('');
+  };
+
+  const removeIngredient = (ingredient: string) => {
+    setIngredients(prev => prev.filter(i => i !== ingredient));
+  };
+
+  const handleIngredientKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addIngredient();
+    }
   };
 
   const handleModelInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -308,6 +343,7 @@ export default function UploadForm({ onUploadSuccess, restaurantId }: UploadForm
       if (shortDescription) {
         formData.append('shortDescription', shortDescription);
       }
+      formData.append('ingredients', JSON.stringify(ingredients));
       formData.append('allergens', JSON.stringify(selectedAllergens));
       
       // Ajouter les données des hotspots
@@ -399,6 +435,8 @@ export default function UploadForm({ onUploadSuccess, restaurantId }: UploadForm
     setModelName('');
     setPrice('');
     setShortDescription('');
+    setIngredients([]);
+    setNewIngredient('');
     setSelectedAllergens([]);
     setShowAllergenDropdown(false);
     
@@ -766,6 +804,62 @@ export default function UploadForm({ onUploadSuccess, restaurantId }: UploadForm
                   <div className="text-xs text-gray-500 mt-1">
                     {shortDescription.length}/150 caractères
                   </div>
+                </div>
+
+                {/* Ingrédients */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ingrédients
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={newIngredient}
+                      onChange={(e) => setNewIngredient(e.target.value)}
+                      onKeyPress={handleIngredientKeyPress}
+                      placeholder="ex: Mozzarella, Tomates, Basilic (séparez par des virgules)"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      disabled={isUploading}
+                    />
+                    <button
+                      type="button"
+                      onClick={addIngredient}
+                      disabled={isUploading || !newIngredient.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <span>+</span>
+                      Ajouter
+                    </button>
+                  </div>
+                  
+                  {/* Liste des ingrédients */}
+                  <div className="flex flex-wrap gap-1">
+                    {ingredients.length > 0 ? (
+                      ingredients.map((ingredient, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200"
+                        >
+                          <span className="mr-1">🧄</span>
+                          {ingredient}
+                          {!isUploading && (
+                            <button
+                              type="button"
+                              onClick={() => removeIngredient(ingredient)}
+                              className="ml-1 hover:text-red-600"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">Aucun ingrédient ajouté</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tapez un ou plusieurs ingrédients séparés par des virgules. Appuyez sur Entrée ou cliquez sur "Ajouter"
+                  </p>
                 </div>
 
                 {/* Allergènes */}

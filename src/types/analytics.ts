@@ -54,6 +54,8 @@ export interface Restaurant {
   phone?: string;
   website?: string;
   logo?: string;
+  logo_url?: string;
+  ambiance_image_url?: string; // Image d'ambiance pour le nouveau design de menu
   primaryColor?: string;
   secondaryColor?: string;
   isActive: boolean;

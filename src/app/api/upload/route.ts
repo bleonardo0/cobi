@@ -25,15 +25,18 @@ export async function POST(request: NextRequest) {
     const modelName = formData.get('modelName') as string;
     const price = formData.get('price') as string;
     const shortDescription = formData.get('shortDescription') as string || '';
+    const ingredientsJson = formData.get('ingredients') as string || '[]';
     const allergensJson = formData.get('allergens') as string || '[]';
     const restaurantId = formData.get('restaurantId') as string;
     
     // Parse JSON arrays
     let tags: string[] = [];
+    let ingredients: string[] = [];
     let allergens: string[] = [];
     
     try {
       tags = JSON.parse(tagsJson);
+      ingredients = JSON.parse(ingredientsJson);
       allergens = JSON.parse(allergensJson);
     } catch (error) {
       console.error('Error parsing JSON data:', error);
@@ -137,6 +140,7 @@ export async function POST(request: NextRequest) {
       tags: tags,
       price: priceValue,
       short_description: shortDescription,
+      ingredients: ingredients,
       allergens: allergens,
       restaurant_id: restaurantId || null, // Assigner le restaurant ID
       created_at: new Date().toISOString(),
@@ -183,6 +187,7 @@ export async function POST(request: NextRequest) {
       tags: data.tags || [],
       price: data.price,
       shortDescription: data.short_description,
+      ingredients: data.ingredients || [],
       allergens: data.allergens || [],
     };
 

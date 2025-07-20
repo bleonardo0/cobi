@@ -158,7 +158,6 @@ export async function getModelsByRestaurant(restaurantSlug: string): Promise<Mod
       // Fallback pour les restaurants définis en code (comme les TEST_RESTAURANTS)
       const restaurantIdMap: Record<string, string> = {
         'bella-vita': 'restaurant-bella-vita-1',
-        'leo-et-les-pieds': 'restaurant-leo-et-les-pieds-1',
         'le-gourmet-3d': 'restaurant-test-123'
       };
       

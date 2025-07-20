@@ -128,6 +128,16 @@ export async function PATCH(
         updateData.short_description = shortDescription;
       }
       
+      // Handle ingredients
+      const ingredientsJson = formData.get('ingredients') as string;
+      if (ingredientsJson) {
+        try {
+          updateData.ingredients = JSON.parse(ingredientsJson);
+        } catch (error) {
+          console.error('Error parsing ingredients JSON:', error);
+        }
+      }
+      
       // Handle allergens
       const allergensJson = formData.get('allergens') as string;
       if (allergensJson) {

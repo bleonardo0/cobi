@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const restaurantId = formData.get('restaurantId') as string;
+    const imageType = formData.get('type') as string || 'logo'; // 'logo' ou 'ambiance'
 
     if (!file || !restaurantId) {
       return NextResponse.json(
@@ -22,18 +23,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 10MB pour ambiance, 5MB pour logo)
+    const maxSize = imageType === 'ambiance' ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const maxSizeMB = imageType === 'ambiance' ? 10 : 5;
       return NextResponse.json(
-        { error: 'L\'image ne doit pas dépasser 5MB' },
+        { error: `L'image ne doit pas dépasser ${maxSizeMB}MB` },
         { status: 400 }
       );
     }
 
-    // Create file path
+    // Create file path based on type
     const fileExt = file.name.split('.').pop();
-    const fileName = `logo-${restaurantId}-${Date.now()}.${fileExt}`;
-    const filePath = `logos/${fileName}`;
+    const fileName = `${imageType}-${restaurantId}-${Date.now()}.${fileExt}`;
+    const filePath = `${imageType === 'ambiance' ? 'ambiance' : 'logos'}/${fileName}`;
 
     // Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
@@ -63,9 +66,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Update restaurant in database with new image URL
+    const updateField = imageType === 'ambiance' ? 'ambiance_image_url' : 'logo_url';
+    
+    const { error: updateError } = await supabaseAdmin
+      .from('restaurants')
+      .update({ [updateField]: urlData.publicUrl })
+      .eq('id', restaurantId);
+
+    if (updateError) {
+      console.error('Database update error:', updateError);
+      // Pour les images d'ambiance, si la colonne n'existe pas encore, on continue sans erreur
+      if (imageType === 'ambiance' && updateError.message?.includes('column')) {
+        console.log('Colonne ambiance_image_url non trouvée, continuons sans sauvegarder en base');
+      } else {
+        return NextResponse.json(
+          { error: 'Erreur lors de la mise à jour en base de données' },
+          { status: 500 }
+        );
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      logoUrl: urlData.publicUrl,
+      [imageType === 'ambiance' ? 'imageUrl' : 'logoUrl']: urlData.publicUrl,
       filePath: filePath
     });
 

@@ -2,18 +2,84 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { motion } from "framer-motion";
 import { Model3D } from "@/types/model";
 import { Restaurant } from "@/types/analytics";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { usePOSConfig } from "@/hooks/usePOSConfig";
-import { useCart } from "@/hooks/useCart";
-import { getCategoryInfo, getAllergenInfo } from "@/lib/constants";
+import { getCategoryInfo } from "@/lib/constants";
 import ModelViewer from "@/components/ModelViewer";
 import HotspotViewer from "@/components/HotspotViewer";
-import Cart from "@/components/Cart";
 
-export default function MenuPage() {
+// Nouveau composant de carte de plat moderne
+interface ModernDishCardProps {
+  model: Model3D;
+  restaurant: Restaurant;
+  onViewIn3D: (model: Model3D) => void;
+}
+
+function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) {
+  return (
+    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6 transition-all duration-300 hover:scale-105">
+      {/* Image du plat */}
+      <div className="relative">
+        <img 
+          src={model.thumbnailUrl || '/placeholder-dish.jpg'} 
+          alt={model.name}
+          className="w-full h-48 object-cover"
+        />
+        {/* Badge catégorie optionnel */}
+        {model.category && (
+          <div className="absolute top-2 left-2">
+            <span className="px-2 py-1 bg-white/90 text-gray-800 text-xs rounded-full font-medium">
+              {getCategoryInfo(model.category as any)?.name || model.category}
+            </span>
+          </div>
+        )}
+      </div>
+      
+      {/* Contenu de la carte */}
+      <div className="p-4">
+        <h3 className="text-md font-semibold text-gray-900 mb-2">{model.name}</h3>
+        <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+          {model.shortDescription || 'Délicieux plat préparé avec soin par nos chefs'}
+        </p>
+        
+        {/* Ingrédients */}
+        {model.ingredients && model.ingredients.length > 0 && (
+          <div className="mb-3">
+            <div className="flex flex-wrap gap-1">
+              {model.ingredients.slice(0, 4).map((ingredient, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200"
+                >
+                  <span className="mr-1">🧄</span>
+                  {ingredient}
+                </span>
+              ))}
+              {model.ingredients.length > 4 && (
+                <span className="text-xs text-gray-400 italic">
+                  +{model.ingredients.length - 4} ingrédients
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <p className="text-base font-bold text-emerald-600 mb-3">
+          {model.price ? `${model.price.toFixed(2)}€` : 'Prix sur demande'}
+        </p>
+        <button 
+          onClick={() => onViewIn3D(model)}
+          className="mt-2 w-full bg-emerald-500 text-white text-sm py-2 rounded-full hover:bg-emerald-600 transition-colors"
+        >
+          Voir en 3D
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function ModernMenuPage() {
   const params = useParams();
   const restaurantSlug = params.restaurant as string;
   
@@ -23,31 +89,9 @@ export default function MenuPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const [hotspotsEnabled, setHotspotsEnabled] = useState(true);
 
   const { trackModelView, trackModelViewEnd, trackSessionStart, trackMenuView } = useAnalytics(restaurant?.id);
-  
-  // Configuration POS
-  const { config: posConfig, isEnabled: posEnabled, canOrder } = usePOSConfig(restaurant?.id || '');
-  
-  // Gestion du panier
-  const {
-    cart,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    clearCart,
-    getItemCount,
-    isInCart,
-    getItemQuantity,
-    isEmpty: isCartEmpty,
-    isLoading: isCartLoading,
-    error: cartError
-  } = useCart({ 
-    restaurantId: restaurant?.id || '', 
-    config: posConfig || undefined 
-  });
 
   useEffect(() => {
     fetchRestaurantData();
@@ -55,10 +99,8 @@ export default function MenuPage() {
 
   useEffect(() => {
     if (restaurant) {
-      console.log('🔍 Restaurant chargé:', restaurant);
-      console.log('🔍 Restaurant ID:', restaurant.id);
       trackSessionStart();
-      trackMenuView(); // Track la vue de menu
+      trackMenuView();
     }
   }, [restaurant]);
 
@@ -90,7 +132,7 @@ export default function MenuPage() {
     }
   };
 
-  const handleModelSelect = (model: Model3D) => {
+  const handleViewIn3D = (model: Model3D) => {
     if (selectedModel?.id === model.id) {
       trackModelViewEnd();
       setSelectedModel(null);
@@ -103,6 +145,7 @@ export default function MenuPage() {
     }
   };
 
+  // Grouper les modèles par catégorie
   const groupedModels = models.reduce((acc, model) => {
     const category = model.category || 'autres';
     if (!acc[category]) {
@@ -112,25 +155,20 @@ export default function MenuPage() {
     return acc;
   }, {} as Record<string, Model3D[]>);
 
+  // Filtrer les modèles selon la catégorie sélectionnée
   const filteredModels = selectedCategory === 'all' 
     ? models 
     : models.filter(model => model.category === selectedCategory);
 
+  // Obtenir toutes les catégories disponibles
   const categories = ['all', ...Object.keys(groupedModels)];
-
-  // Handlers pour le panier
-  const handleCheckout = () => {
-    // TODO: Rediriger vers la page de checkout
-    console.log('Checkout avec panier:', cart);
-    alert('Fonctionnalité de checkout à implémenter');
-  };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-teal-600">Chargement du menu...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-emerald-600">Chargement du menu...</p>
         </div>
       </div>
     );
@@ -138,241 +176,83 @@ export default function MenuPage() {
 
   if (error || !restaurant) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-teal-800 mb-2">Restaurant non trouvé</h1>
-          <p className="text-teal-600">{error}</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Restaurant non trouvé</h1>
+          <p className="text-gray-600">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50 font-montserrat">
-      {/* Header du restaurant */}
-      <div 
-        className="text-white py-4 sm:py-8"
-        style={{ 
-          background: restaurant.primaryColor || '#0a5b48' 
-        }}
-      >
-        <div className="max-w-4xl mx-auto px-4">
-          
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold font-montserrat">{restaurant.name}</h1>
-              <p className="text-white mt-1 font-montserrat opacity-90 text-sm sm:text-base">
-                {restaurant.description || 'Découvrez notre menu en 3D - Une expérience culinaire immersive'}
-                {posEnabled && canOrder && (
-                  <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-500 text-white">
-                    📱 Commande en ligne
-                  </span>
-                )}
-              </p>
-            </div>
-            
-            <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-4">
-              {/* Toggle Hotspots */}
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-white hidden sm:inline">Hotspots</span>
-                <span className="text-xs font-medium text-white sm:hidden">Hotspots</span>
-                <button
-                  onClick={() => setHotspotsEnabled(!hotspotsEnabled)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    hotspotsEnabled ? 'bg-green-600' : 'bg-gray-400'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      hotspotsEnabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-              
-              {/* Bouton Panier */}
-              {posEnabled && canOrder && (
-                <button
-                  onClick={() => setIsCartOpen(true)}
-                  className="relative bg-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center space-x-2 text-sm sm:text-base min-h-[44px]"
-                  style={{ color: restaurant.primaryColor || '#0a5b48' }}
-                >
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6 0H9.5" />
-                  </svg>
-                  <span className="hidden sm:inline">Panier</span>
-                  {!isCartEmpty && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
-                      {getItemCount()}
-                    </span>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Image d'ambiance en haut */}
+      <div className="relative">
+        <img 
+          src={restaurant.ambiance_image_url || '/default-restaurant-ambiance.jpg'} 
+          alt={`Ambiance ${restaurant.name}`}
+          className="w-full h-48 object-cover rounded-b-xl"
+        />
+        {/* Overlay gradient pour le texte */}
+        <div className="absolute inset-0 bg-black/30 rounded-b-xl"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4 lg:py-6">
-        {/* Filtres par catégorie */}
-        <div className="mb-3 sm:mb-4 lg:mb-6">
-          <div className="flex flex-wrap gap-2 sm:gap-3">
-            {categories.map((category) => {
-              const categoryInfo = category === 'all' 
-                ? { name: 'Tout', icon: '🍽️' }
-                : getCategoryInfo(category as any);
-              
-              return (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-2 py-1.5 sm:px-3 sm:py-2 lg:px-4 lg:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors font-montserrat min-h-[36px] sm:min-h-[40px] lg:min-h-[44px] ${
-                    selectedCategory === category
-                      ? 'text-white shadow-md'
-                      : 'bg-white hover:bg-gray-100 border border-gray-200'
-                  }`}
-                  style={selectedCategory === category 
-                    ? { backgroundColor: restaurant.primaryColor || '#0a5b48' }
-                    : { color: restaurant.primaryColor || '#0a5b48' }
-                  }
-                >
-                  <span className="flex items-center space-x-1">
-                    <span>{categoryInfo?.icon}</span>
-                    <span>{categoryInfo?.name || category}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+      {/* Conteneur principal centré */}
+      <div className="max-w-4xl mx-auto px-4">
+        {/* Informations du restaurant */}
+        <div className="text-center mt-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{restaurant.name}</h1>
+          <p className="text-gray-600 mb-1">
+            {restaurant.description || 'Découvrez notre délicieux menu'}
+          </p>
+          <p className="text-sm italic text-gray-500">
+            🍽️ Menu disponible en 3D • Livraison disponible
+          </p>
         </div>
 
-        {/* Grille des plats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+        {/* Filtres de catégories */}
+        <div className="flex flex-wrap justify-center gap-2 mt-6 mb-8 sticky top-4 z-10 bg-gray-50 py-4 rounded-lg">
+          {categories.map((category) => {
+            const isSelected = selectedCategory === category;
+            const categoryInfo = category === 'all' 
+              ? { name: 'Tout', icon: '🍽️' }
+              : getCategoryInfo(category as any);
+            
+            return (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-1 rounded-full border text-sm font-medium transition-all ${
+                  isSelected
+                    ? 'bg-orange-500 text-white border-orange-500'
+                    : 'text-gray-700 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                {categoryInfo?.name || category}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Grille des plats - responsive */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
           {filteredModels.map((model) => (
-            <motion.div
+            <ModernDishCard
               key={model.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className={`bg-white rounded-xl shadow-sm border-2 transition-all cursor-pointer ${
-                selectedModel?.id === model.id 
-                  ? 'shadow-lg' 
-                  : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-              }`}
-              style={selectedModel?.id === model.id 
-                ? { borderColor: restaurant.primaryColor || '#0a5b48' } 
-                : {}
-              }
-              onClick={() => handleModelSelect(model)}
-            >
-              {/* Image/Thumbnail */}
-              <div className="aspect-square bg-gray-100 rounded-t-xl overflow-hidden">
-                {model.thumbnailUrl ? (
-                  <img 
-                    src={model.thumbnailUrl} 
-                    alt={model.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                  </div>
-                )}
-                
-                {/* Badge 3D */}
-                <div className="absolute top-2 right-2">
-                  <span 
-                    className="text-white text-xs px-2 py-1 rounded-full font-medium"
-                    style={{ backgroundColor: restaurant.primaryColor || '#0a5b48' }}
-                  >
-                    3D
-                  </span>
-                </div>
-              </div>
-
-              {/* Informations du plat */}
-              <div className="p-3 sm:p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-sm sm:text-base lg:text-lg font-montserrat flex-1 min-w-0 pr-2" style={{ color: restaurant.primaryColor || '#0a5b48' }}>{model.name}</h3>
-                  {model.price && (
-                    <span className="font-bold text-sm sm:text-base lg:text-lg font-montserrat flex-shrink-0" style={{ color: restaurant.primaryColor || '#0a5b48' }}>
-                      {model.price.toFixed(2)}€
-                    </span>
-                  )}
-                </div>
-
-                {model.shortDescription && (
-                  <p className="text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2 font-montserrat" style={{ color: restaurant.primaryColor || '#0a5b48' }}>
-                    {model.shortDescription}
-                  </p>
-                )}
-
-                {/* Tags */}
-                {model.tags && model.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {model.tags.slice(0, 2).map((tagId) => {
-                      const tagInfo = getCategoryInfo(tagId as any);
-                      return tagInfo ? (
-                        <span
-                          key={tagId}
-                          className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${tagInfo.color}`}
-                        >
-                          {tagInfo.name}
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-
-                {/* Allergènes */}
-                {model.allergens && model.allergens.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {model.allergens.slice(0, 3).map((allergenId) => {
-                      const allergenInfo = getAllergenInfo(allergenId);
-                      return allergenInfo ? (
-                        <span
-                          key={allergenId}
-                          className="inline-flex items-center text-xs bg-red-50 text-red-700 border border-red-200 rounded px-1"
-                          title={allergenInfo.name}
-                        >
-                          {allergenInfo.icon}
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-
-                {/* Boutons d'action */}
-                <div className="mt-2 sm:mt-3 space-y-2">
-                  <button 
-                    className="w-full bg-teal-600 text-white py-2 sm:py-2.5 rounded-lg hover:bg-teal-700 transition-colors text-xs sm:text-sm font-medium font-montserrat min-h-[40px] sm:min-h-[44px]"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleModelSelect(model);
-                    }}
-                  >
-                    {selectedModel?.id === model.id ? 'Fermer la vue 3D' : 'Voir en 3D'}
-                  </button>
-                  
-
-                  
-                  {/* Message d'erreur panier */}
-                  {cartError && (
-                    <p className="text-red-600 text-xs mt-1">{cartError}</p>
-                  )}
-                </div>
-              </div>
-            </motion.div>
+              model={model}
+              restaurant={restaurant}
+              onViewIn3D={handleViewIn3D}
+            />
           ))}
         </div>
 
+        {/* Message si aucun plat */}
         {filteredModels.length === 0 && (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -380,50 +260,44 @@ export default function MenuPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium mb-2 font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>Aucun plat trouvé</h3>
-            <p className="font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>Aucun plat ne correspond à cette catégorie.</p>
+            <h3 className="text-lg font-medium mb-2 text-gray-800">Aucun plat trouvé</h3>
+            <p className="text-gray-600">Aucun plat ne correspond à cette catégorie.</p>
           </div>
         )}
       </div>
 
-      {/* Visualiseur 3D Modal */}
+      {/* Modal 3D */}
       {selectedModel && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-2 sm:p-4"
-          onClick={() => handleModelSelect(selectedModel)}
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => handleViewIn3D(selectedModel)}
         >
-          <motion.div
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0.8 }}
-            className="bg-white rounded-lg sm:rounded-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden"
+          <div
+            className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-3 sm:p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <div className="flex-1 min-w-0 pr-3">
-                  <h2 className="text-lg sm:text-xl font-bold font-montserrat truncate" style={{ color: 'rgb(10, 91, 72)' }}>{selectedModel.name}</h2>
+                  <h2 className="text-xl font-bold text-gray-900 truncate">{selectedModel.name}</h2>
                   {selectedModel.price && (
-                    <p className="font-semibold text-base sm:text-lg font-montserrat" style={{ color: 'rgb(10, 91, 72)' }}>
+                    <p className="font-semibold text-lg text-emerald-600">
                       {selectedModel.price.toFixed(2)}€
                     </p>
                   )}
                 </div>
                 <button
-                  onClick={() => handleModelSelect(selectedModel)}
+                  onClick={() => handleViewIn3D(selectedModel)}
                   className="text-gray-400 hover:text-gray-600 p-2 -m-2 rounded-full hover:bg-gray-100"
                 >
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
             </div>
             
-            <div className="h-64 sm:h-96 relative">
+            <div className="h-96 relative">
               <ModelViewer 
                 src={selectedModel.url}
                 alt={selectedModel.name}
@@ -443,10 +317,10 @@ export default function MenuPage() {
               
               {/* Toggle Hotspots */}
               {selectedModel.hotspotsEnabled && (
-                <div className="absolute top-2 right-2 sm:top-4 sm:right-4">
+                <div className="absolute top-4 right-4">
                   <button
                     onClick={() => setHotspotsEnabled(!hotspotsEnabled)}
-                    className={`p-2 rounded-lg transition-colors min-h-[44px] ${
+                    className={`p-2 rounded-lg transition-colors ${
                       hotspotsEnabled
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-gray-100 text-gray-500'
@@ -460,26 +334,12 @@ export default function MenuPage() {
             </div>
 
             {selectedModel.shortDescription && (
-              <div className="p-3 sm:p-4 border-t border-gray-200">
-                <p className="font-montserrat text-sm sm:text-base" style={{ color: 'rgb(10, 91, 72)' }}>{selectedModel.shortDescription}</p>
+              <div className="p-4 border-t border-gray-200">
+                <p className="text-gray-700">{selectedModel.shortDescription}</p>
               </div>
             )}
-          </motion.div>
-        </motion.div>
-      )}
-
-      {/* Composant Panier */}
-      {posEnabled && canOrder && (
-        <Cart
-          cart={cart}
-          config={posConfig || undefined}
-          isOpen={isCartOpen}
-          onClose={() => setIsCartOpen(false)}
-          onUpdateQuantity={updateQuantity}
-          onRemoveItem={removeFromCart}
-          onCheckout={handleCheckout}
-          onClearCart={clearCart}
-        />
+          </div>
+        </div>
       )}
     </div>
   );
