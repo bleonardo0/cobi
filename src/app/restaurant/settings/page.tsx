@@ -6,6 +6,7 @@ import { useAuth } from '@/providers/ClerkAuthProvider';
 import { supabase } from '@/lib/supabase';
 import DashboardLayout from '@/components/shared/DashboardLayout';
 import StatsCard from '@/components/shared/StatsCard';
+import { UserButton } from '@clerk/nextjs';
 
 interface Restaurant {
   id: string;
@@ -57,7 +58,7 @@ const defaultOpeningHours: OpeningHours[] = [
 ];
 
 export default function RestaurantSettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [openingHours, setOpeningHours] = useState<OpeningHours[]>(defaultOpeningHours);
@@ -70,12 +71,15 @@ export default function RestaurantSettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
+    // Ne pas rediriger pendant le chargement de l'authentification
+    if (authLoading) return;
+    
     if (!user) {
       router.push('/sign-in');
       return;
     }
     loadRestaurantData();
-  }, [user, router]);
+  }, [user, router, authLoading]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now().toString();
@@ -389,6 +393,15 @@ export default function RestaurantSettingsPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div>
         </div>
       </DashboardLayout>
+    );
+  }
+
+  // Afficher un loader pendant le chargement de l'authentification
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
     );
   }
 
@@ -816,13 +829,29 @@ export default function RestaurantSettingsPage() {
                     </div>
 
                     <div className="flex gap-4">
-                      <button
-                        onClick={() => router.push('/auth/reset')}
-                        className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 flex items-center gap-2"
-                      >
-                        <span>🔒</span>
-                        Modifier mot de passe
-                      </button>
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-neutral-700 mb-2">
+                            Gestion du compte
+                          </label>
+                          <p className="text-sm text-neutral-600 mb-3">
+                            Utilisez le menu de votre profil pour modifier votre mot de passe, email, ou autres paramètres de sécurité.
+                          </p>
+                        </div>
+                        <div className="transform scale-125">
+                          <UserButton 
+                            appearance={{
+                              elements: {
+                                avatarBox: "w-10 h-10",
+                                userButtonPopoverCard: "shadow-lg border border-gray-200",
+                                userButtonPopoverActionButton: "hover:bg-gray-50"
+                              }
+                            }}
+                            showName={false}
+                            afterSignOutUrl="/sign-in"
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <div className="border-t pt-4">

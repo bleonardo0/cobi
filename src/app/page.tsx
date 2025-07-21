@@ -1,12 +1,19 @@
 'use client';
 
 import { useAuth } from '@/providers/ClerkAuthProvider';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function Home() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  // S'assurer que le composant est monté côté client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Calculer la destination avant le rendu
   const destination = useMemo(() => {
@@ -24,6 +31,9 @@ export default function Home() {
   }, [user, isLoading]);
 
   useEffect(() => {
+    // Ne rediriger que si on est vraiment sur la page d'accueil ET que le composant est monté
+    if (!mounted || pathname !== '/') return;
+
     if (!isLoading && !user) {
       router.replace('/sign-in');
       return;
@@ -32,10 +42,10 @@ export default function Home() {
     if (destination) {
       router.replace(destination);
     }
-  }, [destination, isLoading, user, router]);
+  }, [destination, isLoading, user, router, mounted, pathname]);
 
-  // Optimisation : afficher un spinner plus simple
-  if (isLoading) {
+  // Pendant le chargement ou si pas encore monté
+  if (isLoading || !mounted) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -48,7 +58,7 @@ export default function Home() {
     return null;
   }
 
-  // Afficher un message de redirection seulement si nécessaire
+  // Afficher un message de redirection
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
