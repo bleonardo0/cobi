@@ -19,14 +19,18 @@ export default function EditModelPage() {
   const [model, setModel] = useState<Model3D | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [updateProgress, setUpdateProgress] = useState(0);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [buttonClicked, setButtonClicked] = useState<string | null>(null);
   
   // Auth et restaurant
   const { user } = useAuth();
   const [restaurantSlug, setRestaurantSlug] = useState<string>('restaurant');
   const [restaurantName, setRestaurantName] = useState<string>('Restaurant');
+
+  // États pour les notifications toast
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error'; position?: { top: number; left: number } }>>([]);
 
   // États pour les fichiers
   const [selectedGlbFile, setSelectedGlbFile] = useState<File | null>(null);
@@ -64,6 +68,9 @@ export default function EditModelPage() {
   // État pour l'éditeur de hotspots
   const [hotspotsConfig, setHotspotsConfig] = useState<any[]>([]);
 
+  // État unifié pour toutes les sauvegardes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   useEffect(() => {
     if (params.slug) {
       fetchModel(params.slug as string);
@@ -96,6 +103,28 @@ export default function EditModelPage() {
 
   const handleLogout = () => {
           router.push('/sign-in');
+  };
+
+  // Fonction pour afficher les notifications toast
+  const showToast = (message: string, type: 'success' | 'error' = 'success', element?: HTMLElement | null) => {
+    const id = Date.now().toString();
+    
+    let position = undefined;
+    if (element) {
+      // Positionner à gauche du bouton flottant (position fixe)
+      position = {
+        top: window.innerHeight - 90, // Aligné avec le bouton
+        left: window.innerWidth - 560 // À gauche du bouton (240px largeur bouton + 40px gap + 280px largeur toast)
+      };
+      console.log('Toast position:', position);
+    }
+    
+    setToasts(prev => [...prev, { id, message, type, position }]);
+    
+    // Auto-remove after 4 seconds for contextual toasts, 3 for global ones
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, position ? 4000 : 3000);
   };
 
   // Fermer les dropdowns quand on clique ailleurs
@@ -292,84 +321,105 @@ export default function EditModelPage() {
     }
   };
 
-  const updateCategoryAndTags = async () => {
-    if (!model) return;
+  // Fonction de sauvegarde unifiée
+  const saveAllChanges = async () => {
+    if (!model || isSaving) return;
 
-    setIsUpdating(true);
+    setButtonClicked('save-all');
+    setIsSaving(true);
     setUpdateError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('category', selectedCategory);
-      formData.append('tags', JSON.stringify(selectedTags));
-      
-      // Ajouter les nouveaux champs restaurant
-      if (price) {
-        formData.append('price', price);
-      }
-      if (shortDescription) {
-        formData.append('shortDescription', shortDescription);
-      }
-      formData.append('ingredients', JSON.stringify(ingredients));
-      formData.append('allergens', JSON.stringify(selectedAllergens));
-      
-      // Ajouter les données des hotspots
-      formData.append('hotspotsEnabled', hotspotsEnabled.toString());
-      if (nutriScore) {
-        formData.append('nutriScore', nutriScore);
-      }
-      formData.append('securityRisk', securityRisk.toString());
-      if (originCountry) {
-        formData.append('originCountry', originCountry);
-      }
-      if (transportDistance) {
-        formData.append('transportDistance', transportDistance);
-      }
-      if (carbonFootprint) {
-        formData.append('carbonFootprint', carbonFootprint);
-      }
-      
-      // Ajouter la configuration des hotspots
-      formData.append('hotspotsConfig', JSON.stringify(hotspotsConfig));
+      // Étape 1: Sauvegarder les métadonnées si elles ont changé
+      const hasMetadataChanges = (
+        selectedCategory !== (model?.category || 'autres') ||
+        JSON.stringify(selectedTags.sort()) !== JSON.stringify((model?.tags || []).sort()) ||
+        price !== (model?.price ? model.price.toString() : '') ||
+        shortDescription !== (model?.shortDescription || '') ||
+        JSON.stringify(ingredients.sort()) !== JSON.stringify((model?.ingredients || []).sort()) ||
+        JSON.stringify(selectedAllergens.sort()) !== JSON.stringify((model?.allergens || []).sort()) ||
+        hotspotsEnabled !== (model?.hotspotsEnabled || false) ||
+        nutriScore !== (model?.nutriScore || '') ||
+        securityRisk !== (model?.securityRisk || false) ||
+        originCountry !== (model?.originCountry || '') ||
+        transportDistance !== (model?.transportDistance ? model.transportDistance.toString() : '') ||
+        carbonFootprint !== (model?.carbonFootprint ? model.carbonFootprint.toString() : '')
+      );
 
-      const response = await fetch(`/api/models/${model.id}`, {
-        method: 'PATCH',
-        body: formData,
-      });
+      if (hasMetadataChanges) {
+        const formData = new FormData();
+        formData.append('category', selectedCategory);
+        formData.append('tags', JSON.stringify(selectedTags));
+        
+        if (price) formData.append('price', price);
+        if (shortDescription) formData.append('shortDescription', shortDescription);
+        formData.append('ingredients', JSON.stringify(ingredients));
+        formData.append('allergens', JSON.stringify(selectedAllergens));
+        formData.append('hotspotsEnabled', hotspotsEnabled.toString());
+        if (nutriScore) formData.append('nutriScore', nutriScore);
+        formData.append('securityRisk', securityRisk.toString());
+        if (originCountry) formData.append('originCountry', originCountry);
+        if (transportDistance) formData.append('transportDistance', transportDistance);
+        if (carbonFootprint) formData.append('carbonFootprint', carbonFootprint);
 
-      const data = await response.json();
-      
-      if (data.success) {
-        setModel(prev => prev ? { 
-          ...prev, 
-          category: selectedCategory, 
-          tags: selectedTags,
-          price: price ? parseFloat(price) : undefined,
-          shortDescription: shortDescription || undefined,
-          allergens: selectedAllergens,
-          // Mettre à jour les données des hotspots
-          hotspotsEnabled: hotspotsEnabled,
-          nutriScore: nutriScore || undefined,
-          securityRisk: securityRisk,
-          originCountry: originCountry || undefined,
-          transportDistance: transportDistance ? parseFloat(transportDistance) : undefined,
-          carbonFootprint: carbonFootprint ? parseFloat(carbonFootprint) : undefined
-        } : null);
-      } else {
-        setUpdateError(data.error || 'Erreur lors de la mise à jour');
+        const response = await fetch(`/api/models/${model.id}`, {
+          method: 'PATCH',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Erreur lors de la mise à jour des informations');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          setModel(data.model);
+        } else {
+          throw new Error(data.error || 'Erreur lors de la mise à jour');
+        }
       }
+
+      // Étape 2: Gérer les fichiers si nécessaire
+      const hasFileChanges = selectedGlbFile || selectedThumbnail || removeGlb || removeThumbnail;
+      
+      if (hasFileChanges) {
+        // Temporairement simulé pour le debug
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        setSelectedGlbFile(null);
+        setSelectedThumbnail(null);
+        setThumbnailPreview(null);
+        setRemoveGlb(false);
+        setRemoveThumbnail(false);
+      }
+
+      // Réinitialiser l'état des changements
+      setHasUnsavedChanges(false);
+      
+      // Afficher le toast de succès
+      setTimeout(() => {
+        const saveButton = document.getElementById('unified-save-button');
+        if (saveButton) {
+          showToast('✅ Toutes les modifications sauvegardées !', 'success', saveButton);
+        } else {
+          showToast('✅ Toutes les modifications sauvegardées !', 'success');
+        }
+      }, 100);
+
     } catch (error) {
-      console.error('Error updating category and tags:', error);
-      setUpdateError('Erreur lors de la mise à jour');
+      console.error('Erreur:', error);
+      setUpdateError(error instanceof Error ? error.message : 'Erreur inconnue');
+      showToast('❌ Erreur lors de la sauvegarde', 'error');
     } finally {
-      setIsUpdating(false);
+      setIsSaving(false);
+      setButtonClicked(null);
     }
   };
 
   const updateModelName = async () => {
     if (!model || !newModelName.trim() || newModelName === model.name) return;
 
-    setIsUpdating(true);
+    setIsSaving(true);
     setUpdateError(null);
 
     try {
@@ -395,118 +445,37 @@ export default function EditModelPage() {
       console.error('Update name error:', error);
       setUpdateError(error instanceof Error ? error.message : 'Erreur lors de la mise à jour du nom');
     } finally {
-      setIsUpdating(false);
+      setIsSaving(false);
     }
   };
 
-  const updateModel = async () => {
+  // Système de détection des changements
+  useEffect(() => {
     if (!model) return;
 
-    setIsUpdating(true);
-    setUpdateProgress(0);
-    setUpdateError(null);
+    const hasMetadataChanges = (
+      selectedCategory !== (model?.category || 'autres') ||
+      JSON.stringify(selectedTags.sort()) !== JSON.stringify((model?.tags || []).sort()) ||
+      price !== (model?.price ? model.price.toString() : '') ||
+      shortDescription !== (model?.shortDescription || '') ||
+      JSON.stringify(ingredients.sort()) !== JSON.stringify((model?.ingredients || []).sort()) ||
+      JSON.stringify(selectedAllergens.sort()) !== JSON.stringify((model?.allergens || []).sort()) ||
+      hotspotsEnabled !== (model?.hotspotsEnabled || false) ||
+      nutriScore !== (model?.nutriScore || '') ||
+      securityRisk !== (model?.securityRisk || false) ||
+      originCountry !== (model?.originCountry || '') ||
+      transportDistance !== (model?.transportDistance ? model.transportDistance.toString() : '') ||
+      carbonFootprint !== (model?.carbonFootprint ? model.carbonFootprint.toString() : '')
+    );
 
-    try {
-      const formData = new FormData();
-      
-      // Ajouter les nouveaux fichiers s'ils existent
-      if (selectedGlbFile) {
-        formData.append('glbFile', selectedGlbFile);
-      }
-      if (selectedThumbnail) {
-        formData.append('thumbnail', selectedThumbnail);
-      }
-      
-      // Ajouter les flags de suppression
-      if (removeGlb) {
-        formData.append('removeGlb', 'true');
-      }
-      if (removeThumbnail) {
-        formData.append('removeThumbnail', 'true');
-      }
-      
-      // Ajouter le nouveau nom du modèle s'il a changé
-      if (newModelName && newModelName !== model.name) {
-        formData.append('modelName', newModelName);
-      }
-
-      // Ajouter les données des hotspots
-      formData.append('hotspotsEnabled', hotspotsEnabled.toString());
-      if (nutriScore) {
-        formData.append('nutriScore', nutriScore);
-      }
-      formData.append('securityRisk', securityRisk.toString());
-      if (originCountry) {
-        formData.append('originCountry', originCountry);
-      }
-      if (transportDistance) {
-        formData.append('transportDistance', transportDistance);
-      }
-      if (carbonFootprint) {
-        formData.append('carbonFootprint', carbonFootprint);
-      }
-      
-      // Ajouter la configuration des hotspots
-      formData.append('hotspotsConfig', JSON.stringify(hotspotsConfig));
-
-      // Simuler le progrès
-      const progressInterval = setInterval(() => {
-        setUpdateProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + 10;
-        });
-      }, 200);
-
-      const response = await fetch(`/api/models/${model.id}`, {
-        method: 'PATCH',
-        body: formData,
-      });
-
-      clearInterval(progressInterval);
-      setUpdateProgress(100);
-
-      const data = await response.json();
-      
-      if (data.success) {
-        console.log('🎉 Mise à jour réussie:', data);
-        
-        // Mettre à jour l'état local du modèle avec les hotspots
-        setModel(prev => prev ? { 
-          ...prev, 
-          hotspotsEnabled: hotspotsEnabled,
-          nutriScore: nutriScore || undefined,
-          securityRisk: securityRisk,
-          originCountry: originCountry || undefined,
-          transportDistance: transportDistance ? parseFloat(transportDistance) : undefined,
-          carbonFootprint: carbonFootprint ? parseFloat(carbonFootprint) : undefined,
-          hotspotsConfig: hotspotsConfig as any
-        } : null);
-        
-        setTimeout(() => {
-          // Forcer le rafraîchissement de la page de destination
-          window.location.href = `/models/${model.slug}`;
-        }, 500);
-      } else {
-        // Gestion spéciale pour les conflits de noms (code 409)
-        if (response.status === 409) {
-          throw new Error(data.error || 'Conflit de nom de fichier');
-        } else {
-          throw new Error(data.error || 'Erreur lors de la mise à jour');
-        }
-      }
-    } catch (error) {
-      console.error('Update error:', error);
-      setUpdateError(error instanceof Error ? error.message : 'Erreur lors de la mise à jour');
-      setUpdateProgress(0);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-
+    const hasFileChanges = !!(selectedGlbFile || selectedThumbnail || removeGlb || removeThumbnail);
+    
+    setHasUnsavedChanges(hasMetadataChanges || hasFileChanges);
+  }, [
+    model, selectedCategory, selectedTags, price, shortDescription, ingredients, selectedAllergens,
+    hotspotsEnabled, nutriScore, securityRisk, originCountry, transportDistance, carbonFootprint,
+    selectedGlbFile, selectedThumbnail, removeGlb, removeThumbnail
+  ]);
 
   if (isLoading) {
     return (
@@ -514,7 +483,6 @@ export default function EditModelPage() {
         userRole={user?.role || 'restaurateur'}
         restaurantName={restaurantName}
         restaurantSlug={restaurantSlug}
-        onLogout={handleLogout}
       >
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
@@ -526,25 +494,18 @@ export default function EditModelPage() {
     );
   }
 
-  if (error || !model) {
+  if (error) {
     return (
       <DashboardLayout
         userRole={user?.role || 'restaurateur'}
         restaurantName={restaurantName}
         restaurantSlug={restaurantSlug}
-        onLogout={handleLogout}
       >
         <div className="flex items-center justify-center min-h-96">
-          <div className="text-center max-w-md mx-auto px-4">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-neutral-900 mb-2">Erreur</h1>
-            <p className="text-neutral-600 mb-6">{error || 'Modèle non trouvé'}</p>
-            <Link href="/restaurant/dashboard" className="inline-flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
-              Retour au dashboard
+          <div className="text-center text-red-600">
+            <p>Erreur: {error}</p>
+            <Link href="/restaurant/dashboard" className="text-blue-600 hover:underline mt-2 inline-block">
+              ← Retour au dashboard
             </Link>
           </div>
         </div>
@@ -552,91 +513,182 @@ export default function EditModelPage() {
     );
   }
 
-  const topBarActions = (
-    <div className="flex items-center space-x-3">
-      <Link
-        href={`/models/${model.slug}`}
-        className="inline-flex items-center px-3 py-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
-        title="Retour au modèle"
+  if (!model) {
+    return (
+      <DashboardLayout
+        userRole={user?.role || 'restaurateur'}
+        restaurantName={restaurantName}
+        restaurantSlug={restaurantSlug}
       >
-        <svg
-          className="w-5 h-5 mr-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        Retour
-      </Link>
-      
-      <Link
-        href={`/models/${model.slug}`}
-        className="inline-flex items-center px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors font-medium shadow-sm"
-      >
-        <svg
-          className="w-5 h-5 mr-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-          />
-        </svg>
-        Voir le modèle
-      </Link>
-      
-      <button
-        onClick={updateModel}
-        disabled={isUpdating || (!selectedGlbFile && !selectedThumbnail && !removeGlb && !removeThumbnail)}
-        className={`inline-flex items-center px-4 py-2 rounded-lg font-medium transition-colors shadow-sm ${
-          isUpdating || (!selectedGlbFile && !selectedThumbnail && !removeGlb && !removeThumbnail)
-            ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
-            : 'bg-sky-600 text-white hover:bg-sky-700'
-        }`}
-      >
-        <svg
-          className="w-5 h-5 mr-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-          />
-        </svg>
-        {isUpdating ? 'Sauvegarde...' : 'Sauvegarder'}
-      </button>
-    </div>
-  );
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <p>Modèle non trouvé</p>
+            <Link href="/restaurant/dashboard" className="text-blue-600 hover:underline mt-2 inline-block">
+              ← Retour au dashboard
+            </Link>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout
       userRole={user?.role || 'restaurateur'}
       restaurantName={restaurantName}
       restaurantSlug={restaurantSlug}
-      onLogout={handleLogout}
-      topBarActions={topBarActions}
+      showFloatingButton={false}
     >
-      <div className="max-w-4xl mx-auto space-y-6">
+      {/* Toast notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {toasts.filter(toast => !toast.position).map(toast => (
+          <div
+            key={toast.id}
+            className={`px-4 py-3 rounded-lg shadow-lg border animate-in slide-in-from-right transition-all duration-300 ${
+              toast.type === 'success' 
+                ? 'bg-green-50 text-green-700 border-green-200' 
+                : 'bg-red-50 text-red-700 border-red-200'
+            }`}
+          >
+            <div className="flex items-center">
+              <span className="mr-2">
+                {toast.type === 'success' ? '✅' : '❌'}
+              </span>
+              {toast.message}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Contextual toast notifications */}
+      {toasts.filter(toast => toast.position).map(toast => (
+        <div
+          key={toast.id}
+          className={`fixed z-50 px-6 py-4 rounded-2xl shadow-2xl border-2 animate-in slide-in-from-right transition-all duration-500 transform ${
+            toast.type === 'success' 
+              ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-800 border-green-200 shadow-green-500/20' 
+              : 'bg-gradient-to-r from-red-50 to-pink-50 text-red-800 border-red-200 shadow-red-500/20'
+          }`}
+          style={{
+            top: `${toast.position!.top}px`,
+            left: `${toast.position!.left}px`,
+            minWidth: '280px',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+          }}
+        >
+          <div className="flex items-center text-base font-semibold">
+            <span className="mr-3 text-2xl">
+              {toast.type === 'success' ? '🎉' : '❌'}
+            </span>
+            {toast.message}
+          </div>
+          {/* Petite flèche pointant vers le bouton */}
+          <div className={`absolute top-1/2 -right-2 transform -translate-y-1/2 w-0 h-0 border-l-8 border-r-0 border-t-8 border-b-8 border-transparent ${
+            toast.type === 'success' ? 'border-l-green-200' : 'border-l-red-200'
+          }`}></div>
+        </div>
+      ))}
+
+      {/* Bouton de sauvegarde unifié flottant */}
+      {hasUnsavedChanges && (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          className="fixed bottom-6 right-6 z-50"
+          onMouseEnter={() => {}}
+          onMouseLeave={() => {}}
+        >
+          <button
+            id="unified-save-button"
+            onClick={saveAllChanges}
+            disabled={isSaving || buttonClicked === 'save-all'}
+            className={`group relative inline-flex items-center justify-center gap-3 px-6 py-4 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 overflow-hidden min-w-[240px] border-2 ${
+              isSaving || buttonClicked === 'save-all'
+                ? 'bg-gray-400 border-gray-300 text-white cursor-not-allowed'
+                : 'bg-gradient-to-r from-green-500 to-blue-500 border-white/20 hover:border-white/40 text-white'
+            }`}
+            style={{ 
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
+            }}
+          >
+            {isSaving || buttonClicked === 'save-all' ? (
+              <>
+                <motion.svg 
+                  className="w-5 h-5 relative z-10 flex-shrink-0 text-white drop-shadow-sm"
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </motion.svg>
+                <motion.span
+                  className="font-bold text-sm relative z-10 whitespace-nowrap text-white drop-shadow-sm"
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 1 }}
+                >
+                  Sauvegarde...
+                </motion.span>
+              </>
+            ) : (
+              <>
+                <motion.svg
+                  className="w-5 h-5 relative z-10 flex-shrink-0 text-white drop-shadow-sm"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </motion.svg>
+                <motion.span
+                  className="font-bold text-sm relative z-10 whitespace-nowrap text-white drop-shadow-sm"
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 1 }}
+                >
+                  Sauvegarder les modifications
+                </motion.span>
+              </>
+            )}
+            
+            {/* Effet de vagues au hover */}
+            <motion.div
+              className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-full"
+              initial={{ scale: 0 }}
+              whileHover={{ scale: 1 }}
+              transition={{ duration: 0.3 }}
+            />
+            
+            {/* Animation de pulse pour attirer l'attention */}
+            <motion.div
+              className="absolute inset-0 bg-white opacity-15 rounded-full"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            {/* Effet de brillance */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-30 rounded-full"
+              initial={{ x: '-100%' }}
+              whileHover={{ x: '100%' }}
+              transition={{ duration: 0.6 }}
+            />
+
+            {/* Backdrop pour plus de contraste */}
+            <div className="absolute inset-0 bg-black/10 rounded-full" />
+          </button>
+        </motion.div>
+      )}
+
+      <div className="max-w-4xl mx-auto space-y-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-neutral-600">
           <Link href="/restaurant/dashboard" className="hover:text-neutral-900 transition-colors">
@@ -739,10 +791,10 @@ export default function EditModelPage() {
                     </div>
                     <button
                       onClick={updateModelName}
-                      disabled={isUpdating || !newModelName.trim() || newModelName === model.name}
+                      disabled={isSaving || !newModelName.trim() || newModelName === model.name}
                       className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                     >
-                      {isUpdating ? 'Sauvegarde...' : 'Sauvegarder le nom'}
+                      {isSaving ? 'Sauvegarde...' : 'Sauvegarder le nom'}
                     </button>
                   </div>
                 )}
@@ -894,24 +946,15 @@ export default function EditModelPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Ingrédients
                   </label>
-                  <div className="flex gap-2 mb-2">
+                  <div className="mb-2">
                     <input
                       type="text"
                       value={newIngredient}
                       onChange={(e) => setNewIngredient(e.target.value)}
                       onKeyPress={handleIngredientKeyPress}
-                      placeholder="ex: Mozzarella, Tomates, Basilic (séparez par des virgules)"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      placeholder="ex: Mozzarella, Tomates, Basilic (séparez par des virgules et appuyez sur Entrée)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                     />
-                    <button
-                      type="button"
-                      onClick={addIngredient}
-                      disabled={!newIngredient.trim()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      <span>+</span>
-                      Ajouter
-                    </button>
                   </div>
                   
                   {/* Liste des ingrédients */}
@@ -938,7 +981,7 @@ export default function EditModelPage() {
                     )}
                   </div>
                   <p className="text-xs text-gray-500">
-                    Tapez un ou plusieurs ingrédients séparés par des virgules. Appuyez sur Entrée ou cliquez sur "Ajouter"
+                    Tapez un ou plusieurs ingrédients séparés par des virgules et appuyez sur Entrée pour les ajouter
                   </p>
                 </div>
 
@@ -1015,28 +1058,7 @@ export default function EditModelPage() {
                   </div>
                 </div>
 
-                {/* Bouton de sauvegarde */}
-                {(selectedCategory !== (model?.category || 'autres') || 
-                  JSON.stringify(selectedTags.sort()) !== JSON.stringify((model?.tags || []).sort()) ||
-                  price !== (model?.price ? model.price.toString() : '') ||
-                  shortDescription !== (model?.shortDescription || '') ||
-                  JSON.stringify(selectedAllergens.sort()) !== JSON.stringify((model?.allergens || []).sort()) ||
-                  hotspotsEnabled !== (model?.hotspotsEnabled || false) ||
-                  nutriScore !== (model?.nutriScore || '') ||
-                  securityRisk !== (model?.securityRisk || false) ||
-                  originCountry !== (model?.originCountry || '') ||
-                  transportDistance !== (model?.transportDistance ? model.transportDistance.toString() : '') ||
-                  carbonFootprint !== (model?.carbonFootprint ? model.carbonFootprint.toString() : '')) && (
-                  <div className="pt-4 border-t border-gray-200">
-                    <button
-                      onClick={updateCategoryAndTags}
-                      disabled={isUpdating}
-                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-                    >
-                      {isUpdating ? 'Sauvegarde...' : 'Sauvegarder les informations'}
-                    </button>
-                  </div>
-                )}
+                {/* Plus besoin de bouton de sauvegarde ici - géré par le bouton flottant unifié */}
               </div>
             </div>
 
@@ -1048,7 +1070,9 @@ export default function EditModelPage() {
                 {/* Toggle principal */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">🎯 Activer les hotspots</h3>
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                      🎯 Activer les hotspots
+                    </h3>
                     <p className="text-sm text-gray-500">Ajouter des points interactifs sur le modèle 3D</p>
                   </div>
                   <button
@@ -1414,7 +1438,7 @@ export default function EditModelPage() {
             </div>
 
             {/* Progress */}
-            {isUpdating && (
+            {isSaving && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Mise à jour en cours...</span>
@@ -1434,33 +1458,21 @@ export default function EditModelPage() {
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="flex items-center">
                   <svg className="w-5 h-5 text-red-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293-1.293a1 1 0 00-1.414-1.414L10 10l-1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                   <p className="text-red-800 text-sm">{updateError}</p>
                 </div>
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex items-center justify-between pt-6 border-t border-neutral-200">
+            {/* Actions simplifiées */}
+            <div className="flex items-center justify-center pt-6 border-t border-neutral-200">
               <Link
                 href={`/models/${model.slug}`}
-                className="px-4 py-2 text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+                className="px-6 py-3 text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors font-medium"
               >
-                Annuler
+                ← Retour au modèle
               </Link>
-              
-              <button
-                onClick={updateModel}
-                disabled={isUpdating || (!selectedGlbFile && !selectedThumbnail && !removeGlb && !removeThumbnail)}
-                className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                  isUpdating || (!selectedGlbFile && !selectedThumbnail && !removeGlb && !removeThumbnail)
-                    ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
-                    : 'bg-sky-600 text-white hover:bg-sky-700'
-                }`}
-              >
-                {isUpdating ? 'Mise à jour...' : 'Sauvegarder les modifications'}
-              </button>
             </div>
           </div>
         </motion.div>

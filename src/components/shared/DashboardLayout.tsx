@@ -14,6 +14,7 @@ interface DashboardLayoutProps {
   restaurantSlug?: string;
   topBarActions?: React.ReactNode;
   className?: string;
+  showFloatingButton?: boolean;
 }
 
 export default function DashboardLayout({
@@ -23,7 +24,8 @@ export default function DashboardLayout({
   restaurantName,
   restaurantSlug,
   topBarActions,
-  className = ''
+  className = '',
+  showFloatingButton = true
 }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -68,7 +70,7 @@ export default function DashboardLayout({
       </div>
 
       {/* Floating Action Button */}
-      <FloatingActionButton userRole={userRole} />
+      {showFloatingButton && <FloatingActionButton userRole={userRole} />}
     </div>
   );
 } 

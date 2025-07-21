@@ -189,6 +189,19 @@ export async function PATCH(
         }
       }
       
+      // Handle file uploads (GLB and thumbnail)
+      const glbFile = formData.get('glb') as File | null;
+      const thumbnailFile = formData.get('thumbnail') as File | null;
+      const removeGlb = formData.get('removeGlb') === 'true';
+      const removeThumbnail = formData.get('removeThumbnail') === 'true';
+      
+      // For now, we'll handle file uploads in a separate API endpoint
+      // This PATCH is primarily for metadata updates
+      if (glbFile || thumbnailFile || removeGlb || removeThumbnail) {
+        console.log('🔄 File operations detected, but not implemented in this endpoint yet');
+        // TODO: Implement file upload/removal logic here
+      }
+      
     } else {
       // Handle JSON
       const body = await request.json();
@@ -216,6 +229,7 @@ export async function PATCH(
 
     if (error) {
       console.error('❌ Database error:', error);
+      console.error('❌ Update data that caused error:', updateData);
       return NextResponse.json(
         { success: false, error: `Erreur lors de la mise à jour: ${error.message}` },
         { status: 500 }
