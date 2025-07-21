@@ -295,25 +295,50 @@ export default function RestaurantSettingsPage() {
     try {
       setIsExporting(true);
       
-      // Fetch model views data
+      // Fetch model views data without join to avoid relationship error
       const { data: modelViews, error } = await supabase
         .from('model_views')
-        .select(`
-          model_id,
-          viewed_at,
-          device_type,
-          models_3d(name)
-        `)
+        .select('model_id, viewed_at, device_type')
         .eq('restaurant_id', restaurant.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur lors de la récupération des vues:', error);
+        showToast('Erreur lors de la récupération des données: ' + error.message, 'error');
+        return;
+      }
+
+      if (!modelViews || modelViews.length === 0) {
+        showToast('Aucune donnée à exporter pour le moment', 'info');
+        return;
+      }
+
+      // Get unique model IDs
+      const modelIds = [...new Set(modelViews.map(view => view.model_id))];
+      
+      // Fetch model names separately
+      const { data: modelsData, error: modelsError } = await supabase
+        .from('models_3d')
+        .select('id, name')
+        .in('id', modelIds);
+
+      if (modelsError) {
+        console.error('Erreur lors de la récupération des modèles:', modelsError);
+        showToast('Erreur lors de la récupération des noms de modèles', 'error');
+        return;
+      }
+
+      // Create a map of model names
+      const modelNamesMap = new Map();
+      modelsData?.forEach(model => {
+        modelNamesMap.set(model.id, model.name);
+      });
 
       // Process data for CSV
       const stats: { [key: string]: { name: string; total_views: number; weekly_views: number; } } = {};
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-      modelViews?.forEach(view => {
-        const modelName = (view as any).models_3d?.name || 'Modèle inconnu';
+      modelViews.forEach(view => {
+        const modelName = modelNamesMap.get(view.model_id) || 'Modèle inconnu';
         const viewDate = new Date(view.viewed_at);
         
         if (!stats[view.model_id]) {
@@ -351,7 +376,7 @@ export default function RestaurantSettingsPage() {
       
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
-      showToast('Erreur lors de l\'export des statistiques', 'error');
+      showToast('Erreur inattendue lors de l\'export des statistiques', 'error');
     } finally {
       setIsExporting(false);
     }
@@ -517,6 +542,8 @@ export default function RestaurantSettingsPage() {
                           value={restaurant.slug || ''}
                           onChange={(e) => setRestaurant({...restaurant, slug: e.target.value})}
                           className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          pattern="[a-z0-9-]+"
+                          title="Le slug doit contenir uniquement des lettres minuscules, chiffres et tirets"
                         />
                       </div>
                     </div>

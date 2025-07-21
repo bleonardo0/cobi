@@ -39,7 +39,11 @@ const ModelCard = ({
   // Récupérer les vraies données de vues hebdomadaires
   useEffect(() => {
     const fetchWeeklyViews = async () => {
-      if (!restaurantId || !model.id) return;
+      if (!restaurantId || !model.id) {
+        // Si pas de restaurant ID, on affiche 0 vues sans faire d'appel API
+        setWeeklyViews(0);
+        return;
+      }
       
       try {
         const response = await fetch(`/api/analytics/model-views/${model.id}?restaurantId=${restaurantId}&period=week`);

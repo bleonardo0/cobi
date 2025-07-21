@@ -46,7 +46,12 @@ export const useRestaurantId = (fallbackSlug?: string): {
         const slug = getRestaurantSlug();
         
         if (!slug) {
-          throw new Error('Aucun slug de restaurant trouvé');
+          // Au lieu de throw une erreur, on retourne silencieusement
+          console.warn('⚠️ Aucun slug de restaurant trouvé - contexte sans restaurant');
+          setError(null); // Pas d'erreur, juste pas de restaurant
+          setRestaurantId(null);
+          setRestaurantSlug(null);
+          return;
         }
 
         setRestaurantSlug(slug);
