@@ -1,11 +1,36 @@
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  // Middleware minimal - ne fait rien, laisse tout passer
+// Définir les routes qui nécessitent une authentification
+const isProtectedRoute = createRouteMatcher([
+  '/admin(.*)',
+  '/restaurant(.*)',
+  '/api/admin(.*)',
+  '/api/models(.*)',
+  '/api/analytics(.*)',
+  '/api/restaurants(.*)',
+  '/api/users(.*)',
+  '/models(.*)/edit',
+  '/upload(.*)'
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  // Protéger les routes sensibles
+  if (isProtectedRoute(req)) {
+    const authData = await auth();
+    if (!authData.userId) {
+      return NextResponse.redirect(new URL('/sign-in', req.url));
+    }
+  }
+  
   return NextResponse.next();
-}
+});
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
 }; 

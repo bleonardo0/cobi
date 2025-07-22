@@ -238,8 +238,6 @@ export default function ModelDetailPage() {
     }
   };
 
-
-
   const handleDeleteModel = async () => {
     if (!model) return;
     
@@ -281,7 +279,6 @@ export default function ModelDetailPage() {
         userRole={user?.role || 'restaurateur'}
         restaurantName={restaurantName}
         restaurantSlug={restaurantSlug}
-        onLogout={handleLogout}
       >
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
@@ -299,7 +296,6 @@ export default function ModelDetailPage() {
         userRole={user?.role || 'restaurateur'}
         restaurantName={restaurantName}
         restaurantSlug={restaurantSlug}
-        onLogout={handleLogout}
       >
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center max-w-md mx-auto px-4">
@@ -398,7 +394,6 @@ export default function ModelDetailPage() {
       userRole={user?.role || 'restaurateur'}
       restaurantName={restaurantName}
       restaurantSlug={restaurantSlug}
-      onLogout={handleLogout}
       topBarActions={topBarActions}
     >
       <div className="space-y-6">
@@ -760,11 +755,137 @@ export default function ModelDetailPage() {
                 Détails du modèle
               </h2>
               
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Nom</label>
                   <p className="text-gray-900">{model.name}</p>
                 </div>
+
+                {/* Catégorie et Tags */}
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Catégorie</label>
+                  <p className="text-gray-900">{model.category || 'Non définie'}</p>
+                </div>
+
+                {model.tags && model.tags.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Tags</label>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {model.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Prix */}
+                {model.price && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Prix</label>
+                    <p className="text-gray-900 font-semibold text-lg">
+                      {model.price.toFixed(2)} €
+                    </p>
+                  </div>
+                )}
+
+                {/* Description courte */}
+                {model.shortDescription && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Description</label>
+                    <p className="text-gray-900">{model.shortDescription}</p>
+                  </div>
+                )}
+
+                {/* Description longue */}
+                {model.description && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Description détaillée</label>
+                    <p className="text-gray-900">{model.description}</p>
+                  </div>
+                )}
+
+                {/* Ingrédients */}
+                {model.ingredients && model.ingredients.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">🥘 Ingrédients</label>
+                    <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex flex-wrap gap-1">
+                        {model.ingredients.map((ingredient, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                          >
+                            🌿 {ingredient}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Allergènes */}
+                {model.allergens && model.allergens.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">⚠️ Allergènes</label>
+                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex flex-wrap gap-1">
+                        {model.allergens.map((allergen, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                          >
+                            ⚠️ {allergen}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-xs text-red-600 mt-2">
+                        ⚠️ Contient ou peut contenir des traces de ces allergènes
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Informations nutritionnelles supplémentaires */}
+                {(model.nutriScore || model.originCountry || model.carbonFootprint) && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">📊 Informations nutritionnelles</label>
+                    <div className="mt-2 space-y-2">
+                      {model.nutriScore && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">Nutri-Score:</span>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${
+                            model.nutriScore === 'A' ? 'bg-green-500 text-white' :
+                            model.nutriScore === 'B' ? 'bg-lime-400 text-black' :
+                            model.nutriScore === 'C' ? 'bg-yellow-400 text-black' :
+                            model.nutriScore === 'D' ? 'bg-orange-500 text-white' :
+                            'bg-red-500 text-white'
+                          }`}>
+                            {model.nutriScore}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {model.originCountry && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">🌍 Origine:</span>
+                          <span className="text-sm text-gray-900">{model.originCountry}</span>
+                        </div>
+                      )}
+                      
+                      {model.carbonFootprint && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">🌱 Empreinte carbone:</span>
+                          <span className="text-sm text-gray-900">{model.carbonFootprint} kg CO₂</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <label className="text-sm font-medium text-gray-500">Date d&apos;ajout</label>
@@ -854,7 +975,6 @@ export default function ModelDetailPage() {
                 </div>
               </div>
             </div>
-
 
           </div>
         </motion.div>

@@ -46,19 +46,47 @@ function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) 
         {/* Ingrédients */}
         {model.ingredients && model.ingredients.length > 0 && (
           <div className="mb-3">
+            <div className="text-xs font-medium text-gray-500 mb-1 flex items-center">
+              <span className="mr-1">🥘</span>
+              Ingrédients
+            </div>
             <div className="flex flex-wrap gap-1">
               {model.ingredients.slice(0, 4).map((ingredient, index) => (
                 <span
                   key={index}
                   className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200"
                 >
-                  <span className="mr-1">🧄</span>
-                  {ingredient}
+                  🌿 {ingredient}
                 </span>
               ))}
               {model.ingredients.length > 4 && (
-                <span className="text-xs text-gray-400 italic">
+                <span className="text-xs text-green-600 italic font-medium">
                   +{model.ingredients.length - 4} ingrédients
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Allergènes */}
+        {model.allergens && model.allergens.length > 0 && (
+          <div className="mb-3">
+            <div className="text-xs font-medium text-gray-500 mb-1 flex items-center">
+              <span className="mr-1">⚠️</span>
+              Allergènes
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {model.allergens.slice(0, 3).map((allergen, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200"
+                >
+                  ⚠️ {allergen}
+                </span>
+              ))}
+              {model.allergens.length > 3 && (
+                <span className="text-xs text-red-600 italic font-medium">
+                  +{model.allergens.length - 3} allergènes
                 </span>
               )}
             </div>

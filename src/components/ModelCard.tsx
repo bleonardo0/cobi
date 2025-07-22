@@ -318,25 +318,59 @@ const ModelCard = ({
             </div>
           )}
 
+          {/* Ingrédients */}
+          {model.ingredients && model.ingredients.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-500 flex items-center">
+                <span className="mr-1">🥘</span>
+                Ingrédients
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {model.ingredients.slice(0, 3).map((ingredient, index) => (
+                  <motion.span
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors"
+                  >
+                    🌿 {ingredient}
+                  </motion.span>
+                ))}
+                {model.ingredients.length > 3 && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-600 border border-green-200">
+                    +{model.ingredients.length - 3}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Allergens */}
           {model.allergens && model.allergens.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {model.allergens.slice(0, 3).map((allergen, index) => (
-                <motion.span
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
-                >
-                  ⚠️ {allergen}
-                </motion.span>
-              ))}
-              {model.allergens.length > 3 && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200">
-                  +{model.allergens.length - 3}
-                </span>
-              )}
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-500 flex items-center">
+                <span className="mr-1">⚠️</span>
+                Allergènes
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {model.allergens.slice(0, 3).map((allergen, index) => (
+                  <motion.span
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+                  >
+                    ⚠️ {allergen}
+                  </motion.span>
+                ))}
+                {model.allergens.length > 3 && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200">
+                    +{model.allergens.length - 3} allergènes
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
