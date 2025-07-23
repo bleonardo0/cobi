@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
+import { useDashboardLanguage } from '@/contexts/DashboardLanguageContext';
 // import DarkModeToggle from './DarkModeToggle';
 
 interface TopBarProps {
@@ -21,11 +22,19 @@ export default function TopBar({
   actions,
   onToggleSidebar 
 }: TopBarProps) {
+  const { t, language } = useDashboardLanguage();
+  
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Bonjour';
-    if (hour < 18) return 'Bon après-midi';
-    return 'Bonsoir';
+    if (language === 'fr') {
+      if (hour < 12) return 'Bonjour';
+      if (hour < 18) return 'Bon après-midi';
+      return 'Bonsoir';
+    } else {
+      if (hour < 12) return 'Good morning';
+      if (hour < 18) return 'Good afternoon';
+      return 'Good evening';
+    }
   };
 
   const getWelcomeMessage = () => {
@@ -69,8 +78,8 @@ export default function TopBar({
               </h1>
               <p className="text-xs lg:text-sm text-neutral-500 mt-1 hidden sm:block">
                 {userRole === 'admin' 
-                  ? 'Gérez vos restaurants et modèles 3D' 
-                  : 'Gérez votre menu et vos modèles 3D'
+                  ? (language === 'fr' ? 'Gérez vos restaurants et modèles 3D' : 'Manage your restaurants and 3D models')
+                  : (language === 'fr' ? 'Gérez votre menu et vos modèles 3D' : 'Manage your menu and 3D models')
                 }
               </p>
             </motion.div>
@@ -116,7 +125,10 @@ export default function TopBar({
                     {userRole === 'admin' ? 'Admin' : restaurantName}
                   </p>
                   <p className="text-xs text-neutral-500">
-                    {userRole === 'admin' ? 'Administrateur' : 'Restaurateur'}
+                    {userRole === 'admin' 
+                      ? (language === 'fr' ? 'Administrateur' : 'Administrator')
+                      : (language === 'fr' ? 'Restaurateur' : 'Restaurant Owner')
+                    }
                   </p>
                 </div>
                 

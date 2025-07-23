@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import DashboardLayout from '@/components/shared/DashboardLayout';
 import StatsCard from '@/components/shared/StatsCard';
 import { UserButton } from '@clerk/nextjs';
+import { useDashboardLanguage } from '@/contexts/DashboardLanguageContext';
 
 interface Restaurant {
   id: string;
@@ -60,6 +61,7 @@ const defaultOpeningHours: OpeningHours[] = [
 export default function RestaurantSettingsPage() {
   const { user, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const { language, setLanguage, t } = useDashboardLanguage();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [openingHours, setOpeningHours] = useState<OpeningHours[]>(defaultOpeningHours);
   const [isLoading, setIsLoading] = useState(true);
@@ -342,30 +344,30 @@ export default function RestaurantSettingsPage() {
         {/* En-tête */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Paramètres</h1>
-            <p className="text-neutral-600">Gérez les paramètres de votre restaurant</p>
+            <h1 className="text-2xl font-bold text-neutral-900">{t('settings.title')}</h1>
+            <p className="text-neutral-600">{t('settings.subtitle')}</p>
           </div>
         </div>
 
         {/* Cartes de statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
-            title="Statut"
-            value={restaurant.is_active ? 'Actif' : 'Inactif'}
+            title={t('settings.status')}
+            value={restaurant.is_active ? t('common.active') : t('common.inactive')}
             icon={<span>{restaurant.is_active ? '✅' : '❌'}</span>}
           />
           <StatsCard
-            title="Plan"
+            title={t('settings.plan')}
             value={restaurant.subscription_plan || 'Gratuit'}
             icon={<span>💳</span>}
           />
           <StatsCard
-            title="Note"
+            title={t('settings.rating')}
             value={restaurant.rating ? `${restaurant.rating}/5` : 'N/A'}
             icon={<span>⭐</span>}
           />
           <StatsCard
-            title="Allergènes"
+            title={t('settings.allergens')}
             value={restaurant.allergens?.length || 0}
             icon={<span>🚫</span>}
           />
@@ -383,7 +385,7 @@ export default function RestaurantSettingsPage() {
                     : 'border-transparent text-neutral-500 hover:text-neutral-700'
                 }`}
               >
-                🏢 Général
+                {t('settings.general')}
               </button>
               <button
                 onClick={() => setActiveTab('customization')}
@@ -393,7 +395,7 @@ export default function RestaurantSettingsPage() {
                     : 'border-transparent text-neutral-500 hover:text-neutral-700'
                 }`}
               >
-                🎨 Design
+                {t('settings.design')}
               </button>
               <button
                 onClick={() => setActiveTab('hours')}
@@ -403,7 +405,7 @@ export default function RestaurantSettingsPage() {
                     : 'border-transparent text-neutral-500 hover:text-neutral-700'
                 }`}
               >
-                🕒 Horaires
+                {t('settings.hours')}
               </button>
               <button
                 onClick={() => setActiveTab('account')}
@@ -413,7 +415,17 @@ export default function RestaurantSettingsPage() {
                     : 'border-transparent text-neutral-500 hover:text-neutral-700'
                 }`}
               >
-                👤 Compte
+                {t('settings.account')}
+              </button>
+              <button
+                onClick={() => setActiveTab('language')}
+                className={`px-6 py-3 font-medium text-sm border-b-2 whitespace-nowrap ${
+                  activeTab === 'language'
+                    ? 'border-sky-600 text-sky-600'
+                    : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                }`}
+              >
+                {t('settings.language')}
               </button>
             </div>
           </div>
@@ -736,6 +748,55 @@ export default function RestaurantSettingsPage() {
                         <span>🗑️</span>
                         Supprimer mon compte
                       </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'language' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium text-neutral-900 mb-4">{t('settings.language')}</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        {t('settings.language.select')}
+                      </label>
+                      <div className="space-y-3">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            name="language"
+                            value="fr"
+                            checked={language === 'fr'}
+                            onChange={(e) => setLanguage(e.target.value as 'fr' | 'en')}
+                            className="w-4 h-4 text-sky-600 focus:ring-sky-500 border-neutral-300"
+                          />
+                          <span className="ml-3 text-sm text-neutral-900 flex items-center">
+                            🇫🇷 {t('settings.language.french')}
+                          </span>
+                        </label>
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            name="language"
+                            value="en"
+                            checked={language === 'en'}
+                            onChange={(e) => setLanguage(e.target.value as 'fr' | 'en')}
+                            className="w-4 h-4 text-sky-600 focus:ring-sky-500 border-neutral-300"
+                          />
+                          <span className="ml-3 text-sm text-neutral-900 flex items-center">
+                            🇺🇸 {t('settings.language.english')}
+                          </span>
+                        </label>
+                      </div>
+                      <p className="text-xs text-neutral-500 mt-3">
+                        {language === 'fr' 
+                          ? 'La langue sera appliquée à tout le dashboard et au menu client.' 
+                          : 'The language will be applied to the entire dashboard and client menu.'
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>

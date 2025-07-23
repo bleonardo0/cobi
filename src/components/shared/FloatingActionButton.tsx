@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRestaurantTheme, useApplyTheme } from '@/hooks/useRestaurantTheme';
+import { useDashboardLanguage } from '@/contexts/DashboardLanguageContext';
 
 interface FloatingActionButtonProps {
   userRole: 'admin' | 'restaurateur';
@@ -12,6 +13,7 @@ interface FloatingActionButtonProps {
 
 export default function FloatingActionButton({ userRole, className = '' }: FloatingActionButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { t } = useDashboardLanguage();
 
   // Système de thème restaurant
   const theme = useRestaurantTheme();
@@ -59,7 +61,7 @@ export default function FloatingActionButton({ userRole, className = '' }: Float
           initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
         >
-          Ajouter un plat
+          {t('common.add.dish')}
         </motion.span>
         
         {/* Effet de vagues au hover */}

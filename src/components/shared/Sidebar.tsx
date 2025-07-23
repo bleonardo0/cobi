@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import CobiLogo from './CobiLogo';
+import { useDashboardLanguage } from '@/contexts/DashboardLanguageContext';
 
 interface SidebarProps {
   userRole: 'admin' | 'restaurateur';
@@ -17,6 +18,7 @@ export default function Sidebar({ userRole, restaurantName, isOpen = false, onCl
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const { t } = useDashboardLanguage();
 
   // Détection mobile avec un hook useEffect pour éviter les problèmes SSR
   useEffect(() => {
@@ -30,20 +32,20 @@ export default function Sidebar({ userRole, restaurantName, isOpen = false, onCl
   }, []);
 
   const adminNavItems = [
-    { href: '/admin/dashboard', label: 'Dashboard', icon: '🏠' },
+    { href: '/admin/dashboard', label: t('nav.dashboard'), icon: '🏠' },
     { href: '/admin/restaurants', label: 'Restaurants', icon: '🍽️' },
     { href: '/admin/models', label: 'Modèles 3D', icon: '🎨' },
     { href: '/admin/users', label: 'Utilisateurs', icon: '👥' },
     { href: '/admin/analytics', label: 'Analytiques', icon: '📊' },
-    { href: '/admin/settings', label: 'Paramètres', icon: '⚙️' },
+    { href: '/admin/settings', label: t('nav.settings'), icon: '⚙️' },
   ];
 
   const restaurantNavItems = [
-    { href: '/restaurant/dashboard', label: 'Dashboard', icon: '🏠' },
-    { href: restaurantName ? `/menu/${restaurantName.toLowerCase().replace(/\s+/g, '-')}` : '/menu', label: 'Menu Client', icon: '👁️' },
-    { href: '/insights', label: 'Statistiques', icon: '📈' },
-    { href: '/restaurant/settings', label: 'Paramètres', icon: '⚙️' },
-    { href: '/restaurant/feedback', label: 'Nous contacter', icon: '💬' },
+    { href: '/restaurant/dashboard', label: t('nav.dashboard'), icon: '🏠' },
+    { href: restaurantName ? `/menu/${restaurantName.toLowerCase().replace(/\s+/g, '-')}` : '/menu', label: t('nav.menu'), icon: '👁️' },
+    { href: '/insights', label: t('nav.statistics'), icon: '📈' },
+    { href: '/restaurant/settings', label: t('nav.settings'), icon: '⚙️' },
+    { href: '/restaurant/feedback', label: t('nav.contact'), icon: '💬' },
   ];
 
   const navItems = userRole === 'admin' ? adminNavItems : restaurantNavItems;
@@ -103,7 +105,7 @@ export default function Sidebar({ userRole, restaurantName, isOpen = false, onCl
               key={item.href} 
               href={item.href} 
               onClick={onClose}
-              target={item.label === 'Menu Client' ? '_blank' : undefined}
+              target={item.label === t('nav.menu') ? '_blank' : undefined}
             >
               <motion.div
                 whileHover={{ scale: 1.02 }}

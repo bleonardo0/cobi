@@ -9,6 +9,8 @@ import { getCategoryInfo } from "@/lib/constants";
 import ModelViewer from "@/components/ModelViewer";
 import HotspotViewer from "@/components/HotspotViewer";
 import { useRestaurantTheme, useApplyTheme } from "@/hooks/useRestaurantTheme";
+import { useMenuLanguage } from "@/contexts/MenuLanguageContext";
+import MenuLanguageSelector from "@/components/MenuLanguageSelector";
 
 // Nouveau composant de carte de plat moderne
 interface ModernDishCardProps {
@@ -18,6 +20,8 @@ interface ModernDishCardProps {
 }
 
 function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) {
+  const { t } = useMenuLanguage();
+  
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6 transition-all duration-300 hover:scale-105">
       {/* Image du plat */}
@@ -41,7 +45,7 @@ function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) 
       <div className="p-4">
         <h3 className="text-md font-semibold text-gray-900 mb-2">{model.name}</h3>
         <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-          {model.shortDescription || 'Délicieux plat préparé avec soin par nos chefs'}
+          {model.shortDescription || t('restaurant.dish.description.default')}
         </p>
         
         {/* Ingrédients */}
@@ -49,7 +53,7 @@ function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) 
           <div className="mb-3">
             <div className="text-xs font-medium text-gray-500 mb-1 flex items-center">
               <span className="mr-1">🥘</span>
-              Ingrédients
+              {t('model.ingredients')}
             </div>
             <div className="flex flex-wrap gap-1">
               {model.ingredients.slice(0, 4).map((ingredient, index) => (
@@ -62,7 +66,7 @@ function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) 
               ))}
               {model.ingredients.length > 4 && (
                 <span className="text-xs text-green-600 italic font-medium">
-                  +{model.ingredients.length - 4} ingrédients
+                  +{model.ingredients.length - 4} {t('model.ingredients').toLowerCase()}
                 </span>
               )}
             </div>
@@ -74,7 +78,7 @@ function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) 
           <div className="mb-3">
             <div className="text-xs font-medium text-gray-500 mb-1 flex items-center">
               <span className="mr-1">⚠️</span>
-              Allergènes
+              {t('model.allergens')}
             </div>
             <div className="flex flex-wrap gap-1">
               {model.allergens.slice(0, 3).map((allergen, index) => (
@@ -87,7 +91,7 @@ function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) 
               ))}
               {model.allergens.length > 3 && (
                 <span className="text-xs text-red-600 italic font-medium">
-                  +{model.allergens.length - 3} allergènes
+                  +{model.allergens.length - 3} {t('model.allergens').toLowerCase()}
                 </span>
               )}
             </div>
@@ -95,13 +99,13 @@ function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) 
         )}
 
         <p className="text-base font-bold text-restaurant-primary mb-3">
-          {model.price ? `${model.price.toFixed(2)}€` : 'Prix sur demande'}
+          {model.price ? `${model.price.toFixed(2)}€` : t('model.price.on.request')}
         </p>
         <button 
           onClick={() => onViewIn3D(model)}
           className="mt-2 w-full bg-restaurant-primary text-white text-sm py-2 rounded-full hover:bg-restaurant-primary transition-colors"
         >
-          Voir en 3D
+          {t('model.view.3d')}
         </button>
       </div>
     </div>
@@ -111,6 +115,7 @@ function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) 
 export default function ModernMenuPage() {
   const params = useParams();
   const restaurantSlug = params.restaurant as string;
+  const { t } = useMenuLanguage();
   
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [models, setModels] = useState<Model3D[]>([]);
@@ -144,7 +149,7 @@ export default function ModernMenuPage() {
       // Récupérer les données du restaurant
       const restaurantResponse = await fetch(`/api/restaurants/${restaurantSlug}`);
       if (!restaurantResponse.ok) {
-        throw new Error('Restaurant non trouvé');
+        throw new Error(t('restaurant.not.found'));
       }
       const restaurantData = await restaurantResponse.json();
       setRestaurant(restaurantData.restaurant);
@@ -152,14 +157,14 @@ export default function ModernMenuPage() {
       // Récupérer les modèles du restaurant
       const modelsResponse = await fetch(`/api/restaurants/by-slug/${restaurantSlug}/models`);
       if (!modelsResponse.ok) {
-        throw new Error('Erreur lors du chargement du menu');
+        throw new Error(t('restaurant.error.loading'));
       }
       const modelsData = await modelsResponse.json();
       setModels(modelsData.models);
       
     } catch (error) {
       console.error('Erreur:', error);
-      setError(error instanceof Error ? error.message : 'Erreur inconnue');
+      setError(error instanceof Error ? error.message : t('restaurant.error.unknown'));
     } finally {
       setIsLoading(false);
     }
@@ -201,7 +206,7 @@ export default function ModernMenuPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-emerald-600">Chargement du menu...</p>
+          <p className="text-emerald-600">{t('menu.loading')}</p>
         </div>
       </div>
     );
@@ -216,7 +221,7 @@ export default function ModernMenuPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Restaurant non trouvé</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">{t('restaurant.not.found')}</h1>
           <p className="text-gray-600">{error}</p>
         </div>
       </div>
@@ -225,6 +230,11 @@ export default function ModernMenuPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Sélecteur de langue fixe */}
+      <div className="fixed top-4 right-4 z-30">
+        <MenuLanguageSelector />
+      </div>
+
       {/* Image d'ambiance en haut */}
       <div className="relative">
         <img 
@@ -242,10 +252,10 @@ export default function ModernMenuPage() {
         <div className="text-center mt-4">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{restaurant.name}</h1>
           <p className="text-gray-600 mb-1">
-            {restaurant.description || 'Découvrez notre délicieux menu'}
+            {restaurant.description || t('restaurant.menu.description')}
           </p>
           <p className="text-sm italic text-gray-500">
-            🍽️ Menu disponible en 3D • Livraison disponible
+            🍽️ {t('restaurant.menu.3d.available')}
           </p>
         </div>
 
@@ -254,7 +264,7 @@ export default function ModernMenuPage() {
           {categories.map((category) => {
             const isSelected = selectedCategory === category;
             const categoryInfo = category === 'all' 
-              ? { name: 'Tout', icon: '🍽️' }
+              ? { name: t('menu.all'), icon: '🍽️' }
               : getCategoryInfo(category as any);
             
             return (
@@ -293,8 +303,8 @@ export default function ModernMenuPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium mb-2 text-gray-800">Aucun plat trouvé</h3>
-            <p className="text-gray-600">Aucun plat ne correspond à cette catégorie.</p>
+            <h3 className="text-lg font-medium mb-2 text-gray-800">{t('menu.no.results')}</h3>
+            <p className="text-gray-600">{t('restaurant.no.dishes.category')}</p>
           </div>
         )}
       </div>
@@ -358,7 +368,7 @@ export default function ModernMenuPage() {
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-gray-100 text-gray-500'
                     }`}
-                    title={hotspotsEnabled ? 'Masquer les hotspots' : 'Afficher les hotspots'}
+                    title={hotspotsEnabled ? t('model.hotspots.hide') : t('model.hotspots.show')}
                   >
                     {hotspotsEnabled ? '👁️' : '🚫'}
                   </button>

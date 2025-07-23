@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ClerkAuthProvider } from "@/providers/ClerkAuthProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { DashboardLanguageProvider } from "@/contexts/DashboardLanguageContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -31,11 +32,13 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <ClerkProvider>
-            <ClerkAuthProvider>
-              {children}
-            </ClerkAuthProvider>
-          </ClerkProvider>
+          <DashboardLanguageProvider>
+            <ClerkProvider>
+              <ClerkAuthProvider>
+                {children}
+              </ClerkAuthProvider>
+            </ClerkProvider>
+          </DashboardLanguageProvider>
         </ThemeProvider>
       </body>
     </html>

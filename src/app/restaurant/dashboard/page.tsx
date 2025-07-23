@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useRestaurantId } from "@/hooks/useRestaurantId";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import StatsCard from "@/components/shared/StatsCard";
+import { useDashboardLanguage } from "@/contexts/DashboardLanguageContext";
 
 
 export default function RestaurantDashboard() {
@@ -22,6 +23,7 @@ export default function RestaurantDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'category'>('name');
+  const { t } = useDashboardLanguage();
   
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -224,7 +226,7 @@ export default function RestaurantDashboard() {
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
-        <span>Voir le menu</span>
+        <span>{t('dashboard.view.menu')}</span>
       </Link>
     </div>
   );
@@ -241,7 +243,7 @@ export default function RestaurantDashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
-            title="Plats disponibles"
+            title={t('dashboard.dishes.total')}
             value={models.length}
             emoji="🍽️"
             icon={
@@ -253,7 +255,7 @@ export default function RestaurantDashboard() {
             loading={isLoading}
           />
           <StatsCard
-            title="Vues totales"
+            title={t('dashboard.views.total')}
             value={analytics?.totalViews || 0}
             emoji="👁️"
             icon={
@@ -266,7 +268,7 @@ export default function RestaurantDashboard() {
             loading={isLoading}
           />
           <StatsCard
-            title="Scans cette semaine"
+            title={t('dashboard.scans.weekly')}
             value={analytics?.weeklyScans || 0}
             emoji="📊"
             icon={
@@ -278,8 +280,8 @@ export default function RestaurantDashboard() {
             loading={isLoading}
           />
           <StatsCard
-            title="Plat le plus vu"
-            value={analytics?.mostViewedDish?.name || 'Aucun'}
+            title={t('dashboard.dish.popular')}
+            value={analytics?.mostViewedDish?.name || (t('language') === 'fr' ? 'Aucun' : 'None')}
             emoji="🏆"
             icon={
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -303,7 +305,7 @@ export default function RestaurantDashboard() {
             <div>
               <div className="inline-flex items-center space-x-2 bg-emerald-100 rounded-full px-4 py-2 mb-6 border border-emerald-200">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-emerald-800">Menu 3D Actif</span>
+                <span className="text-sm font-medium text-emerald-800">{t('dashboard.menu.active')}</span>
               </div>
               
               <h2 className="text-3xl font-bold mb-4">
@@ -311,7 +313,7 @@ export default function RestaurantDashboard() {
               </h2>
               
               <p className="text-xl mb-6 text-neutral-600">
-                Sans appli, sans surprise : vos clients scannent un QR code pour découvrir vos plats en 3D et commander en toute confiance.
+                {t('dashboard.menu.description')}
               </p>
               
               <div className="flex flex-wrap items-center gap-4">
@@ -323,7 +325,7 @@ export default function RestaurantDashboard() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
-                  <span>Voir le menu client</span>
+                  <span>{t('dashboard.view.menu')}</span>
                 </Link>
                 
                 <div className="flex items-center space-x-4 text-neutral-600">
@@ -347,7 +349,7 @@ export default function RestaurantDashboard() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-2xl font-bold text-neutral-900">
-              {models.length} plats disponibles – visualisables en 3D & AR 🎉
+              {models.length} {t('dashboard.dishes.available')}
             </h3>
             <div className="flex items-center space-x-4">
               <select
@@ -355,9 +357,9 @@ export default function RestaurantDashboard() {
                 onChange={(e) => handleSortChange(e.target.value as 'name' | 'date' | 'category')}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="name">Trier par nom</option>
-                <option value="date">Trier par date</option>
-                <option value="category">Trier par catégorie</option>
+                <option value="name">{t('language') === 'fr' ? 'Trier par nom' : 'Sort by name'}</option>
+                <option value="date">{t('language') === 'fr' ? 'Trier par date' : 'Sort by date'}</option>
+                <option value="category">{t('language') === 'fr' ? 'Trier par catégorie' : 'Sort by category'}</option>
               </select>
             </div>
           </div>
