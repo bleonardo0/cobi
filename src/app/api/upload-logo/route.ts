@@ -36,11 +36,20 @@ export async function POST(request: NextRequest) {
     // Create file path based on type
     const fileExt = file.name.split('.').pop();
     const fileName = `${imageType}-${restaurantId}-${Date.now()}.${fileExt}`;
-    const filePath = `${imageType === 'ambiance' ? 'ambiance' : 'logos'}/${fileName}`;
+    let filePath;
+    
+    if (imageType === 'ambiance') {
+      filePath = `ambiance/${fileName}`;
+    } else if (imageType === 'thumbnail') {
+      filePath = `thumbnails/${fileName}`;
+    } else {
+      filePath = `logos/${fileName}`;
+    }
 
     // Upload to Supabase Storage
+    const STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'models-3d';
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from('models-3d')
+      .from(STORAGE_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true
@@ -56,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     // Get public URL
     const { data: urlData } = supabaseAdmin.storage
-      .from('models-3d')
+      .from(STORAGE_BUCKET)
       .getPublicUrl(filePath);
 
     if (!urlData.publicUrl) {
@@ -66,30 +75,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update restaurant in database with new image URL
-    const updateField = imageType === 'ambiance' ? 'ambiance_image_url' : 'logo_url';
-    
-    const { error: updateError } = await supabaseAdmin
-      .from('restaurants')
-      .update({ [updateField]: urlData.publicUrl })
-      .eq('id', restaurantId);
+    // Update database with new image URL
+    if (imageType === 'thumbnail') {
+      // Pour les thumbnails, ne pas mettre à jour la table restaurants
+      // L'URL sera mise à jour dans la table models_3d par la fonction appelante
+    } else {
+      // Update restaurant in database with new image URL
+      const updateField = imageType === 'ambiance' ? 'ambiance_image_url' : 'logo_url';
+      
+      const { error: updateError } = await supabaseAdmin
+        .from('restaurants')
+        .update({ [updateField]: urlData.publicUrl })
+        .eq('id', restaurantId);
 
-    if (updateError) {
-      console.error('Database update error:', updateError);
-      // Pour les images d'ambiance, si la colonne n'existe pas encore, on continue sans erreur
-      if (imageType === 'ambiance' && updateError.message?.includes('column')) {
-        console.log('Colonne ambiance_image_url non trouvée, continuons sans sauvegarder en base');
-      } else {
-        return NextResponse.json(
-          { error: 'Erreur lors de la mise à jour en base de données' },
-          { status: 500 }
-        );
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        // Pour les images d'ambiance, si la colonne n'existe pas encore, on continue sans erreur
+        if (imageType === 'ambiance' && updateError.message?.includes('column')) {
+          console.log('Colonne ambiance_image_url non trouvée, continuons sans sauvegarder en base');
+        } else {
+          return NextResponse.json(
+            { error: 'Erreur lors de la mise à jour en base de données' },
+            { status: 500 }
+          );
+        }
       }
     }
 
     return NextResponse.json({
       success: true,
-      [imageType === 'ambiance' ? 'imageUrl' : 'logoUrl']: urlData.publicUrl,
+      [imageType === 'thumbnail' ? 'imageUrl' : imageType === 'ambiance' ? 'imageUrl' : 'logoUrl']: urlData.publicUrl,
       filePath: filePath
     });
 

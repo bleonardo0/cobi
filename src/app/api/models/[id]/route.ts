@@ -189,6 +189,12 @@ export async function PATCH(
         }
       }
       
+      // Handle thumbnail URL
+      const thumbnailUrl = formData.get('thumbnailUrl') as string;
+      if (thumbnailUrl !== null) {
+        updateData.thumbnail_url = thumbnailUrl;
+      }
+      
       // Handle file uploads (GLB and thumbnail)
       const glbFile = formData.get('glb') as File | null;
       const thumbnailFile = formData.get('thumbnail') as File | null;

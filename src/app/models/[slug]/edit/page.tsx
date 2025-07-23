@@ -145,7 +145,8 @@ export default function EditModelPage() {
   const fetchModel = async (slug: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/models');
+      // Ajouter un cache-bust pour forcer la récupération des données fraîches
+      const response = await fetch(`/api/models?t=${Date.now()}`);
       
       if (!response.ok) {
         throw new Error('Erreur lors du chargement du modèle');
@@ -383,9 +384,68 @@ export default function EditModelPage() {
       const hasFileChanges = selectedGlbFile || selectedThumbnail || removeGlb || removeThumbnail;
       
       if (hasFileChanges) {
-        // Temporairement simulé pour le debug
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setUpdateProgress(50);
         
+        const fileFormData = new FormData();
+        
+        // Ajouter les fichiers s'ils existent
+        if (selectedGlbFile) {
+          fileFormData.append('glbFile', selectedGlbFile);
+        }
+        if (selectedThumbnail) {
+          fileFormData.append('thumbnailFile', selectedThumbnail);
+        }
+        
+        // Ajouter les flags de suppression
+        if (removeGlb) {
+          fileFormData.append('removeGlb', 'true');
+        }
+        if (removeThumbnail) {
+          fileFormData.append('removeThumbnail', 'true');
+        }
+        
+        // Upload thumbnail si présent
+        if (selectedThumbnail) {
+          const thumbnailFormData = new FormData();
+          thumbnailFormData.append('file', selectedThumbnail);
+          thumbnailFormData.append('restaurantId', model.id);
+          thumbnailFormData.append('type', 'thumbnail');
+          
+          const thumbnailResponse = await fetch('/api/upload-logo', {
+            method: 'POST',
+            body: thumbnailFormData,
+          });
+          
+          if (!thumbnailResponse.ok) {
+            throw new Error('Erreur lors de l\'upload de l\'image de prévisualisation');
+          }
+          
+          const thumbnailData = await thumbnailResponse.json();
+          if (thumbnailData.success && thumbnailData.imageUrl) {
+            // Mettre à jour le modèle avec la nouvelle URL de thumbnail
+            const updateFormData = new FormData();
+            updateFormData.append('thumbnailUrl', thumbnailData.imageUrl);
+            
+            const updateResponse = await fetch(`/api/models/${model.id}`, {
+              method: 'PATCH',
+              body: updateFormData,
+            });
+            
+            if (updateResponse.ok) {
+              const updateData = await updateResponse.json();
+              setModel(prev => prev ? {
+                ...prev,
+                thumbnailUrl: thumbnailData.imageUrl
+              } : prev);
+            }
+          }
+        }
+        
+        setUpdateProgress(80);
+        
+        setUpdateProgress(100);
+        
+        // Réinitialiser les états des fichiers
         setSelectedGlbFile(null);
         setSelectedThumbnail(null);
         setThumbnailPreview(null);
@@ -393,6 +453,9 @@ export default function EditModelPage() {
         setRemoveThumbnail(false);
       }
 
+      // Recharger le modèle pour récupérer les données fraîches
+      await fetchModel(params.slug as string);
+      
       // Réinitialiser l'état des changements
       setHasUnsavedChanges(false);
       
