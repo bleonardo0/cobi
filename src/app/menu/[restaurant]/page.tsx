@@ -8,6 +8,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { getCategoryInfo } from "@/lib/constants";
 import ModelViewer from "@/components/ModelViewer";
 import HotspotViewer from "@/components/HotspotViewer";
+import { useRestaurantTheme, useApplyTheme } from "@/hooks/useRestaurantTheme";
 
 // Nouveau composant de carte de plat moderne
 interface ModernDishCardProps {
@@ -93,12 +94,12 @@ function ModernDishCard({ model, restaurant, onViewIn3D }: ModernDishCardProps) 
           </div>
         )}
 
-        <p className="text-base font-bold text-emerald-600 mb-3">
+        <p className="text-base font-bold text-restaurant-primary mb-3">
           {model.price ? `${model.price.toFixed(2)}€` : 'Prix sur demande'}
         </p>
         <button 
           onClick={() => onViewIn3D(model)}
-          className="mt-2 w-full bg-emerald-500 text-white text-sm py-2 rounded-full hover:bg-emerald-600 transition-colors"
+          className="mt-2 w-full bg-restaurant-primary text-white text-sm py-2 rounded-full hover:bg-restaurant-primary transition-colors"
         >
           Voir en 3D
         </button>
@@ -120,6 +121,10 @@ export default function ModernMenuPage() {
   const [hotspotsEnabled, setHotspotsEnabled] = useState(true);
 
   const { trackModelView, trackModelViewEnd, trackSessionStart, trackMenuView } = useAnalytics(restaurant?.id);
+
+  // Système de thème restaurant
+  const theme = useRestaurantTheme(restaurantSlug);
+  useApplyTheme(theme);
 
   useEffect(() => {
     fetchRestaurantData();
@@ -258,8 +263,8 @@ export default function ModernMenuPage() {
                 onClick={() => setSelectedCategory(category)}
                 className={`px-4 py-1 rounded-full border text-sm font-medium transition-all ${
                   isSelected
-                    ? 'bg-orange-500 text-white border-orange-500'
-                    : 'text-gray-700 border-gray-300 hover:bg-gray-100'
+                    ? 'bg-restaurant-primary text-white border-restaurant-primary'
+                    : 'text-gray-700 border-gray-300 hover:bg-restaurant-primary-light hover:border-restaurant-primary hover:text-restaurant-primary'
                 }`}
               >
                 {categoryInfo?.name || category}

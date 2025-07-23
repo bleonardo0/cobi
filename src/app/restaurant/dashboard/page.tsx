@@ -339,17 +339,7 @@ export default function RestaurantDashboard() {
               </div>
             </div>
             
-            <div className="hidden lg:block">
-              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/80">
-                <div className="text-center">
-                  <div className="text-4xl mb-4">📊</div>
-                  <h3 className="text-lg font-semibold mb-2 text-neutral-800">Statistiques en temps réel</h3>
-                  <p className="text-neutral-600 text-sm">
-                    Suivez les performances de votre menu 3D et l'engagement de vos clients
-                  </p>
-                </div>
-              </div>
-            </div>
+
           </div>
         </motion.div>
 

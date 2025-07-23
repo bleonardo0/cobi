@@ -201,8 +201,7 @@ const ModelCard = ({
               animate={{ scale: 1 }}
               className={`inline-flex items-center text-xs px-2 py-1 rounded-full font-medium backdrop-blur-sm shadow-sm ${getCategoryInfo(model.category).color}`}
             >
-              <span className="mr-1">{getCategoryInfo(model.category).icon}</span>
-              {getCategoryInfo(model.category).name}
+              {getCategoryInfo(model.category).icon} {getCategoryInfo(model.category).name}
             </motion.div>
           </div>
         )}

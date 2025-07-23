@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { FilterState, MenuCategory } from '@/types/model';
 import { MENU_CATEGORIES, PREDEFINED_TAGS, getCategoryInfo, getTagInfo } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRestaurantTheme, useApplyTheme } from '@/hooks/useRestaurantTheme';
 
 interface FilterBarProps {
   onFilterChange: (filters: FilterState) => void;
@@ -20,6 +21,10 @@ export default function FilterBar({ onFilterChange, totalItems, filteredItems }:
 
   const [searchInput, setSearchInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Système de thème restaurant
+  const theme = useRestaurantTheme();
+  useApplyTheme(theme);
 
   // Debounce pour la recherche
   useEffect(() => {
@@ -133,7 +138,7 @@ export default function FilterBar({ onFilterChange, totalItems, filteredItems }:
             exit={{ opacity: 0, height: 0 }}
             className="space-y-6"
           >
-            {/* Filtres par catégorie */}
+            {/* Filtres par catégorie - Fixed isolated icons */}
             <div>
               <h3 className="text-sm font-medium text-neutral-700 mb-3 flex items-center">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,17 +147,23 @@ export default function FilterBar({ onFilterChange, totalItems, filteredItems }:
                 Catégories
               </h3>
               <div className="flex flex-wrap gap-2">
+                {/* Bouton Toutes catégories */}
                 <motion.button
+                  key="all-categories-v4"
                   onClick={() => handleCategoryChange('all')}
-                  className={`rounded-full px-3 py-1 text-sm font-medium transition-all duration-200 ${
+                  className={`rounded-full px-3 py-1 text-sm font-medium transition-all duration-200 flex items-center gap-1 ${
                     filters.category === 'all'
-                      ? 'bg-primary-600 text-white ring-2 ring-primary-500/20 shadow-soft'
-                      : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:ring-1 hover:ring-primary-200'
+                      ? 'bg-blue-600 text-white ring-2 ring-blue-500/20 shadow-lg'
+                      : 'bg-gray-100 text-gray-800 hover:bg-blue-50 hover:text-blue-700 hover:ring-1 hover:ring-blue-200'
                   }`}
+                  style={{
+                    backgroundColor: filters.category === 'all' ? theme.primaryColor : '#f3f4f6',
+                    color: filters.category === 'all' ? '#ffffff' : '#1f2937'
+                  }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Toutes 🍽️
+                  🍽️ Toutes
                 </motion.button>
                 {MENU_CATEGORIES.map((category) => (
                   <motion.button
@@ -160,14 +171,17 @@ export default function FilterBar({ onFilterChange, totalItems, filteredItems }:
                     onClick={() => handleCategoryChange(category.id)}
                     className={`rounded-full px-3 py-1 text-sm font-medium transition-all duration-200 flex items-center gap-1 ${
                       filters.category === category.id
-                        ? 'bg-primary-600 text-white ring-2 ring-primary-500/20 shadow-soft'
-                        : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:ring-1 hover:ring-primary-200'
+                        ? 'bg-blue-600 text-white ring-2 ring-blue-500/20 shadow-lg'
+                        : 'bg-gray-100 text-gray-800 hover:bg-blue-50 hover:text-blue-700 hover:ring-1 hover:ring-blue-200'
                     }`}
+                    style={{
+                      backgroundColor: filters.category === category.id ? theme.primaryColor : '#f3f4f6',
+                      color: filters.category === category.id ? '#ffffff' : '#1f2937'
+                    }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <span>{category.icon}</span>
-                    {category.name}
+                    {category.icon} {category.name}
                   </motion.button>
                 ))}
               </div>
@@ -188,9 +202,14 @@ export default function FilterBar({ onFilterChange, totalItems, filteredItems }:
                     onClick={() => handleTagToggle(tag.id)}
                     className={`rounded-full px-3 py-1 text-sm font-medium transition-all duration-200 relative ${
                       filters.tags.includes(tag.id)
-                        ? 'bg-accent-100 text-accent-800 ring-2 ring-accent-500/20 shadow-soft'
-                        : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:ring-1 hover:ring-primary-200'
+                        ? 'ring-2 shadow-soft'
+                        : 'bg-neutral-100 text-neutral-700 hover:ring-1'
                     }`}
+                    style={{
+                      backgroundColor: filters.tags.includes(tag.id) ? theme.secondaryColor + '20' : '#f3f4f6',
+                      color: filters.tags.includes(tag.id) ? theme.secondaryColor : '#1f2937',
+                      '--tw-ring-color': theme.secondaryColor + '33'
+                    } as React.CSSProperties}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >

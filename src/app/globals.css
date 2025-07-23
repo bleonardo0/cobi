@@ -38,6 +38,16 @@
   --color-bella-vita: var(--color-navy);
   --background: var(--color-bg-primary);
   --foreground: var(--color-text-primary);
+  
+  /* Restaurant Dynamic Theme Variables */
+  --restaurant-primary: #3b82f6;
+  --restaurant-secondary: #10b981;
+  --restaurant-primary-rgb: 59, 130, 246;
+  --restaurant-secondary-rgb: 16, 185, 129;
+  --restaurant-primary-light: rgba(59, 130, 246, 0.1);
+  --restaurant-secondary-light: rgba(16, 185, 129, 0.1);
+  --restaurant-primary-hover: #2563eb;
+  --restaurant-secondary-hover: #059669;
 }
 
 @theme inline {
@@ -291,6 +301,55 @@ h4, h5, h6 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-navy);
+}
+
+/* Restaurant Theme Classes */
+.bg-restaurant-primary {
+  background-color: var(--restaurant-primary) !important;
+}
+
+.bg-restaurant-secondary {
+  background-color: var(--restaurant-secondary) !important;
+}
+
+.text-restaurant-primary {
+  color: var(--restaurant-primary) !important;
+}
+
+.text-restaurant-secondary {
+  color: var(--restaurant-secondary) !important;
+}
+
+.border-restaurant-primary {
+  border-color: var(--restaurant-primary) !important;
+}
+
+.border-restaurant-secondary {
+  border-color: var(--restaurant-secondary) !important;
+}
+
+.bg-restaurant-primary-light {
+  background-color: var(--restaurant-primary-light) !important;
+}
+
+.bg-restaurant-secondary-light {
+  background-color: var(--restaurant-secondary-light) !important;
+}
+
+.hover\:bg-restaurant-primary:hover {
+  background-color: var(--restaurant-primary-hover) !important;
+}
+
+.hover\:bg-restaurant-secondary:hover {
+  background-color: var(--restaurant-secondary-hover) !important;
+}
+
+.ring-restaurant-primary {
+  --tw-ring-color: var(--restaurant-primary) !important;
+}
+
+.ring-restaurant-secondary {
+  --tw-ring-color: var(--restaurant-secondary) !important;
 }
 
 /* Model Viewer Styles */

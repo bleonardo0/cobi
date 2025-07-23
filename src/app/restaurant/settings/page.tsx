@@ -19,7 +19,7 @@ interface Restaurant {
   description: string;
   short_description: string;
   logo_url: string;
-  ambiance_image_url?: string; // Image d'ambiance pour le nouveau menu
+  ambiance_image_url?: string;
   primary_color: string;
   secondary_color: string;
   rating: number;
@@ -71,7 +71,6 @@ export default function RestaurantSettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
-    // Ne pas rediriger pendant le chargement de l'authentification
     if (authLoading) return;
     
     if (!user) {
@@ -86,7 +85,6 @@ export default function RestaurantSettingsPage() {
     const newToast: Toast = { id, message, type };
     setToasts(prev => [...prev, newToast]);
     
-    // Auto-remove after 3 seconds
     setTimeout(() => {
       setToasts(prev => prev.filter(toast => toast.id !== id));
     }, 3000);
@@ -104,9 +102,6 @@ export default function RestaurantSettingsPage() {
 
       if (error) throw error;
       setRestaurant(restaurantData);
-
-      // Load opening hours if they exist (for now using defaults)
-      // TODO: Implement opening hours storage in database
       
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
@@ -142,9 +137,6 @@ export default function RestaurantSettingsPage() {
         .eq('id', restaurant.id);
 
       if (error) throw error;
-
-      // Save opening hours
-      // TODO: Implement opening hours storage in database
       
       showToast('Modifications enregistrées', 'success');
       
@@ -160,13 +152,11 @@ export default function RestaurantSettingsPage() {
     const file = event.target.files?.[0];
     if (!file || !restaurant) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       showToast('Veuillez sélectionner une image', 'error');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       showToast('L\'image ne doit pas dépasser 5MB', 'error');
       return;
@@ -175,12 +165,10 @@ export default function RestaurantSettingsPage() {
     try {
       setIsUploading(true);
       
-      // Create FormData for API call
       const formData = new FormData();
       formData.append('file', file);
       formData.append('restaurantId', restaurant.id);
 
-      // Call upload API
       const response = await fetch('/api/upload-logo', {
         method: 'POST',
         body: formData
@@ -192,9 +180,7 @@ export default function RestaurantSettingsPage() {
         throw new Error(data.error || 'Erreur lors de l\'upload');
       }
 
-      // Recharger les données du restaurant pour récupérer la nouvelle URL depuis la base
       await loadRestaurantData();
-      
       showToast('Logo uploadé avec succès', 'success');
       
     } catch (error) {
@@ -203,7 +189,6 @@ export default function RestaurantSettingsPage() {
       showToast(`Erreur lors de l'upload du logo: ${errorMessage}`, 'error');
     } finally {
       setIsUploading(false);
-      // Reset file input
       event.target.value = '';
     }
   };
@@ -212,13 +197,11 @@ export default function RestaurantSettingsPage() {
     const file = event.target.files?.[0];
     if (!file || !restaurant) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       showToast('Veuillez sélectionner une image', 'error');
       return;
     }
 
-    // Validate file size (max 10MB pour l'image d'ambiance)
     if (file.size > 10 * 1024 * 1024) {
       showToast('L\'image ne doit pas dépasser 10MB', 'error');
       return;
@@ -227,14 +210,12 @@ export default function RestaurantSettingsPage() {
     try {
       setIsUploading(true);
       
-      // Create FormData for API call
       const formData = new FormData();
       formData.append('file', file);
       formData.append('restaurantId', restaurant.id);
-      formData.append('type', 'ambiance'); // Spécifier le type d'image
+      formData.append('type', 'ambiance');
 
-      // Call upload API (nous utiliserons la même API que pour le logo)
-      const response = await fetch('/api/upload-logo', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
@@ -245,51 +226,18 @@ export default function RestaurantSettingsPage() {
         throw new Error(data.error || 'Erreur lors de l\'upload');
       }
 
-      // Recharger les données pour récupérer la nouvelle URL depuis la base
-      await loadRestaurantData();
-      
-      // Si l'image n'est pas encore en base, la mettre temporairement dans le state
-      if (data.imageUrl) {
-        setRestaurant(prev => prev ? { 
-          ...prev, 
-          ambiance_image_url: prev.ambiance_image_url || data.imageUrl 
-        } : null);
+      if (data.url) {
+        setRestaurant(prev => prev ? { ...prev, ambiance_image_url: data.url } : null);
+        showToast('Image d\'ambiance uploadée avec succès', 'success');
       }
-      
-      showToast('Image d\'ambiance uploadée avec succès', 'success');
       
     } catch (error) {
       console.error('Erreur lors de l\'upload:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      showToast(`Erreur lors de l'upload de l'image d'ambiance: ${errorMessage}`, 'error');
+      showToast(`Erreur lors de l'upload de l'image: ${errorMessage}`, 'error');
     } finally {
       setIsUploading(false);
-      // Reset file input
       event.target.value = '';
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!user || !restaurant) return;
-
-    try {
-      // Delete restaurant and all associated data
-      const { error } = await supabase
-        .from('restaurants')
-        .delete()
-        .eq('id', restaurant.id);
-
-      if (error) throw error;
-
-      // Sign out user
-      await supabase.auth.signOut();
-      
-      showToast('Compte supprimé avec succès', 'success');
-      router.push('/');
-      
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      showToast('Erreur lors de la suppression du compte', 'error');
     }
   };
 
@@ -299,90 +247,40 @@ export default function RestaurantSettingsPage() {
     try {
       setIsExporting(true);
       
-      // Fetch model views data without join to avoid relationship error
-      const { data: modelViews, error } = await supabase
-        .from('model_views')
-        .select('model_id, viewed_at, device_type')
-        .eq('restaurant_id', restaurant.id);
-
-      if (error) {
-        console.error('Erreur lors de la récupération des vues:', error);
-        showToast('Erreur lors de la récupération des données: ' + error.message, 'error');
-        return;
-      }
-
-      if (!modelViews || modelViews.length === 0) {
-        showToast('Aucune donnée à exporter pour le moment', 'info');
-        return;
-      }
-
-      // Get unique model IDs
-      const modelIds = [...new Set(modelViews.map(view => view.model_id))];
+      const response = await fetch(`/api/analytics/stats?restaurantId=${restaurant.id}&format=csv`);
       
-      // Fetch model names separately
-      const { data: modelsData, error: modelsError } = await supabase
-        .from('models_3d')
-        .select('id, name')
-        .in('id', modelIds);
-
-      if (modelsError) {
-        console.error('Erreur lors de la récupération des modèles:', modelsError);
-        showToast('Erreur lors de la récupération des noms de modèles', 'error');
-        return;
+      if (!response.ok) {
+        throw new Error('Erreur lors de l\'export');
       }
 
-      // Create a map of model names
-      const modelNamesMap = new Map();
-      modelsData?.forEach(model => {
-        modelNamesMap.set(model.id, model.name);
-      });
-
-      // Process data for CSV
-      const stats: { [key: string]: { name: string; total_views: number; weekly_views: number; } } = {};
-      const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-      modelViews.forEach(view => {
-        const modelName = modelNamesMap.get(view.model_id) || 'Modèle inconnu';
-        const viewDate = new Date(view.viewed_at);
-        
-        if (!stats[view.model_id]) {
-          stats[view.model_id] = {
-            name: modelName,
-            total_views: 0,
-            weekly_views: 0
-          };
-        }
-        
-        stats[view.model_id].total_views++;
-        if (viewDate > oneWeekAgo) {
-          stats[view.model_id].weekly_views++;
-        }
-      });
-
-      // Create CSV content
-      const csvContent = [
-        'dish_name,total_views,weekly_views,qr_scans',
-        ...Object.values(stats).map(stat => 
-          `"${stat.name}",${stat.total_views},${stat.weekly_views},0`
-        )
-      ].join('\n');
-
-      // Download CSV
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${restaurant.slug}_statistics_${new Date().toISOString().split('T')[0]}.csv`;
-      link.click();
-      URL.revokeObjectURL(url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `statistiques-${restaurant.slug}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       
       showToast('Statistiques exportées avec succès', 'success');
       
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
-      showToast('Erreur inattendue lors de l\'export des statistiques', 'error');
+      showToast('Erreur lors de l\'export des statistiques', 'error');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await logout();
+      router.push('/');
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      showToast('Erreur lors de la suppression du compte', 'error');
     }
   };
 
@@ -396,7 +294,6 @@ export default function RestaurantSettingsPage() {
     );
   }
 
-  // Afficher un loader pendant le chargement de l'authentification
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -423,6 +320,7 @@ export default function RestaurantSettingsPage() {
       userRole="restaurateur"
       restaurantName={restaurant.name}
       restaurantSlug={restaurant.slug}
+      showFloatingButton={false}
     >
       {/* Toast notifications */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
@@ -447,14 +345,6 @@ export default function RestaurantSettingsPage() {
             <h1 className="text-2xl font-bold text-neutral-900">Paramètres</h1>
             <p className="text-neutral-600">Gérez les paramètres de votre restaurant</p>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50 flex items-center gap-2"
-          >
-            <span>💾</span>
-            {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
-          </button>
         </div>
 
         {/* Cartes de statistiques */}
@@ -729,24 +619,6 @@ export default function RestaurantSettingsPage() {
                         </p>
                       </div>
                     </div>
-
-                    <div className="p-4 bg-neutral-50 rounded-lg">
-                      <h4 className="font-medium mb-2">Aperçu des couleurs</h4>
-                      <div className="flex gap-2">
-                        <div 
-                          className="w-20 h-10 rounded border flex items-center justify-center text-white text-sm font-medium"
-                          style={{ backgroundColor: restaurant.primary_color }}
-                        >
-                          Primaire
-                        </div>
-                        <div 
-                          className="w-20 h-10 rounded border flex items-center justify-center text-white text-sm font-medium"
-                          style={{ backgroundColor: restaurant.secondary_color }}
-                        >
-                          Secondaire
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -777,7 +649,7 @@ export default function RestaurantSettingsPage() {
                             <span className="text-sm">Ouvert</span>
                           </label>
                         </div>
-                        {day.isOpen ? (
+                        {day.isOpen && (
                           <div className="flex items-center gap-2">
                             <input
                               type="time"
@@ -789,7 +661,7 @@ export default function RestaurantSettingsPage() {
                               }}
                               className="px-2 py-1 border border-neutral-300 rounded text-sm"
                             />
-                            <span className="text-neutral-500">à</span>
+                            <span className="text-neutral-500">-</span>
                             <input
                               type="time"
                               value={day.closeTime}
@@ -801,8 +673,6 @@ export default function RestaurantSettingsPage() {
                               className="px-2 py-1 border border-neutral-300 rounded text-sm"
                             />
                           </div>
-                        ) : (
-                          <span className="text-neutral-500 text-sm">Fermé</span>
                         )}
                       </div>
                     ))}
@@ -922,6 +792,34 @@ export default function RestaurantSettingsPage() {
           </div>
         </div>
       )}
+
+      {/* Bouton de sauvegarde flottant */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="group relative inline-flex items-center justify-center gap-3 px-6 py-4 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 overflow-hidden min-w-[200px] border-2 border-white/20 hover:border-white/40"
+          style={{ 
+            background: restaurant ? `linear-gradient(135deg, ${restaurant.primary_color}, ${restaurant.secondary_color})` : 'linear-gradient(135deg, #3b82f6, #10b981)',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
+          }}
+        >
+          <svg
+            className="w-5 h-5 relative z-10 flex-shrink-0 text-white drop-shadow-sm"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+          </svg>
+          
+          <span className="font-bold text-sm relative z-10 whitespace-nowrap text-white drop-shadow-sm">
+            {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
+          </span>
+          
+          <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
+        </button>
+      </div>
     </DashboardLayout>
   );
 } 

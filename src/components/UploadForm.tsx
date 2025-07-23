@@ -665,8 +665,7 @@ export default function UploadForm({ onUploadSuccess, restaurantId }: UploadForm
                       const categoryInfo = getCategoryInfo(selectedCategory as MenuCategory);
                       return categoryInfo ? (
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${categoryInfo.color}`}>
-                          <span className="mr-1">{categoryInfo.icon}</span>
-                          {categoryInfo.name}
+                          {categoryInfo.icon} {categoryInfo.name}
                         </span>
                       ) : null;
                     })()}

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRestaurantTheme, useApplyTheme } from '@/hooks/useRestaurantTheme';
 
 interface FloatingActionButtonProps {
   userRole: 'admin' | 'restaurateur';
@@ -11,6 +12,10 @@ interface FloatingActionButtonProps {
 
 export default function FloatingActionButton({ userRole, className = '' }: FloatingActionButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  // Système de thème restaurant
+  const theme = useRestaurantTheme();
+  useApplyTheme(theme);
 
   // Ne pas afficher le bouton pour les admins
   if (userRole === 'admin') {
@@ -30,8 +35,9 @@ export default function FloatingActionButton({ userRole, className = '' }: Float
     >
       <Link
         href="/upload"
-        className="group relative inline-flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 overflow-hidden min-w-[200px] border-2 border-white/20 hover:border-white/40"
+        className="group relative inline-flex items-center justify-center gap-3 px-6 py-4 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 overflow-hidden min-w-[200px] border-2 border-white/20 hover:border-white/40"
         style={{ 
+          background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
         }}
       >
