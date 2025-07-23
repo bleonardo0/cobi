@@ -35,7 +35,7 @@ export default function ModelDetailPage() {
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [environmentMode, setEnvironmentMode] = useState<'default' | 'neutral' | 'grid'>('default');
+
   const [hotspotsEnabled, setHotspotsEnabled] = useState(true);
   const [performanceStats, setPerformanceStats] = useState<{
     loadTime?: number;
@@ -193,50 +193,7 @@ export default function ModelDetailPage() {
     });
   };
 
-  const updateEnvironment = (mode: 'default' | 'neutral' | 'grid') => {
-    setEnvironmentMode(mode);
-    
-    if (modelViewerRef.current) {
-      const modelViewer = modelViewerRef.current as any;
-      
-      // Supprimer tous les attributs d'environnement d'abord
-      modelViewer.removeAttribute('environment-image');
-      modelViewer.removeAttribute('skybox-image');
-      
-      // Réinitialiser les styles du conteneur
-      const container = viewerContainerRef.current;
-      if (container) {
-        container.style.cssText = '';
-        container.className = 'relative h-80 lg:h-[500px] xl:h-[600px]';
-      }
-      
-      switch (mode) {
-        case 'neutral':
-          // Environnement neutre (gris)
-          if (container) {
-            container.style.backgroundColor = '#f5f5f5';
-            container.className += ' bg-gray-100';
-          }
-          break;
-        case 'grid':
-          // Fond blanc avec grille
-          if (container) {
-            container.style.backgroundColor = '#ffffff';
-            container.style.backgroundImage = 'linear-gradient(rgba(0,0,0,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.1) 1px, transparent 1px)';
-            container.style.backgroundSize = '20px 20px';
-          }
-          break;
-        default:
-          // Environnement par défaut (gradient)
-          if (container) {
-            container.className += ' bg-gradient-to-br from-gray-50 to-gray-100';
-          }
-          break;
-      }
-      
-      console.log('Environment changed to:', mode);
-    }
-  };
+
 
   const handleDeleteModel = async () => {
     if (!model) return;
@@ -502,10 +459,9 @@ export default function ModelDetailPage() {
                   />
                 )}
                 
-                {/* Contrôles d'environnement */}
-                <div className="absolute top-4 right-4 flex space-x-2">
-                  {/* Toggle Hotspots */}
-                  {model.hotspotsEnabled && (
+                {/* Contrôles hotspots */}
+                {model.hotspotsEnabled && (
+                  <div className="absolute top-4 right-4">
                     <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
                       <button
                         onClick={() => setHotspotsEnabled(!hotspotsEnabled)}
@@ -519,60 +475,14 @@ export default function ModelDetailPage() {
                         {hotspotsEnabled ? '👁️' : '🚫'}
                       </button>
                     </div>
-                  )}
-                  
-                  <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={() => updateEnvironment('default')}
-                        className={`p-2 rounded transition-colors ${
-                          environmentMode === 'default' 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : 'hover:bg-gray-100'
-                        }`}
-                        title="Environnement par défaut"
-                      >
-                        🌟
-                      </button>
-                      <button
-                        onClick={() => updateEnvironment('neutral')}
-                        className={`p-2 rounded transition-colors ${
-                          environmentMode === 'neutral' 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : 'hover:bg-gray-100'
-                        }`}
-                        title="Fond neutre"
-                      >
-                        ⚪
-                      </button>
-                      <button
-                        onClick={() => updateEnvironment('grid')}
-                        className={`p-2 rounded transition-colors ${
-                          environmentMode === 'grid' 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : 'hover:bg-gray-100'
-                        }`}
-                        title="Grille au sol"
-                      >
-                        📐
-                      </button>
-                    </div>
                   </div>
-                </div>
+                )}
               </div>
               
               {/* Controls */}
               <div className="p-4 border-t border-neutral-200">
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-neutral-600">
-                    Utilisez votre souris ou vos doigts pour explorer le modèle
-                  </div>
-                  <div className="text-xs text-neutral-500">
-                    Environnement: {
-                      environmentMode === 'default' ? '🌟 Défaut' :
-                      environmentMode === 'neutral' ? '⚪ Neutre' : '📐 Grille'
-                    }
-                  </div>
+                <div className="text-sm text-neutral-600">
+                  Utilisez votre souris ou vos doigts pour explorer le modèle
                 </div>
               </div>
             </div>

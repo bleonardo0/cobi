@@ -40,9 +40,21 @@ export function useRestaurantTheme(restaurantSlug?: string): RestaurantTheme {
         }
 
         const response = await fetch(endpoint);
+        
+        if (!response.ok) {
+          console.warn(`Erreur API ${response.status}: ${response.statusText}`);
+          setTheme({
+            primaryColor: '#3b82f6',
+            secondaryColor: '#10b981',
+            isLoading: false,
+            error: null
+          });
+          return;
+        }
+
         const data = await response.json();
 
-        if (data.success && data.restaurant) {
+        if (data && data.success && data.restaurant) {
           const restaurant = data.restaurant;
           setTheme({
             primaryColor: restaurant.primary_color || restaurant.primaryColor || '#3b82f6',
@@ -51,7 +63,14 @@ export function useRestaurantTheme(restaurantSlug?: string): RestaurantTheme {
             error: null
           });
         } else {
-          throw new Error('Restaurant non trouvé');
+          // Restaurant non trouvé, utiliser les couleurs par défaut sans erreur
+          console.warn('Restaurant non trouvé, utilisation des couleurs par défaut');
+          setTheme({
+            primaryColor: '#3b82f6',
+            secondaryColor: '#10b981',
+            isLoading: false,
+            error: null
+          });
         }
       } catch (error) {
         console.error('Erreur lors du chargement du thème:', error);
