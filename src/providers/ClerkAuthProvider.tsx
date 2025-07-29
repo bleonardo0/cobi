@@ -87,6 +87,8 @@ export function ClerkAuthProvider({ children }: AuthProviderProps) {
       }
 
       if (clerkUser) {
+
+
         // Utilisateur connecté, récupérer les données Supabase
         const fetchPromise = fetchUserData(clerkUser.id);
         fetchingRef.current = fetchPromise;

@@ -9,6 +9,7 @@ export async function GET(
     const { id } = await params;
     const clerkId = id;
 
+
     // Récupérer l'utilisateur depuis Supabase par clerk_id avec les infos du restaurant
     const { data: userData, error } = await supabaseAdmin
       .from('users')

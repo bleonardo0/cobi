@@ -32,13 +32,13 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <DashboardLanguageProvider>
-            <ClerkProvider>
-              <ClerkAuthProvider>
+          <ClerkProvider>
+            <ClerkAuthProvider>
+              <DashboardLanguageProvider>
                 {children}
-              </ClerkAuthProvider>
-            </ClerkProvider>
-          </DashboardLanguageProvider>
+              </DashboardLanguageProvider>
+            </ClerkAuthProvider>
+          </ClerkProvider>
         </ThemeProvider>
       </body>
     </html>
