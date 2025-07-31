@@ -6,10 +6,11 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const restaurantId = searchParams.get('restaurantId');
+    const timeRange = searchParams.get('timeRange') as '7d' | '30d' | '90d' | null;
 
-    console.log('📊 Récupération des analytics pour restaurant:', restaurantId);
+    console.log('📊 Récupération des analytics pour restaurant:', restaurantId, 'période:', timeRange);
 
-    const stats = await getAnalyticsStats(restaurantId || undefined);
+    const stats = await getAnalyticsStats(restaurantId || undefined, timeRange || undefined);
 
     // Récupérer les détails des modèles depuis la base de données
     const modelIds = stats.modelStats.map(stat => stat.modelId);
@@ -45,7 +46,11 @@ export async function GET(request: NextRequest) {
     // Convertir viewsByDay en format tableau
     const viewsByDay = stats.viewsByDay || {};
     const viewsByDayArray = Object.entries(viewsByDay).map(([date, views]) => ({
-      date: new Date(date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+      date: new Date(date).toLocaleDateString('fr-FR', { 
+        weekday: 'short', 
+        day: 'numeric', 
+        month: 'short' 
+      }),
       views: views
     })).reverse();
 

@@ -9,6 +9,10 @@ import { useRestaurantId } from "@/hooks/useRestaurantId";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import StatsCard from "@/components/shared/StatsCard";
+import TrendAnalyticsCard from '@/components/analytics/TrendAnalyticsCard';
+import ConversionMetricsCard from '@/components/analytics/ConversionMetricsCard';
+import SmartAlertsCard from '@/components/analytics/SmartAlertsCard';
+import { AdvancedAnalytics } from '@/types/analytics';
 
 interface ModelStats {
   id: string;
@@ -36,7 +40,9 @@ interface AnalyticsData {
 
 export default function InsightsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [advancedAnalytics, setAdvancedAnalytics] = useState<AdvancedAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingAdvanced, setIsLoadingAdvanced] = useState(true);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [lastRefresh, setLastRefresh] = useState<string>('');
   const [restaurantName, setRestaurantName] = useState<string>('');
@@ -48,9 +54,10 @@ export default function InsightsPage() {
   useEffect(() => {
     if (restaurantId && user) {
       fetchAnalyticsData();
+      fetchAdvancedAnalytics();
       fetchRestaurantName();
     }
-  }, [restaurantId, user]);
+  }, [restaurantId, user, timeRange]);
 
   const fetchRestaurantName = async () => {
     try {
@@ -81,7 +88,7 @@ export default function InsightsPage() {
       
       console.log('🔄 Rechargement des analytics pour restaurant ID:', restaurantId);
       
-      const response = await fetch(`/api/analytics/stats?restaurantId=${restaurantId}`, {
+      const response = await fetch(`/api/analytics/stats?restaurantId=${restaurantId}&timeRange=${timeRange}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
@@ -102,6 +109,42 @@ export default function InsightsPage() {
       console.error('Erreur lors du chargement des analytics:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchAdvancedAnalytics = async () => {
+    try {
+      if (!advancedAnalytics) {
+        setIsLoadingAdvanced(true);
+      }
+      
+      if (!restaurantId) {
+        console.warn('⚠️ Aucun restaurant ID disponible pour les analytics avancées');
+        return;
+      }
+      
+      console.log('🔄 Rechargement des analytics avancées pour restaurant ID:', restaurantId);
+      
+      const response = await fetch(`/api/analytics/advanced?restaurantId=${restaurantId}&timeRange=${timeRange}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des analytics avancées');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        setAdvancedAnalytics(data.data);
+        console.log('📊 Analytics avancées rechargées:', data.data.summary);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des analytics avancées:', error);
+    } finally {
+      setIsLoadingAdvanced(false);
     }
   };
 
@@ -151,7 +194,10 @@ export default function InsightsPage() {
                 Dashboard
               </Link>
               <button
-                onClick={fetchAnalyticsData}
+                onClick={() => {
+                  fetchAnalyticsData();
+                  fetchAdvancedAnalytics();
+                }}
                 className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 text-sm font-medium"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,7 +287,7 @@ export default function InsightsPage() {
             <div className="space-y-4">
               {viewsByDay.map((day, index) => (
                 <div key={index} className="flex items-center">
-                  <div className="w-12 text-sm font-medium text-slate-600">{day.date}</div>
+                  <div className="w-20 flex-shrink-0 text-sm font-medium text-slate-600">{day.date}</div>
                   <div className="flex-1 mx-4">
                     <div className="bg-slate-100 rounded-full h-3">
                       <motion.div
@@ -466,6 +512,57 @@ export default function InsightsPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Analytics Avancées */}
+        {!isLoadingAdvanced && advancedAnalytics && (
+          <>
+            {/* Alertes Intelligentes */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <SmartAlertsCard alerts={advancedAnalytics.alerts} />
+            </motion.div>
+
+            {/* Métriques de Conversion */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <ConversionMetricsCard metrics={advancedAnalytics.conversionMetrics} />
+            </motion.div>
+
+            {/* Tendances des Plats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+            >
+              <TrendAnalyticsCard 
+                trends={advancedAnalytics.topModelsByPeriod.daily} 
+                period="daily"
+                timeRange={timeRange}
+              />
+            </motion.div>
+          </>
+        )}
+
+        {/* Loading State pour les Analytics Avancées */}
+        {isLoadingAdvanced && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="bg-white rounded-xl border border-slate-200 p-8"
+          >
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>
+              <p className="text-slate-600">Chargement des analytics avancées...</p>
+            </div>
+          </motion.div>
+        )}
       </div>
     </DashboardLayout>
   );

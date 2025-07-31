@@ -143,7 +143,7 @@ export async function getModelViews(
 }
 
 // Récupération des stats globales - Version simplifiée
-export async function getAnalyticsStats(restaurantId?: string): Promise<AnalyticsStats> {
+export async function getAnalyticsStats(restaurantId?: string, timeRange?: '7d' | '30d' | '90d'): Promise<AnalyticsStats> {
   try {
     let query = supabaseAdmin
       .from('model_views')
@@ -151,6 +151,14 @@ export async function getAnalyticsStats(restaurantId?: string): Promise<Analytic
 
     if (restaurantId) {
       query = query.eq('restaurant_id', restaurantId);
+    }
+
+    // Ajouter le filtre de période
+    if (timeRange) {
+      const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      query = query.gte('viewed_at', startDate.toISOString());
     }
 
     const { data: views, error } = await query;

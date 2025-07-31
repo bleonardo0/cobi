@@ -73,4 +73,88 @@ export interface MenuSession {
   modelsViewed: string[];
   deviceType: 'mobile' | 'tablet' | 'desktop';
   userAgent?: string;
+}
+
+// Nouveaux types pour les statistiques avancées
+export interface ModelTrendAnalytics {
+  modelId: string;
+  name: string;
+  dailyViews: { date: string; views: number }[];
+  weeklyViews: { week: string; views: number }[];
+  monthlyViews: { month: string; views: number }[];
+  growthRate: number; // pourcentage de croissance sur la période
+  trend: 'ascending' | 'descending' | 'stable';
+}
+
+export interface ConversionMetrics {
+  modelId: string;
+  name: string;
+  totalViews: number;
+  ordersCount: number; // sera connecté au POS
+  conversionRate: number; // pourcentage (commandes / vues * 100)
+  revenueGenerated: number; // sera connecté au POS
+  avgOrderValue: number; // sera connecté au POS
+}
+
+export interface SmartAlert {
+  id: string;
+  type: 'low_conversion' | 'high_views_no_orders' | 'declining_popularity' | 'trending_up';
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  modelId?: string;
+  modelName?: string;
+  metrics: {
+    views?: number;
+    orders?: number;
+    conversionRate?: number;
+    trend?: number;
+  };
+  createdAt: string;
+  isRead: boolean;
+}
+
+export interface AdvancedAnalytics {
+  topModelsByPeriod: {
+    daily: ModelTrendAnalytics[];
+    weekly: ModelTrendAnalytics[];
+    monthly: ModelTrendAnalytics[];
+  };
+  conversionMetrics: ConversionMetrics[];
+  alerts: SmartAlert[];
+  summary: {
+    totalViews: number;
+    totalOrders: number;
+    overallConversionRate: number;
+    totalRevenue: number;
+    avgOrderValue: number;
+    mostViewedModel: string;
+    bestConvertingModel: string;
+    worstConvertingModel: string;
+  };
+}
+
+// Types pour l'intégration POS future
+export interface POSOrder {
+  id: string;
+  restaurantId: string;
+  modelId?: string; // Lien avec le modèle 3D consulté
+  sessionId?: string; // Lien avec la session de consultation
+  items: POSOrderItem[];
+  totalAmount: number;
+  timestamp: string;
+  customerInfo?: {
+    id?: string;
+    email?: string;
+    phone?: string;
+  };
+}
+
+export interface POSOrderItem {
+  id: string;
+  modelId?: string; // Lien avec le modèle 3D
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
 } 

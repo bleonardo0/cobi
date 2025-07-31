@@ -114,7 +114,11 @@ export async function GET(request: NextRequest) {
       const dayKey = date.toISOString().split('T')[0];
       const dayViews = views.filter(v => v.viewed_at.startsWith(dayKey)).length;
       last7Days.push({
-        date: date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+        date: date.toLocaleDateString('fr-FR', { 
+          weekday: 'short', 
+          day: 'numeric', 
+          month: 'short' 
+        }),
         views: dayViews
       });
     }

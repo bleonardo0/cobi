@@ -244,7 +244,11 @@ export async function GET(request: NextRequest) {
       date.setDate(date.getDate() - i);
       const dayKey = date.toISOString().split('T')[0];
       last7Days.push({
-        date: date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+        date: date.toLocaleDateString('fr-FR', { 
+          weekday: 'short', 
+          day: 'numeric', 
+          month: 'short' 
+        }),
         views: globalStats.viewsByDay[dayKey] || 0
       });
     }

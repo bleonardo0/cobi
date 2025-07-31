@@ -274,7 +274,7 @@ export default function AdminAnalyticsPage() {
             <div className="space-y-3">
               {data.global.viewsByDay.map((day, index) => (
                 <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600 w-12">{day.date}</span>
+                  <span className="text-sm text-neutral-600 w-20 flex-shrink-0">{day.date}</span>
                   <div className="flex-1 mx-4">
                     <div className="bg-neutral-100 rounded-full h-3 overflow-hidden">
                       <div

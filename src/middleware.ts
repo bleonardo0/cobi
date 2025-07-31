@@ -1,6 +1,14 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
+// Routes publiques (pas besoin d'authentification)
+const isPublicRoute = createRouteMatcher([
+  '/api/restaurants/by-slug/(.*)', // Accès public aux restaurants par slug
+  '/menu/(.*)', // Pages menu publiques
+  '/api/contact(.*)', // Contact public
+  '/api/webhooks(.*)', // Webhooks publics
+]);
+
 // Définir les routes qui nécessitent une authentification
 const isProtectedRoute = createRouteMatcher([
   '/admin(.*)',
@@ -8,13 +16,18 @@ const isProtectedRoute = createRouteMatcher([
   '/api/admin(.*)',
   '/api/models(.*)',
   '/api/analytics(.*)',
-  '/api/restaurants(.*)',
+  '/api/restaurants/(.*)', // Protéger toutes les routes restaurants (mais on vérifie les publiques en premier)
   '/api/users(.*)',
   '/models(.*)/edit',
   '/upload(.*)'
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  // Permettre l'accès aux routes publiques sans authentification
+  if (isPublicRoute(req)) {
+    return NextResponse.next();
+  }
+  
   // Protéger les routes sensibles
   if (isProtectedRoute(req)) {
     const authData = await auth();
