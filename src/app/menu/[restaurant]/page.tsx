@@ -30,7 +30,7 @@ export default function ModernMenuPage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Hooks
-  const { trackView, trackViewEnd } = useAnalytics();
+  const { trackModelView, trackModelViewEnd } = useAnalytics(restaurant?.id);
   const { t } = useMenuLanguage();
   const { config: posConfig, loading: posLoading } = usePOSConfig(restaurant?.id);
   
@@ -48,23 +48,23 @@ export default function ModernMenuPage() {
   // Load data function
   useEffect(() => {
     async function loadData() {
-      try {
-        setIsLoading(true);
-        
+    try {
+      setIsLoading(true);
+      
         // Fetch restaurant data
         const restaurantResponse = await fetch(`/api/restaurants/by-slug/${restaurantSlug}`);
-        if (!restaurantResponse.ok) {
+      if (!restaurantResponse.ok) {
           throw new Error('Restaurant not found');
-        }
-        const restaurantData = await restaurantResponse.json();
+      }
+      const restaurantData = await restaurantResponse.json();
         setRestaurant(restaurantData);
 
         // Fetch models
-        const modelsResponse = await fetch(`/api/restaurants/by-slug/${restaurantSlug}/models`);
-        if (!modelsResponse.ok) {
+      const modelsResponse = await fetch(`/api/restaurants/by-slug/${restaurantSlug}/models`);
+      if (!modelsResponse.ok) {
           throw new Error('Failed to load dishes');
-        }
-        const modelsData = await modelsResponse.json();
+      }
+      const modelsData = await modelsResponse.json();
         // L'API retourne un objet avec une propriété models
         const modelsList = modelsData.models || modelsData || [];
         setModels(Array.isArray(modelsList) ? modelsList : []);
@@ -72,9 +72,9 @@ export default function ModernMenuPage() {
       } catch (err) {
         console.error('Error loading data:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setIsLoading(false);
-      }
+    } finally {
+      setIsLoading(false);
+    }
     }
 
     if (restaurantSlug) {
@@ -103,17 +103,19 @@ export default function ModernMenuPage() {
 
   // Handler functions
   const handleViewIn3D = (model: Model3D) => {
+    console.log('🔄 handleViewIn3D called for model:', model.id, 'restaurant:', restaurant?.id);
+    
     if (selectedModel?.id === model.id) {
       setSelectedModel(null);
       if (selectedModel) {
-        trackViewEnd(selectedModel.id, Date.now());
+      trackModelViewEnd();
       }
     } else {
       if (selectedModel) {
-        trackViewEnd(selectedModel.id, Date.now());
+        trackModelViewEnd();
       }
       setSelectedModel(model);
-      trackView(model.id);
+      trackModelView(model.id);
     }
   };
 
@@ -183,8 +185,8 @@ export default function ModernMenuPage() {
             <h1 className="text-3xl font-bold text-white mb-2">{restaurant.name}</h1>
             <p className="text-white/90">Menu interactif 3D</p>
           </div>
-        </div>
       </div>
+        </div>
 
       {/* Content container */}
       <div className="container mx-auto px-4 py-8">
@@ -409,8 +411,8 @@ export default function ModernMenuPage() {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+          ))}
+        </div>
         )}
 
         {/* No dishes message */}
@@ -470,8 +472,8 @@ export default function ModernMenuPage() {
               )}
             </div>
           </div>
-        </div>
-      )}
+                </div>
+              )}
 
       {/* Floating cart button */}
       {canOrder && (
@@ -505,4 +507,4 @@ export default function ModernMenuPage() {
       />
     </div>
   );
-}
+} 
