@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +11,7 @@ export async function GET(
     console.log(`🍽️ Fetching restaurant for: ${slug}`);
     
     // Récupérer les informations du restaurant
-    const { data: restaurant, error: restaurantError } = await supabase
+    const { data: restaurant, error: restaurantError } = await supabaseAdmin
       .from('restaurants')
       .select('id, name, slug, address, phone, email, website, description, logo_url, ambiance_image_url, primary_color, secondary_color, is_active')
       .eq('slug', slug)

@@ -46,15 +46,19 @@ export function useNotifications({ userId, restaurantId }: UseNotificationsOptio
   useEffect(() => {
     if (!hasTarget) return;
 
+    const filter = userId
+      ? `user_id=eq.${userId}`
+      : restaurantId
+      ? `restaurant_id=eq.${restaurantId}`
+      : undefined;
+
     const channel = supabase
       .channel('notifications-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter }, payload => {
         const row = payload.new as NotificationItem;
-        if ((userId && row.user_id === userId) || (restaurantId && row.restaurant_id === restaurantId)) {
-          setItems(prev => [row, ...prev]);
-        }
+        setItems(prev => [row, ...prev]);
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, payload => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter }, payload => {
         const row = payload.new as NotificationItem;
         setItems(prev => prev.map(n => (n.id === row.id ? row : n)));
       })
@@ -70,7 +74,24 @@ export function useNotifications({ userId, restaurantId }: UseNotificationsOptio
     setItems(prev => prev.map(n => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)));
   }, []);
 
-  return { items, unreadCount, isLoading, error, refetch: fetchNotifications, markAsRead };
+  const deleteNotification = useCallback(async (id: string) => {
+    await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+    setItems(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  const deleteAll = useCallback(async () => {
+    const body: any = {};
+    if (userId) body.user_id = userId;
+    if (restaurantId) body.restaurant_id = restaurantId;
+    await fetch('/api/notifications/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    setItems([]);
+  }, [userId, restaurantId]);
+
+  return { items, unreadCount, isLoading, error, refetch: fetchNotifications, markAsRead, deleteNotification, deleteAll };
 }
 
 
