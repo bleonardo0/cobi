@@ -84,6 +84,19 @@ export async function POST(request: NextRequest) {
 
     if (modelError) {
       console.error('❌ Model upload error:', modelError);
+      // Best-effort notification of failure
+      try {
+        if (restaurantId) {
+          await supabaseAdmin.from('notifications').insert({
+            restaurant_id: restaurantId,
+            type: 'model_failed',
+            title: 'Échec de traitement du modèle',
+            message: `Échec de l\'upload du fichier ${modelFile.name}`,
+          });
+        }
+      } catch (e) {
+        console.warn('Notification insert failed (model_failed):', e);
+      }
       return NextResponse.json({ error: `Erreur lors de l'upload du modèle: ${modelError.message}` }, { status: 500 });
     }
 
@@ -165,6 +178,19 @@ export async function POST(request: NextRequest) {
         await supabaseAdmin.storage.from('models-3d').remove([thumbnailFileName]);
       }
       
+      // Best-effort notification of failure
+      try {
+        if (restaurantId) {
+          await supabaseAdmin.from('notifications').insert({
+            restaurant_id: restaurantId,
+            type: 'model_failed',
+            title: 'Échec de sauvegarde du modèle',
+            message: `Le modèle ${modelName || originalName} n\'a pas pu être enregistré`,
+          });
+        }
+      } catch (e) {
+        console.warn('Notification insert failed (db error):', e);
+      }
       return NextResponse.json({ error: `Erreur lors de la sauvegarde: ${error.message}` }, { status: 500 });
     }
 
@@ -192,6 +218,21 @@ export async function POST(request: NextRequest) {
     };
 
     console.log(`🎉 Upload completed successfully for: ${model.name}`);
+
+    // Create notification for success
+    try {
+      if (restaurantId) {
+        await supabaseAdmin.from('notifications').insert({
+          restaurant_id: restaurantId,
+          type: 'model_ready',
+          title: 'Modèle prêt',
+          message: `${model.name} est prêt à être consulté`,
+          url: `/models/${model.slug}`,
+        });
+      }
+    } catch (e) {
+      console.warn('Notification insert failed (model_ready):', e);
+    }
     return NextResponse.json({ 
       success: true, 
       model,
