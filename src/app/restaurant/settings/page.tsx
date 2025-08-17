@@ -96,18 +96,38 @@ export default function RestaurantSettingsPage() {
     try {
       setIsLoading(true);
       
-      const { data: restaurantData, error } = await supabase
-        .from('restaurants')
-        .select('*')
-        .eq('id', user?.restaurantId)
-        .single();
+      // Utiliser la même logique que le dashboard
+      const restaurantId = user?.restaurantId;
+      
+      if (!restaurantId) {
+        console.log('Aucun restaurant ID disponible');
+        setRestaurant(null);
+        return;
+      }
 
-      if (error) throw error;
-      setRestaurant(restaurantData);
+      console.log('🔄 Chargement des données du restaurant:', restaurantId);
+      
+      // Utiliser l'API comme les autres pages
+      const response = await fetch(`/api/admin/restaurants/${restaurantId}`);
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des données du restaurant');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.restaurant) {
+        console.log('✅ Données du restaurant chargées:', data.restaurant.name);
+        setRestaurant(data.restaurant);
+      } else {
+        console.log('❌ Restaurant non trouvé');
+        setRestaurant(null);
+      }
       
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
       showToast('Erreur lors du chargement des données', 'error');
+      setRestaurant(null);
     } finally {
       setIsLoading(false);
     }
@@ -308,9 +328,20 @@ export default function RestaurantSettingsPage() {
     return (
       <DashboardLayout userRole="restaurateur">
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
-          <div className="flex items-center gap-2 text-red-600">
-            <span className="text-xl">⚠️</span>
-            <span>Impossible de charger les données du restaurant</span>
+          <div className="text-center py-8">
+            <div className="flex items-center justify-center gap-2 text-amber-600 mb-4">
+              <span className="text-2xl">🏪</span>
+              <span className="text-lg font-medium">Aucun restaurant associé</span>
+            </div>
+            <p className="text-neutral-600 mb-6">
+              Vous devez vous associer à un restaurant pour accéder aux paramètres.
+            </p>
+                         <button
+               onClick={() => router.push('/restaurant/dashboard')}
+               className="bg-sky-600 text-white px-6 py-3 rounded-lg hover:bg-sky-700 transition-colors font-medium"
+             >
+               Retour au dashboard
+             </button>
           </div>
         </div>
       </DashboardLayout>

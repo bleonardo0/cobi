@@ -67,6 +67,19 @@ async function handleUserCreated(
 
     const name = `${first_name || ''} ${last_name || ''}`.trim() || 'Utilisateur';
 
+    // Essayer de trouver un restaurant associé par email exact
+    let restaurantId = null;
+    const { data: restaurantByEmail } = await supabaseAdmin
+      .from('restaurants')
+      .select('id, name')
+      .eq('email', email)
+      .single();
+
+    if (restaurantByEmail) {
+      restaurantId = restaurantByEmail.id;
+      console.log(`🔗 Restaurant trouvé par email exact: ${restaurantByEmail.name}`);
+    }
+
     // Créer l'utilisateur dans Supabase avec clerk_id
     const { data, error } = await supabaseAdmin
       .from('users')
@@ -76,7 +89,7 @@ async function handleUserCreated(
         name,
         avatar_url: image_url,
         role: 'restaurateur', // Par défaut, les admins sont créés manuellement
-        restaurant_id: null,
+        restaurant_id: restaurantId,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
